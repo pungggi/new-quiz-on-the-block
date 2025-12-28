@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://build_cursor_001"]
+
+[ext_resource type="Script" path="res://scripts/player/build_cursor.gd" id="1_cursor"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_1"]
+size = Vector3(1, 1, 1)
+
+[node name="BuildCursor" type="Node3D"]
+script = ExtResource("1_cursor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_1")

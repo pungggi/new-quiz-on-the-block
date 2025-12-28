@@ -1,9 +1,16 @@
 extends Node3D
 
 @onready var chunk_root: Node3D = $ChunkRoot
+@onready var hud: HUD = $UI/HUD
+@onready var quiz_window: QuizWindow = $UI/QuizWindow
 
 func _ready() -> void:
 	_spawn_chunks()
+	hud.quiz_requested.connect(_on_hud_quiz_requested)
+
+
+func _on_hud_quiz_requested() -> void:
+	quiz_window.open()
 
 func _spawn_chunks() -> void:
 	for x in range(-1, 2):

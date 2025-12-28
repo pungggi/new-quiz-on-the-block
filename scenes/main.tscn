@@ -1,7 +1,10 @@
-[gd_scene load_steps=3 format=3 uid="uid://a3b5c7d9e1f2g"]
+[gd_scene load_steps=4 format=3 uid="uid://a3b5c7d9e1f2g"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_x8k2m"]
 [ext_resource type="Script" path="res://scripts/camera/rts_camera.gd" id="2_camera"]
+[ext_resource type="PackedScene" uid="uid://build_cursor_001" path="res://scenes/player/build_cursor.tscn" id="3_cursor"]
+[ext_resource type="PackedScene" uid="uid://ui_hud_001" path="res://scenes/ui/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" uid="uid://ui_quiz_window_001" path="res://scenes/ui/quiz_window.tscn" id="5_quiz_window"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_x8k2m")
@@ -20,3 +23,11 @@ spring_length = 20.0
 current = true
 
 [node name="ChunkRoot" type="Node3D" parent="."]
+
+[node name="BuildCursor" parent="." instance=ExtResource("3_cursor")]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUD" parent="UI" instance=ExtResource("4_hud")]
+
+[node name="QuizWindow" parent="UI" instance=ExtResource("5_quiz_window")]

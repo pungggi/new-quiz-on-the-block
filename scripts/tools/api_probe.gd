@@ -11,6 +11,14 @@ func _init() -> void:
 	_print_class_summary(&"Viewport")
 	_print_class_summary(&"Node3D")
 
+	# UI-related summaries (Godot 4)
+	_print_class_summary(&"CanvasLayer")
+	_print_class_summary(&"Control")
+	_print_class_summary(&"Button")
+	_print_class_summary(&"Panel")
+	_print_class_summary(&"PopupPanel")
+	_print_class_summary(&"Window")
+
 	print("\nMouse wheel constants:")
 	print("  MOUSE_BUTTON_WHEEL_UP = %s" % str(MOUSE_BUTTON_WHEEL_UP))
 	print("  MOUSE_BUTTON_WHEEL_DOWN = %s" % str(MOUSE_BUTTON_WHEEL_DOWN))
