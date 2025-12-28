@@ -64,6 +64,7 @@ text = "Close"
 layout_mode = 2
 
 [node name="QuestionLabel" type="Label" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 text = "Question goes here..."
@@ -76,16 +77,19 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="Answer1Button" type="Button" parent="Panel/Margin/VBox/Answers"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 text = "Answer A"
 
 [node name="Answer2Button" type="Button" parent="Panel/Margin/VBox/Answers"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 text = "Answer B"
 
 [node name="Answer3Button" type="Button" parent="Panel/Margin/VBox/Answers"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 text = "Answer C"

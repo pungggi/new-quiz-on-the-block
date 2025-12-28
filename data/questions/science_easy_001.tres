@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welche Farbe haben die meisten Pflanzenblätter?"
+answers = PackedStringArray("Blau", "Grün", "Rot")
+correct_answer_index = 1
+category = "science"
+difficulty = 1
+hint = "Denk an Bäume und Gras..."
+explanation = "Pflanzen sind grün wegen Chlorophyll - das brauchen sie für die Photosynthese!"
+reward_points = 10
+tags = PackedStringArray("plants", "nature", "easy")
+
