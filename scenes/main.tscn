@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://a3b5c7d9e1f2g"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_x8k2m"]
+[ext_resource type="Script" path="res://scripts/camera/rts_camera.gd" id="2_camera"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_x8k2m")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("2_camera")
+
+[node name="YawPivot" type="Node3D" parent="CameraRig"]
+
+[node name="PitchPivot" type="Node3D" parent="CameraRig/YawPivot"]
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig/YawPivot/PitchPivot"]
+spring_length = 20.0
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/YawPivot/PitchPivot/SpringArm3D"]
+current = true
+
+[node name="ChunkRoot" type="Node3D" parent="."]

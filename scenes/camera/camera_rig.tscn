@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://camera_rig_001"]
+
+[ext_resource type="Script" path="res://scripts/camera/rts_camera.gd" id="1_camera_rig"]
+
+[node name="CameraRig" type="Node3D"]
+script = ExtResource("1_camera_rig")
+
+[node name="YawPivot" type="Node3D" parent="CameraRig"]
+
+[node name="PitchPivot" type="Node3D" parent="YawPivot"]
+
+[node name="SpringArm3D" type="SpringArm3D" parent="PitchPivot"]
+spring_length = 20.0
+
+[node name="Camera3D" type="Camera3D" parent="SpringArm3D"]
+current = true
