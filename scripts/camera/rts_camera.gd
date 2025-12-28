@@ -21,7 +21,9 @@ signal camera_moved(global_position: Vector3)
 
 # Rotation settings
 @export var rotation_speed: float = 90.0 # degrees per second
-@export var pitch_degrees: float = 60.0 # fixed pitch angle
+@export var pitch_degrees: float = -45.0 # initial pitch angle (negative looks down)
+@export var min_pitch: float = -80.0 # max looking down
+@export var max_pitch: float = -15.0 # max looking up (still angled down for RTS)
 
 # Zoom settings
 @export var min_zoom: float = 5.0
@@ -44,11 +46,20 @@ var pitch_pivot: Node3D
 var spring_arm: SpringArm3D
 var camera: Camera3D
 
+# Mouse drag settings
+@export var mouse_pan_sensitivity: float = 0.08
+@export var mouse_rotate_sensitivity: float = 0.15
+
 # Internal state
 var _viewport: Viewport
 var _last_global_position: Vector3 = Vector3.ZERO
 var _accumulated_movement: float = 0.0
 var _yaw_rotation: float = 0.0 # Track Y rotation separately
+
+# Mouse drag state
+var _is_dragging_pan: bool = false
+var _is_dragging_rotate: bool = false
+var _last_mouse_position: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	_viewport = get_viewport()
@@ -102,19 +113,62 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	# Handle mouse wheel zoom
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		var mouse_event := event as InputEventMouseButton
+		if mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_by_delta(-zoom_speed * 0.5)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		elif mouse_event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom_by_delta(zoom_speed * 0.5)
+		# Right mouse button - pan
+		elif mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+			_is_dragging_pan = mouse_event.pressed
+			_last_mouse_position = mouse_event.position
+		# Middle mouse button - rotate
+		elif mouse_event.button_index == MOUSE_BUTTON_MIDDLE:
+			_is_dragging_rotate = mouse_event.pressed
+			_last_mouse_position = mouse_event.position
+
+	# Handle mouse motion for dragging
+	if event is InputEventMouseMotion:
+		var motion_event := event as InputEventMouseMotion
+
+		if _is_dragging_pan:
+			_handle_mouse_pan(motion_event.relative)
+
+		if _is_dragging_rotate:
+			_handle_mouse_rotate(motion_event.relative)
+
+func _handle_mouse_pan(relative: Vector2) -> void:
+	# Pan camera based on mouse movement
+	var yaw_rad := _yaw_rotation
+	var forward := Vector3.FORWARD.rotated(Vector3.UP, yaw_rad)
+	var right := Vector3.RIGHT.rotated(Vector3.UP, yaw_rad)
+
+	# Invert for intuitive dragging (drag right = camera moves left)
+	var movement := (-right * relative.x - forward * relative.y) * mouse_pan_sensitivity
+	global_position += movement
+
+func _handle_mouse_rotate(relative: Vector2) -> void:
+	# Rotate camera yaw based on horizontal mouse movement
+	if yaw_pivot:
+		var rotation_delta := -relative.x * mouse_rotate_sensitivity * 0.01
+		_yaw_rotation += rotation_delta
+		_yaw_rotation = wrapf(_yaw_rotation, 0.0, TAU)
+		yaw_pivot.rotation.y = _yaw_rotation
+
+	# Adjust pitch based on vertical mouse movement
+	if pitch_pivot:
+		var pitch_delta := relative.y * mouse_rotate_sensitivity * 0.5
+		pitch_degrees = clampf(pitch_degrees + pitch_delta, min_pitch, max_pitch)
+		pitch_pivot.rotation_degrees.x = pitch_degrees
 
 func _handle_pan(delta: float) -> void:
 	# Get pan input vector (WASD or arrow keys)
 	var pan_vector := Vector2.ZERO
 	
 	if Input.is_action_pressed(&"camera_pan_up"):
-		pan_vector.y -= 1.0
-	if Input.is_action_pressed(&"camera_pan_down"):
 		pan_vector.y += 1.0
+	if Input.is_action_pressed(&"camera_pan_down"):
+		pan_vector.y -= 1.0
 	if Input.is_action_pressed(&"camera_pan_left"):
 		pan_vector.x -= 1.0
 	if Input.is_action_pressed(&"camera_pan_right"):
@@ -171,35 +225,41 @@ func _zoom_by_delta(delta: float) -> void:
 func _handle_edge_pan(delta: float) -> void:
 	if not edge_pan_enabled or not _viewport:
 		return
-	
+
 	var mouse_pos := _viewport.get_mouse_position()
 	var viewport_size := _viewport.get_visible_rect().size
-	
+
+	# Don't edge pan if mouse is outside window
+	if mouse_pos.x < 0 or mouse_pos.x > viewport_size.x:
+		return
+	if mouse_pos.y < 0 or mouse_pos.y > viewport_size.y:
+		return
+
 	var edge_pan_vector := Vector2.ZERO
-	
+
 	# Check left edge
 	if mouse_pos.x < edge_pan_margin:
 		edge_pan_vector.x -= 1.0
 	# Check right edge
 	elif mouse_pos.x > viewport_size.x - edge_pan_margin:
 		edge_pan_vector.x += 1.0
-	
+
 	# Check top edge
 	if mouse_pos.y < edge_pan_margin:
 		edge_pan_vector.y -= 1.0
 	# Check bottom edge
 	elif mouse_pos.y > viewport_size.y - edge_pan_margin:
 		edge_pan_vector.y += 1.0
-	
+
 	# Normalize if any edge is active
 	if edge_pan_vector.length_squared() > 0.0:
 		edge_pan_vector = edge_pan_vector.normalized()
-		
+
 		# Apply edge pan in world space
 		var yaw_rad := _yaw_rotation
 		var forward := Vector3.FORWARD.rotated(Vector3.UP, yaw_rad)
 		var right := Vector3.RIGHT.rotated(Vector3.UP, yaw_rad)
-		
+
 		var movement := (forward * edge_pan_vector.y + right * edge_pan_vector.x) * edge_pan_speed * delta
 		global_position += movement
 

@@ -21,6 +21,7 @@ GDAIMCPRuntime="*res://addons/gdai-mcp-plugin-godot/gdai_mcp_runtime.gd"
 Config="*res://autoloads/config.gd"
 EventManager="*res://autoloads/event_manager.gd"
 WorldManager="*res://autoloads/world_manager.gd"
+QuizManager="*res://scripts/data/quiz_manager.gd"
 
 [editor_plugins]
 

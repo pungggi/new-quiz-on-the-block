@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Was ist 5 + 3?"
+answers = PackedStringArray("6", "8", "9")
+correct_answer_index = 1
+category = "math"
+difficulty = 1
+hint = "Zähle von 5 aus drei weiter."
+explanation = "5 + 3 = 8. Wenn du 5 hast und 3 dazu zählst: 6, 7, 8!"
+reward_points = 10
+tags = PackedStringArray("addition", "single-digit", "easy")
+

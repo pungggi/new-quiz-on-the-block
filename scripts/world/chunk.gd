@@ -7,9 +7,24 @@ var chunk_z: int = 0
 
 const TERRAIN_COLLISION_LAYER: int = 1 # Layer 1 for terrain
 
+# Grass material (shared across all chunks)
+static var _grass_material: StandardMaterial3D
+
 func _ready() -> void:
+	_setup_material()
 	_build_mesh()
 	_add_collision()
+
+
+func _setup_material() -> void:
+	# Create shared grass material only once
+	if not _grass_material:
+		_grass_material = StandardMaterial3D.new()
+		_grass_material.albedo_color = Color(0.33, 0.65, 0.25) # Fresh grass green
+		_grass_material.roughness = 0.9
+		_grass_material.metallic = 0.0
+
+	mesh_instance.material_override = _grass_material
 
 func _build_mesh() -> void:
 	var data: PackedByteArray = WorldManager.get_chunk_data(chunk_x, chunk_z)
