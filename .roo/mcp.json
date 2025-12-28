@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+        "godot-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "C:\\Users\\Alessandro\\source\\new-quiz-on-the-block\\addons\\gdai-mcp-plugin-godot\\gdai_mcp_server.py"
+            ],
+            "disabled": false,
+            "alwaysAllow": [
+                ""
+            ]
+        }
+    }
+}
