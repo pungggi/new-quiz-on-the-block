@@ -5,8 +5,6 @@ extends Node3D
 var chunk_x: int = 0
 var chunk_z: int = 0
 
-const TERRAIN_COLLISION_LAYER: int = 1 # Layer 1 for terrain
-
 # Grass material (shared across all chunks)
 static var _grass_material: StandardMaterial3D
 
@@ -31,7 +29,6 @@ func _build_mesh() -> void:
 	if data.is_empty():
 		push_warning("Chunk (%d, %d): No data found from WorldManager!" % [chunk_x, chunk_z])
 		return
-	print("Chunk (%d, %d): Building mesh with %d bytes of data" % [chunk_x, chunk_z, data.size()])
 	
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -96,7 +93,7 @@ func _build_mesh() -> void:
 func _add_collision() -> void:
 	# Create a StaticBody3D for collision
 	var static_body := StaticBody3D.new()
-	static_body.collision_layer = TERRAIN_COLLISION_LAYER
+	static_body.collision_layer = Config.TERRAIN_COLLISION_LAYER
 	static_body.collision_mask = 0 # Don't collide with other bodies
 	
 	# Create a box collision shape covering the chunk
