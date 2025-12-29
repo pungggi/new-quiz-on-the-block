@@ -1,0 +1,138 @@
+[gd_scene load_steps=3 format=3 uid="uid://settings_dialog_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/settings_dialog.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.12, 0.14, 0.2, 0.98)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+content_margin_left = 24.0
+content_margin_top = 20.0
+content_margin_right = 24.0
+content_margin_bottom = 20.0
+
+[node name="SettingsDialog" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.05, 0.1, 0.9)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -320.0
+offset_right = 300.0
+offset_bottom = 320.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⚙️ Einstellungen"
+horizontal_alignment = 1
+
+[node name="NameSection" type="VBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="NameLabel" type="Label" parent="Panel/VBox/NameSection"]
+layout_mode = 2
+text = "Name:"
+
+[node name="NameInput" type="LineEdit" parent="Panel/VBox/NameSection"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+placeholder_text = "Dein Name..."
+max_length = 20
+
+[node name="AvatarSection" type="VBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="AvatarLabel" type="Label" parent="Panel/VBox/AvatarSection"]
+layout_mode = 2
+text = "Avatar:"
+
+[node name="AvatarContainer" type="HBoxContainer" parent="Panel/VBox/AvatarSection"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="GradeSection" type="VBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="GradeLabel" type="Label" parent="Panel/VBox/GradeSection"]
+layout_mode = 2
+text = "Klassenstufe:"
+
+[node name="GradeContainer" type="GridContainer" parent="Panel/VBox/GradeSection"]
+layout_mode = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 6
+
+[node name="CategorySection" type="VBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="CategoryLabel" type="Label" parent="Panel/VBox/CategorySection"]
+layout_mode = 2
+text = "Quiz-Kategorien:"
+
+[node name="CategoryContainer" type="VBoxContainer" parent="Panel/VBox/CategorySection"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ErrorLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+
+[node name="ButtonSection" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResetButton" type="Button" parent="Panel/VBox/ButtonSection"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.5, 0.5, 1)
+text = "🗑️ Zurücksetzen"
+
+[node name="Spacer" type="Control" parent="Panel/VBox/ButtonSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CancelButton" type="Button" parent="Panel/VBox/ButtonSection"]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "Abbrechen"
+
+[node name="SaveButton" type="Button" parent="Panel/VBox/ButtonSection"]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "💾 Speichern"
+

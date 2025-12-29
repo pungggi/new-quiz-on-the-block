@@ -45,6 +45,7 @@ func open_with_category(category: String) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_set_build_cursor_blocking(true)
 	_load_random_question()
+	AudioManager.play_sfx(AudioManager.SFX.PANEL_OPEN)
 
 
 func close() -> void:
@@ -52,6 +53,7 @@ func close() -> void:
 	_current_category = ""
 	_reset_button_colors()
 	_set_build_cursor_blocking(false)
+	AudioManager.play_sfx(AudioManager.SFX.PANEL_CLOSE)
 
 
 func _set_build_cursor_blocking(blocking: bool) -> void:
@@ -95,6 +97,9 @@ func _on_answer_pressed(answer_index: int) -> void:
 
 	var is_correct: bool = _current_question.is_correct(answer_index)
 
+	# Play sound
+	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
+
 	# Visual feedback
 	for i in range(_answer_buttons.size()):
 		var btn := _answer_buttons[i]
@@ -105,8 +110,9 @@ func _on_answer_pressed(answer_index: int) -> void:
 		elif i == answer_index and not is_correct:
 			btn.modulate = Color.RED
 
-	# Record answer in QuizManager
-	if _quiz_manager:
+	# Emit question_answered signal for BuildingManager and AchievementManager
+	if _quiz_manager and _current_question:
+		_quiz_manager.question_answered.emit(_current_question, is_correct)
 		_quiz_manager.record_answer(_current_category, is_correct)
 
 	# Notify NPCManager (which notifies the NPC)

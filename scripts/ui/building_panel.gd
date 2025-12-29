@@ -118,12 +118,14 @@ func _on_toggle_pressed() -> void:
 	panel.visible = _is_open
 	toggle_button.text = "▼ Bauen" if _is_open else "▲ Bauen"
 	panel_toggled.emit(_is_open)
+	AudioManager.play_sfx(AudioManager.SFX.PANEL_OPEN if _is_open else AudioManager.SFX.PANEL_CLOSE)
 
 
 func _on_building_button_pressed(building: BuildingData) -> void:
 	if not building.is_unlocked(_building_manager.player_stats):
 		return
 
+	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
 	if _building_manager.select_building(building):
 		building_selected.emit(building)
 		# Visual feedback - highlight selected
@@ -134,6 +136,7 @@ func _on_building_button_pressed(building: BuildingData) -> void:
 
 func _on_building_hover(building: BuildingData) -> void:
 	var is_unlocked := building.is_unlocked(_building_manager.player_stats)
+	AudioManager.play_sfx(AudioManager.SFX.BUTTON_HOVER, 0.5)
 
 	tooltip_name.text = building.display_name
 	tooltip_desc.text = building.description
@@ -167,4 +170,4 @@ func _on_points_changed(_new_total: int) -> void:
 
 func _on_building_unlocked(building: BuildingData) -> void:
 	_update_button_state(building)
-	# TODO: Play unlock animation/sound
+	AudioManager.play_sfx(AudioManager.SFX.UNLOCK)

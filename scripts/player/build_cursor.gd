@@ -409,7 +409,25 @@ func _place_building() -> void:
 	building.position = Vector3(_current_grid_pos.x + 0.5, _current_grid_pos.y, _current_grid_pos.z + 0.5)
 
 	_buildings_root.add_child(building)
+
+	# Play pop-in animation
+	_play_building_pop_animation(building)
+
 	building_placed.emit(_current_grid_pos)
+
+
+func _play_building_pop_animation(building: Node3D) -> void:
+	# Scale bounce animation
+	building.scale = Vector3.ZERO
+	var tween := create_tween()
+	tween.tween_property(building, "scale", Vector3(1.15, 1.15, 1.15), 0.12).set_ease(Tween.EASE_OUT)
+	tween.tween_property(building, "scale", Vector3.ONE, 0.08).set_ease(Tween.EASE_IN_OUT)
+
+	# Small shake
+	var original_pos := building.position
+	tween.parallel().tween_property(building, "position:x", original_pos.x + 0.03, 0.03)
+	tween.tween_property(building, "position:x", original_pos.x - 0.03, 0.06)
+	tween.tween_property(building, "position:x", original_pos.x, 0.03)
 
 func _try_remove_block() -> void:
 	if not camera:
