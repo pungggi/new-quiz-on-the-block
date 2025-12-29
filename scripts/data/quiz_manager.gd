@@ -46,7 +46,6 @@ func _load_questions() -> void:
 		file_name = dir.get_next()
 	
 	dir.list_dir_end()
-	print("QuizManager: Loaded %d questions" % _questions.size())
 
 
 ## Get questions filtered by category and difficulty

@@ -8,8 +8,8 @@ extends Node
 signal mode_changed(new_mode: Mode)
 
 enum Mode {
-	WALK,  ## Player walks around, third-person camera
-	BUILD  ## Free camera, building enabled
+	WALK, ## Player walks around, third-person camera
+	BUILD ## Free camera, building enabled
 }
 
 ## Current active mode
@@ -18,14 +18,13 @@ var current_mode: Mode = Mode.WALK:
 		if current_mode != value:
 			current_mode = value
 			mode_changed.emit(current_mode)
-			print("GameMode: Switched to %s" % Mode.keys()[current_mode])
 
 ## Reference to player (set by player on ready)
 var player: CharacterBody3D = null
 
 
 func _ready() -> void:
-	print("GameMode: Initialized in WALK mode")
+	pass
 
 
 func _input(event: InputEvent) -> void:
@@ -49,4 +48,3 @@ func is_walk_mode() -> bool:
 ## Check if currently in build mode
 func is_build_mode() -> bool:
 	return current_mode == Mode.BUILD
-

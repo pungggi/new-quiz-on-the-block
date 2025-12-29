@@ -30,9 +30,129 @@ We are building "New Kids on the Block", a kid-friendly, non-violent city builde
 - **Data Structure:** Use `PackedByteArray` for large voxel data sets to minimize memory overhead.
 
 ## 4. Godot 4 Specifics
-- **Verification:** Before suggesting code, verify if the API exists in Godot 4.x (e.g., `move_and_slide()` takes no arguments now). 
+- **Verification:** Before suggesting code, verify if the API exists in Godot 4.x (e.g., `move_and_slide()` takes no arguments now).
 - **Tweens:** Use `create_tween()` instead of the old Tween node.
 - **Exports:** Use `@export var` syntax.
+
+## 5. ⚠️ Godot 4 Stolperfallen (KRITISCH)
+Beim Code-Review und Entwicklung MÜSSEN diese Patterns vermieden/erkannt werden:
+
+### 5.1 API-Migration (Godot 3 → 4)
+| ❌ FALSCH (Godot 3) | ✅ RICHTIG (Godot 4) |
+|---------------------|----------------------|
+| `move_and_slide(velocity)` | `velocity = ...; move_and_slide()` |
+| `instance()` | `instantiate()` |
+| `connect("signal", obj, "method")` | `signal.connect(method)` |
+| `yield(obj, "signal")` | `await obj.signal` |
+| `$Tween.interpolate_property()` | `create_tween().tween_property()` |
+| `export var` | `@export var` |
+
+### 5.2 Signal-Verbindungen
+```gdscript
+# ❌ FALSCH
+button.connect("pressed", self, "_on_pressed")
+# ✅ RICHTIG
+button.pressed.connect(_on_pressed)
+# ✅ Mit Argumenten
+button.pressed.connect(_on_pressed.bind(extra_arg))
+```
+
+### 5.3 Typed Arrays - ACHTUNG!
+```gdscript
+# ❌ FEHLER - Typed Arrays können nicht direkt zugewiesen werden
+var nodes: Array[Node2D] = get_children()  # CRASH!
+# ✅ RICHTIG
+var nodes: Array[Node2D] = []
+nodes.assign(get_children())
+# ✅ ODER - Untyped verwenden wenn nötig
+var nodes := get_children()  # Array (untyped)
+```
+
+### 5.4 Resource-Sharing (GEFÄHRLICH!)
+```gdscript
+# ⚠️ GEFAHR: Alle Instanzen teilen dasselbe Material!
+@export var material: StandardMaterial3D
+func change_color() -> void:
+    material.albedo_color = Color.RED  # ALLE werden rot!
+
+# ✅ FIX 1: In _ready() duplizieren
+func _ready() -> void:
+    material = material.duplicate()
+
+# ✅ FIX 2: Im Editor "resource_local_to_scene = true" setzen
+```
+
+### 5.5 await Funktionen
+```gdscript
+# ⚠️ Funktion mit await MUSS Rückgabetyp haben!
+func do_something():  # ❌ Kein Rückgabetyp = Probleme
+    await get_tree().process_frame
+
+func do_something() -> void:  # ✅ RICHTIG
+    await get_tree().process_frame
+```
+
+### 5.6 queue_free() Timing
+```gdscript
+# ⚠️ Node wird NICHT sofort gelöscht!
+node.queue_free()
+print(node)  # Noch da bis Frame-Ende!
+
+# ⚠️ is_instance_valid() kann true sein trotz queue_free!
+# ✅ Nach Timer/Tween ist is_instance_valid() sicher:
+await get_tree().create_timer(1.0).timeout
+if is_instance_valid(node):
+    node.do_something()  # Sicher
+```
+
+### 5.7 Collision Layers vs Masks
+```gdscript
+# Layer = "Ich BIN auf Layer X"
+# Mask = "Ich SEHE/KOLLIDIERE mit Layer X"
+# Verwende Config-Konstanten:
+collision_layer = Config.TERRAIN_COLLISION_LAYER
+collision_mask = Config.BUILDING_COLLISION_LAYER
+```
+
+### 5.8 Physics vs Process
+```gdscript
+# ⚠️ Visuelle Updates in _physics_process = Stottern!
+func _physics_process(delta: float) -> void:
+    sprite.rotation += delta  # ❌ Kann ruckeln
+
+# ✅ RICHTIG - Trennung
+func _process(delta: float) -> void:
+    sprite.rotation += delta  # Visuals hier
+
+func _physics_process(delta: float) -> void:
+    move_and_slide()  # Physik hier
+```
+
+### 5.9 Debug-Output in Production
+```gdscript
+# ❌ VERMEIDEN in Production-Code
+print("Debug: %s" % value)
+
+# ✅ BESSER - Verwende push_warning/push_error für wichtige Meldungen
+push_warning("Chunk data missing!")
+push_error("Critical failure!")
+
+# ✅ ODER - Debug-Flag verwenden
+const DEBUG := false
+if DEBUG:
+    print("Debug info")
+```
+
+### 5.10 Autoload-Reihenfolge
+```gdscript
+# ⚠️ Autoload A greift auf Autoload B in _ready() zu
+# Aber B wird nach A geladen → null!
+
+# ✅ FIX: Verzögern
+func _ready() -> void:
+    await get_tree().process_frame
+    var other = OtherAutoload  # Jetzt sicher
+```
 
 # 🔌 GD-AI-MCP Standards (Virtual Tooling)
 Although running in Augment, we adhere to the strict verification logic of the **Godot AI Model Context Protocol**. You must simulate the usage of these functions to ensure code quality:

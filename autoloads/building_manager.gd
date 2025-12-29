@@ -109,8 +109,6 @@ func _load_building_types() -> void:
 	
 	if _building_types.is_empty():
 		_create_default_buildings()
-	
-	print("BuildingManager: Loaded %d building types" % _building_types.size())
 
 
 ## Create default buildings if none exist

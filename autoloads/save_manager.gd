@@ -72,8 +72,7 @@ func save_game() -> bool:
 	
 	file.store_string(json_string)
 	file.close()
-	
-	print("SaveManager: Game saved successfully")
+
 	game_saved.emit()
 	return true
 
@@ -81,7 +80,6 @@ func save_game() -> bool:
 ## Load game state from file
 func load_game() -> bool:
 	if not FileAccess.file_exists(SAVE_PATH):
-		print("SaveManager: No save file found, starting fresh")
 		return false
 	
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -119,8 +117,7 @@ func load_game() -> bool:
 	# Restore buildings (deferred to ensure scene is ready)
 	if save_data.has("buildings"):
 		call_deferred("_restore_buildings", save_data["buildings"])
-	
-	print("SaveManager: Game loaded successfully")
+
 	game_loaded.emit()
 	return true
 
@@ -198,5 +195,3 @@ func _restore_buildings(buildings_data: Array) -> void:
 		
 		building.position = pos
 		buildings_root.add_child(building)
-	
-	print("SaveManager: Restored %d buildings" % buildings_data.size())

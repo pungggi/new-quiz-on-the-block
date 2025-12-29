@@ -55,7 +55,6 @@ func _ready() -> void:
 	_create_sfx_pool()
 	_create_music_player()
 	_generate_placeholder_sounds()
-	print("AudioManager: Initialized with %d SFX types" % SFX.size())
 
 
 func _setup_audio_buses() -> void:

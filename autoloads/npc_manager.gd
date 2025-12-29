@@ -50,7 +50,6 @@ var _spawning_enabled: bool = true
 func _ready() -> void:
 	_load_npc_types()
 	_building_manager = get_node_or_null("/root/BuildingManager")
-	print("NPCManager: Loaded %d NPC types" % _npc_types.size())
 
 	# Start spawning after a short delay
 	_spawn_timer = 3.0 # First spawn after 3 seconds

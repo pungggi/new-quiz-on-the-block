@@ -91,7 +91,6 @@ func try_unlock(achievement_id: String) -> bool:
 	ProfileManager.save_profile()
 	
 	achievement_unlocked.emit(achievement)
-	print("Achievement unlocked: %s %s" % [achievement.icon, achievement.title])
 	return true
 
 
@@ -140,4 +139,3 @@ func _on_points_changed(new_total: int) -> void:
 		if ach.type == AchievementData.Type.POINTS_EARNED:
 			if new_total >= ach.target_value:
 				try_unlock(ach.id)
-

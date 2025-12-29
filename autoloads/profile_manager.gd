@@ -73,14 +73,6 @@ func create_profile(player_name: String, grade_level: int, categories: Array = [
 	is_ready = true
 	profile_created.emit(current_profile)
 
-	var cats_str := "alle" if categories.is_empty() else ", ".join(categories)
-	print("ProfileManager: Created profile for '%s' %s (Grade: %s, Categories: %s)" % [
-		player_name,
-		PlayerProfile.AVATAR_EMOJIS.get(avatar, ""),
-		PlayerProfile.get_grade_name(grade_level),
-		cats_str
-	])
-
 	return current_profile
 
 
@@ -141,7 +133,6 @@ func load_all_profiles() -> bool:
 		current_profile = all_profiles[current_profile_index]
 		is_ready = true
 		profile_loaded.emit(current_profile)
-		print("ProfileManager: Loaded %d profiles, active: '%s'" % [all_profiles.size(), current_profile.player_name])
 	else:
 		current_profile_index = -1
 		current_profile = null
@@ -159,7 +150,6 @@ func switch_profile(index: int) -> bool:
 	current_profile = all_profiles[index]
 	save_all_profiles()
 	profile_switched.emit(current_profile)
-	print("ProfileManager: Switched to profile '%s'" % current_profile.player_name)
 	return true
 
 
@@ -170,7 +160,6 @@ func delete_profile(index: int) -> bool:
 	if all_profiles.size() <= 1:
 		return false # Keep at least one profile
 
-	var deleted_name: String = all_profiles[index].player_name
 	all_profiles.remove_at(index)
 
 	# Adjust current index
@@ -182,7 +171,6 @@ func delete_profile(index: int) -> bool:
 	current_profile = all_profiles[current_profile_index]
 	save_all_profiles()
 	profile_switched.emit(current_profile)
-	print("ProfileManager: Deleted profile '%s'" % deleted_name)
 	return true
 
 
@@ -267,4 +255,3 @@ func reset_current_profile() -> void:
 	save_profile()
 	profile_updated.emit(current_profile)
 	points_changed.emit(current_profile.total_points)
-	print("ProfileManager: Profile reset for '%s'" % current_profile.player_name)
