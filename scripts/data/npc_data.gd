@@ -6,6 +6,8 @@ class_name NPCData
 ## Defines an NPC type with its quiz category and rewards.
 ## NPCs teach players through quizzes - each NPC specializes in a category.
 
+enum ShapeType {CAPSULE, CYLINDER, BOX, SPHERE}
+
 ## Unique identifier for this NPC type
 @export var id: String = ""
 
@@ -20,6 +22,12 @@ class_name NPCData
 
 ## Visual color for the NPC mesh
 @export var color: Color = Color.CORNFLOWER_BLUE
+
+## Shape type for the NPC mesh
+@export var shape_type: ShapeType = ShapeType.CAPSULE
+
+## Emoji displayed above the NPC
+@export var emoji: String = "👨‍🏫"
 
 ## Optional: Icon or sprite for UI
 @export var icon: Texture2D
@@ -44,6 +52,11 @@ func get_category_display_name() -> String:
 			return "Geografie"
 		"history":
 			return "Geschichte"
+		"language":
+			return "Sprache"
+		"music":
+			return "Musik"
+		"art":
+			return "Kunst"
 		_:
 			return category.capitalize()
-

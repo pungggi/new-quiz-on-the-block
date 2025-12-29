@@ -17,8 +17,9 @@ const NPC_COLLISION_LAYER: int = 4
 const BASE_SPAWN_INTERVAL: float = 12.0 # Seconds between spawns (was 15)
 const MIN_SPAWN_INTERVAL: float = 4.0 # Minimum interval (was 5)
 const MAX_ACTIVE_NPCS: int = 6 # Maximum NPCs at once (was 8, less overwhelming)
-const SPAWN_RADIUS_MIN: float = 4.0 # Min distance from center
-const SPAWN_RADIUS_MAX: float = 18.0 # Max distance from center
+const SPAWN_RADIUS_MIN: float = 3.0 # Min distance from center
+const SPAWN_RADIUS_MAX: float = 14.0 # Max distance from center (terrain goes from -16 to +32)
+const SPAWN_Y: float = 1.0 # Ground level (top of grass voxels)
 
 ## All loaded NPC data resources
 var _npc_types: Dictionary = {}
@@ -65,7 +66,11 @@ func _update_spawning(delta: float) -> void:
 		return
 
 	# Clean up invalid NPC references
-	_active_npcs = _active_npcs.filter(func(npc: NPC) -> bool: return is_instance_valid(npc))
+	var valid_npcs: Array[NPC] = []
+	for npc: NPC in _active_npcs:
+		if is_instance_valid(npc):
+			valid_npcs.append(npc)
+	_active_npcs = valid_npcs
 
 	# Check if we can spawn more
 	if _active_npcs.size() >= MAX_ACTIVE_NPCS:
@@ -97,13 +102,13 @@ func _spawn_random_npc() -> void:
 	var types: Array = _npc_types.values()
 	var npc_data: NPCData = types[randi() % types.size()]
 
-	# Generate random position on terrain
+	# Generate random position on terrain (centered around chunk 0,0)
 	var angle: float = randf() * TAU
 	var distance: float = randf_range(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX)
 	var spawn_pos := Vector3(
-		cos(angle) * distance,
-		1.0, # Slightly above ground
-		sin(angle) * distance
+		cos(angle) * distance + 8.0, # Offset to center of chunk 0
+		SPAWN_Y, # On top of grass voxels (y=1)
+		sin(angle) * distance + 8.0 # Offset to center of chunk 0
 	)
 
 	# Spawn the NPC

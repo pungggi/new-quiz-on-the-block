@@ -29,7 +29,9 @@ func _setup_material() -> void:
 func _build_mesh() -> void:
 	var data: PackedByteArray = WorldManager.get_chunk_data(chunk_x, chunk_z)
 	if data.is_empty():
+		push_warning("Chunk (%d, %d): No data found from WorldManager!" % [chunk_x, chunk_z])
 		return
+	print("Chunk (%d, %d): Building mesh with %d bytes of data" % [chunk_x, chunk_z, data.size()])
 	
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)

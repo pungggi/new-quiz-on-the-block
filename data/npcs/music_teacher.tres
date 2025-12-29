@@ -4,12 +4,12 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "math_teacher"
-display_name = "Mathe-Lehrer"
-category = "math"
-reward_points = 15
-color = Color(0.2, 0.4, 0.9, 1)
-shape_type = 0
-emoji = "🔢"
-description = "Liebt Zahlen und Formeln!"
+id = "music_teacher"
+display_name = "Musik-Lehrer"
+category = "music"
+reward_points = 10
+color = Color(0.9, 0.2, 0.5, 1)
+shape_type = 3
+emoji = "🎵"
+description = "Macht die Welt bunter mit Musik!"
 

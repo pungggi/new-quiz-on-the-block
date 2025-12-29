@@ -11,7 +11,6 @@ signal closed
 
 var _bar_color_good := Color(0.3, 0.8, 0.4)
 var _bar_color_bad := Color(0.8, 0.4, 0.3)
-var _bar_color_neutral := Color(0.5, 0.6, 0.7)
 
 
 func _ready() -> void:

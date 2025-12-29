@@ -1,0 +1,138 @@
+[gd_scene load_steps=2 format=3 uid="uid://c7ydlppgvq1wh"]
+
+[ext_resource type="Script" uid="uid://dj5ygdpiy1eag" path="res://scripts/ui/character_editor.gd" id="1_1c0vy"]
+
+[node name="CharacterEditor" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_1c0vy")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.7)
+
+[node name="Panel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(800, 550)
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Character Editor"
+horizontal_alignment = 1
+
+[node name="HBox" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PreviewContainer" type="SubViewportContainer" parent="Panel/VBox/HBox"]
+custom_minimum_size = Vector2(250, 350)
+layout_mode = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Panel/VBox/HBox/PreviewContainer"]
+transparent_bg = true
+size = Vector2i(250, 511)
+
+[node name="Camera3D" type="Camera3D" parent="Panel/VBox/HBox/PreviewContainer/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 2.5)
+
+[node name="PreviewCharacter" type="Node3D" parent="Panel/VBox/HBox/PreviewContainer/SubViewport"]
+
+[node name="Light" type="DirectionalLight3D" parent="Panel/VBox/HBox/PreviewContainer/SubViewport"]
+transform = Transform3D(0.70710677, -0.49999997, 0.49999997, 0, 0.70710677, 0.70710677, -0.70710677, -0.49999997, 0.49999997, 0, 0, 0)
+
+[node name="OptionsScroll" type="ScrollContainer" parent="Panel/VBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Options" type="VBoxContainer" parent="Panel/VBox/HBox/OptionsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SkinSection" type="VBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/HBox/OptionsScroll/Options/SkinSection"]
+layout_mode = 2
+text = "Hautfarbe"
+
+[node name="SkinColors" type="HBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options/SkinSection"]
+layout_mode = 2
+
+[node name="HairSection" type="VBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/HBox/OptionsScroll/Options/HairSection"]
+layout_mode = 2
+text = "Haarfarbe"
+
+[node name="HairColors" type="HBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options/HairSection"]
+layout_mode = 2
+
+[node name="HairStyleSection" type="VBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/HBox/OptionsScroll/Options/HairStyleSection"]
+layout_mode = 2
+text = "Frisur"
+
+[node name="HairStyles" type="HBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options/HairStyleSection"]
+layout_mode = 2
+
+[node name="ShirtSection" type="VBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/HBox/OptionsScroll/Options/ShirtSection"]
+layout_mode = 2
+text = "Shirt"
+
+[node name="ShirtColors" type="HBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options/ShirtSection"]
+layout_mode = 2
+
+[node name="PantsSection" type="VBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/HBox/OptionsScroll/Options/PantsSection"]
+layout_mode = 2
+text = "Hose"
+
+[node name="PantsColors" type="HBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options/PantsSection"]
+layout_mode = 2
+
+[node name="GlassesSection" type="VBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/HBox/OptionsScroll/Options/GlassesSection"]
+layout_mode = 2
+text = "Brille"
+
+[node name="GlassesTypes" type="HBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options/GlassesSection"]
+layout_mode = 2
+
+[node name="HatSection" type="VBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/HBox/OptionsScroll/Options/HatSection"]
+layout_mode = 2
+text = "Hut"
+
+[node name="HatTypes" type="HBoxContainer" parent="Panel/VBox/HBox/OptionsScroll/Options/HatSection"]
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="RandomizeButton" type="Button" parent="Panel/VBox/ButtonRow"]
+layout_mode = 2

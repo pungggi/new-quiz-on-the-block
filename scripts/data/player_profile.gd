@@ -111,6 +111,16 @@ const GRADE_POINT_MULTIPLIER: Dictionary = {
 ## Profile creation timestamp
 @export var created_at: String = ""
 
+## Character customization data
+var customization: PlayerCustomization = null
+
+
+## Get or create customization
+func get_customization() -> PlayerCustomization:
+	if customization == null:
+		customization = PlayerCustomization.create_default()
+	return customization
+
 
 ## Get display name for grade level
 static func get_grade_name(grade: int) -> String:
@@ -183,7 +193,7 @@ func get_avatar_emoji() -> String:
 
 ## Convert to dictionary for saving
 func to_dict() -> Dictionary:
-	return {
+	var result := {
 		"player_name": player_name,
 		"avatar_id": avatar_id,
 		"grade_level": grade_level,
@@ -198,6 +208,9 @@ func to_dict() -> Dictionary:
 		"unlocked_achievements": unlocked_achievements,
 		"created_at": created_at,
 	}
+	if customization:
+		result["customization"] = customization.to_dict()
+	return result
 
 
 ## Load from dictionary
@@ -215,3 +228,8 @@ func from_dict(data: Dictionary) -> void:
 	category_wrong = data.get("category_wrong", {})
 	unlocked_achievements = data.get("unlocked_achievements", [])
 	created_at = data.get("created_at", "")
+
+	# Load customization
+	if data.has("customization"):
+		customization = PlayerCustomization.create_default()
+		customization.from_dict(data["customization"])

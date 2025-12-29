@@ -3,6 +3,7 @@ extends Node3D
 ## RTS Camera Controller
 ##
 ## Controls a strategy camera with pan, rotate, zoom, and edge-pan.
+## Supports two modes: BUILD (free camera) and WALK (follows player).
 ##
 ## Camera Rig Structure:
 ## - CameraRig (this script)
@@ -61,12 +62,21 @@ var _is_dragging_pan: bool = false
 var _is_dragging_rotate: bool = false
 var _last_mouse_position: Vector2 = Vector2.ZERO
 
+# Third-person follow settings
+@export var follow_lerp_speed: float = 5.0
+@export var follow_distance: float = 12.0
+@export var follow_height_offset: float = 0.0
+
+# GameMode reference
+var _game_mode: Node
+
 func _ready() -> void:
 	_viewport = get_viewport()
-	
+
 	# Wait for scene tree to be fully ready
 	await get_tree().process_frame
-	
+	await get_tree().process_frame # Extra frame for transform stability
+
 	# Find child nodes by name
 	yaw_pivot = find_child("YawPivot", true, false)
 	if yaw_pivot:
@@ -75,40 +85,65 @@ func _ready() -> void:
 			spring_arm = pitch_pivot.find_child("SpringArm3D", true, false)
 			if spring_arm:
 				camera = spring_arm.find_child("Camera3D", true, false)
-	
+
 	# Validate nodes
 	if not yaw_pivot or not pitch_pivot or not spring_arm or not camera:
 		push_error("RTS Camera: Could not find required child nodes. Expected structure: CameraRig/YawPivot/PitchPivot/SpringArm3D/Camera3D")
 		return
-	
+
 	# Set initial pitch
 	pitch_pivot.rotation_degrees.x = pitch_degrees
-	
+
 	# Make camera current
 	camera.make_current()
-	
+
 	# Disable collision on spring arm for pure zoom control
 	spring_arm.collision_mask = 0
-	
+
 	# Store initial position
 	_last_global_position = global_position
 	_yaw_rotation = yaw_pivot.rotation.y
 
+	# Force transform update to avoid invert warnings
+	force_update_transform()
+
+	# Get GameMode reference
+	_game_mode = get_node_or_null("/root/GameMode")
+
 func _process(delta: float) -> void:
 	if not _viewport or not yaw_pivot:
 		return
-	
-	_handle_pan(delta)
+
+	# Check if we should follow the player (WALK mode)
+	if _game_mode and _game_mode.is_walk_mode():
+		_follow_player(delta)
+	else:
+		# BUILD mode - free camera controls
+		_handle_pan(delta)
+		_handle_edge_pan(delta)
+
+	# These work in both modes
 	_handle_rotation(delta)
 	_handle_zoom(delta)
-	_handle_edge_pan(delta)
-	
+
 	# Clamp to world bounds if enabled
 	if use_world_bounds:
 		_clamp_to_world_bounds()
-	
+
 	# Emit movement signal if threshold exceeded
 	_check_movement_threshold()
+
+
+func _follow_player(delta: float) -> void:
+	if not _game_mode or not _game_mode.player:
+		return
+
+	var player: Node3D = _game_mode.player
+	var target_pos := player.global_position
+	target_pos.y += follow_height_offset
+
+	# Smoothly follow the player
+	global_position = global_position.lerp(target_pos, follow_lerp_speed * delta)
 
 func _input(event: InputEvent) -> void:
 	# Handle mouse wheel zoom

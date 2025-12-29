@@ -4,12 +4,12 @@
 
 [resource]
 script = ExtResource("1_script")
-id = "geography_teacher"
-display_name = "Weltenbummler"
-category = "geography"
+id = "language_teacher"
+display_name = "Sprach-Lehrer"
+category = "language"
 reward_points = 12
-color = Color(0.9, 0.6, 0.2, 1)
-shape_type = 1
-emoji = "🌍"
-description = "Kennt jeden Winkel der Erde!"
+color = Color(0.8, 0.3, 0.6, 1)
+shape_type = 0
+emoji = "📖"
+description = "Liebt Wörter und Geschichten!"
 

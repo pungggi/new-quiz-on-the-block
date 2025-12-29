@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welche Farbe entsteht, wenn man Blau und Gelb mischt?"
+answers = PackedStringArray("Orange", "Grün", "Lila")
+correct_answer_index = 1
+category = "art"
+difficulty = 1
+hint = "Denke an Gras oder Blätter!"
+explanation = "Blau + Gelb = Grün! Das ist eine Sekundärfarbe."
+reward_points = 10
+tags = PackedStringArray("colors", "mixing", "easy")
+
