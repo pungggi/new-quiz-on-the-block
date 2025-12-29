@@ -11,6 +11,11 @@ signal quiz_completed(total_correct: int, total_questions: int)
 ## All loaded questions
 var _questions: Array[QuizQuestion] = []
 
+## Stats tracking
+var total_questions_answered: int = 0
+var total_correct_answers: int = 0
+var questions_by_category: Dictionary = {} # category -> {answered: int, correct: int}
+
 ## Current quiz session
 var _current_session: Array[QuizQuestion] = []
 var _session_index: int = 0
@@ -116,3 +121,32 @@ func get_session_progress() -> float:
 	if _current_session.is_empty():
 		return 0.0
 	return float(_session_index) / float(_current_session.size())
+
+
+## Record a standalone answer (used by NPC quiz flow)
+func record_answer(category: String, was_correct: bool) -> void:
+	total_questions_answered += 1
+	if was_correct:
+		total_correct_answers += 1
+
+	# Update category stats
+	if not questions_by_category.has(category):
+		questions_by_category[category] = {"answered": 0, "correct": 0}
+
+	questions_by_category[category]["answered"] += 1
+	if was_correct:
+		questions_by_category[category]["correct"] += 1
+
+
+## Get number of correct answers in a category
+func get_correct_in_category(category: String) -> int:
+	if questions_by_category.has(category):
+		return questions_by_category[category]["correct"]
+	return 0
+
+
+## Get total answered in a category
+func get_answered_in_category(category: String) -> int:
+	if questions_by_category.has(category):
+		return questions_by_category[category]["answered"]
+	return 0

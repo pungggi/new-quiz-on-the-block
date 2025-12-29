@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NPCData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "math_teacher"
+display_name = "Mathe-Lehrer"
+category = "math"
+reward_points = 10
+color = Color(0.2, 0.4, 0.9, 1)
+description = "Liebt Zahlen und Formeln!"
+

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/building_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Park"
+description = "Ein grüner Ort zum Entspannen. Macht die Stadt schöner!"
+category = "decoration"
+size = Vector3i(2, 1, 2)
+cost = 15
+required_category = "science"
+required_correct_answers = 2
+color = Color(0.2, 0.8, 0.3, 1)
+secondary_color = Color(0.5, 0.3, 0.1, 1)
+stackable = false
+population = 0
+education_bonus = 0.0
+income = 0
+

@@ -22,6 +22,9 @@ Config="*res://autoloads/config.gd"
 EventManager="*res://autoloads/event_manager.gd"
 WorldManager="*res://autoloads/world_manager.gd"
 QuizManager="*res://scripts/data/quiz_manager.gd"
+NetworkManager="*res://autoloads/network_manager.gd"
+BuildingManager="*res://autoloads/building_manager.gd"
+NPCManager="*res://autoloads/npc_manager.gd"
 
 [editor_plugins]
 

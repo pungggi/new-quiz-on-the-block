@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/building_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Laden"
+description = "Ein kleiner Laden für den täglichen Bedarf. Generiert Einkommen!"
+category = "commercial"
+size = Vector3i(1, 1, 1)
+cost = 25
+required_category = ""
+required_correct_answers = 2
+color = Color(1, 0.84, 0, 1)
+secondary_color = Color(0.8, 0.6, 0.2, 1)
+stackable = true
+population = 0
+education_bonus = 0.0
+income = 5
+

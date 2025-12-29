@@ -15,7 +15,7 @@ signal camera_moved(global_position: Vector3)
 
 # Pan settings
 @export var pan_speed: float = 20.0
-@export var edge_pan_enabled: bool = true
+@export var edge_pan_enabled: bool = false # Disabled - keyboard only
 @export var edge_pan_margin: float = 20.0 # pixels from edge
 @export var edge_pan_speed: float = 15.0
 
@@ -118,12 +118,12 @@ func _input(event: InputEvent) -> void:
 			_zoom_by_delta(-zoom_speed * 0.5)
 		elif mouse_event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom_by_delta(zoom_speed * 0.5)
-		# Right mouse button - pan
-		elif mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+		# Middle mouse button - pan
+		elif mouse_event.button_index == MOUSE_BUTTON_MIDDLE:
 			_is_dragging_pan = mouse_event.pressed
 			_last_mouse_position = mouse_event.position
-		# Middle mouse button - rotate
-		elif mouse_event.button_index == MOUSE_BUTTON_MIDDLE:
+		# Right mouse button - rotate
+		elif mouse_event.button_index == MOUSE_BUTTON_RIGHT:
 			_is_dragging_rotate = mouse_event.pressed
 			_last_mouse_position = mouse_event.position
 
@@ -272,9 +272,46 @@ func _clamp_to_world_bounds() -> void:
 func _check_movement_threshold() -> void:
 	var distance := global_position.distance_to(_last_global_position)
 	_accumulated_movement += distance
-	
+
 	if _accumulated_movement >= movement_signal_threshold:
 		camera_moved.emit(global_position)
 		_accumulated_movement = 0.0
-	
+
 	_last_global_position = global_position
+
+## Smoothly pan camera towards a world position (horizontal)
+func look_towards(target_pos: Vector3, lerp_speed: float = 3.0) -> void:
+	var direction: Vector3 = target_pos - global_position
+	direction.y = 0 # Only horizontal direction
+
+	if direction.length_squared() < 0.01:
+		return
+
+	# Calculate target yaw angle
+	var target_yaw: float = atan2(direction.x, direction.z)
+
+	# Smoothly interpolate current yaw towards target
+	var delta: float = get_process_delta_time()
+	_yaw_rotation = lerp_angle(_yaw_rotation, target_yaw, lerp_speed * delta)
+
+	if yaw_pivot:
+		yaw_pivot.rotation.y = _yaw_rotation
+
+## Smoothly adjust pitch to look at a certain height
+func look_up_towards(target_height: float, lerp_speed: float = 2.0) -> void:
+	if not pitch_pivot:
+		return
+
+	# Calculate desired pitch based on height difference
+	# Higher target = look more up (less negative pitch)
+	var height_diff: float = target_height - global_position.y
+
+	# Map height to pitch adjustment (subtle effect)
+	# Each block higher = ~3 degrees less negative pitch
+	var target_pitch: float = pitch_degrees + (height_diff * 3.0)
+	target_pitch = clampf(target_pitch, min_pitch, max_pitch)
+
+	# Smoothly interpolate
+	var delta: float = get_process_delta_time()
+	pitch_degrees = lerpf(pitch_degrees, target_pitch, lerp_speed * delta)
+	pitch_pivot.rotation_degrees.x = pitch_degrees

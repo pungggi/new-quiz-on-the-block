@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches Tier bauten die alten Ägypter als große Statuen?"
+answers = PackedStringArray("Löwen (Sphinx)", "Elefanten", "Bären")
+correct_answer_index = 0
+category = "history"
+difficulty = 1
+hint = "Diese Statue hat einen Löwenkörper und einen Menschenkopf."
+explanation = "Die Sphinx von Gizeh ist eine berühmte Statue mit Löwenkörper. Sie ist über 4500 Jahre alt!"
+reward_points = 10
+tags = PackedStringArray("ancient", "egypt", "easy")
+
