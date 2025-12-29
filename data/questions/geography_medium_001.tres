@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wie viele Kontinente gibt es?"
+answers = PackedStringArray("5", "6", "7")
+correct_answer_index = 2
+category = "geography"
+difficulty = 2
+hint = "Europa, Asien, Afrika, Nord- und Südamerika..."
+explanation = "7 Kontinente: Europa, Asien, Afrika, Nordamerika, Südamerika, Australien und Antarktis!"
+reward_points = 20
+tags = PackedStringArray("continents", "world", "medium")
+

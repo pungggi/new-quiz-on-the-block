@@ -1,8 +1,7 @@
 extends Node3D
 
 const TUTORIAL_SCENE := preload("res://scenes/ui/tutorial_overlay.tscn")
-const PROFILE_CREATION_SCENE := preload("res://scenes/ui/profile_creation.tscn")
-const PROFILE_SELECTION_SCENE := preload("res://scenes/ui/profile_selection.tscn")
+const PAUSE_MENU_SCENE := preload("res://scenes/ui/pause_menu.tscn")
 
 @onready var chunk_root: Node3D = $ChunkRoot
 @onready var hud: HUD = $UI/HUD
@@ -12,6 +11,7 @@ const PROFILE_SELECTION_SCENE := preload("res://scenes/ui/profile_selection.tscn
 
 var _npc_manager: Node = null
 var _effects: Node = null
+var _pause_menu: Control = null
 
 
 func _ready() -> void:
@@ -28,13 +28,13 @@ func _ready() -> void:
 	if build_cursor:
 		build_cursor.building_placed.connect(_on_building_placed)
 
-	# Check if profile needs to be created or selected
-	if ProfileManager.needs_profile_creation():
-		_show_profile_creation()
-	elif ProfileManager.get_profile_count() > 1:
-		_show_profile_selection()
-	else:
-		_start_game()
+	# Start the game (profile is already loaded from main menu)
+	_start_game()
+
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and not _pause_menu:
+		_show_pause_menu()
 
 
 func _on_hud_quiz_requested() -> void:
@@ -73,31 +73,14 @@ func _spawn_chunk(chunk_x: int, chunk_z: int) -> void:
 	chunk_root.add_child(chunk)
 
 
-func _show_profile_selection() -> void:
-	var selection_ui: Control = PROFILE_SELECTION_SCENE.instantiate()
-	selection_ui.profile_selected.connect(_on_profile_selected)
-	selection_ui.create_new_requested.connect(_on_create_new_profile)
-	ui.add_child(selection_ui)
+func _show_pause_menu() -> void:
+	_pause_menu = PAUSE_MENU_SCENE.instantiate()
+	_pause_menu.tree_exited.connect(_on_pause_menu_closed)
+	ui.add_child(_pause_menu)
 
 
-func _on_profile_selected(_profile: Resource) -> void:
-	_start_game()
-
-
-func _on_create_new_profile() -> void:
-	_show_profile_creation()
-
-
-func _show_profile_creation() -> void:
-	var profile_ui: Control = PROFILE_CREATION_SCENE.instantiate()
-	profile_ui.profile_completed.connect(_on_profile_created)
-	ui.add_child(profile_ui)
-
-
-func _on_profile_created(_profile: Resource) -> void:
-	# Profile created, now show tutorial and start game
-	_show_tutorial_if_needed()
-	_start_game()
+func _on_pause_menu_closed() -> void:
+	_pause_menu = null
 
 
 func _start_game() -> void:

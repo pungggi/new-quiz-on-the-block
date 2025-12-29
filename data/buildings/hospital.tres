@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/building_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Krankenhaus"
+description = "Hier werden kranke Menschen gesund gepflegt."
+category = "public"
+size = Vector3i(2, 3, 2)
+cost = 100
+required_category = "science"
+required_correct_answers = 10
+color = Color(1.0, 1.0, 1.0, 1)
+secondary_color = Color(0.9, 0.2, 0.2, 1)
+stackable = false
+population = 0
+education_bonus = 0.1
+income = 5
+

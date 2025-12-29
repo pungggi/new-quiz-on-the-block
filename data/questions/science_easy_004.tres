@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Was brauchen Pflanzen zum Wachsen?"
+answers = PackedStringArray("Nur Wasser", "Licht, Wasser und Erde", "Nur Sonne")
+correct_answer_index = 1
+category = "science"
+difficulty = 1
+hint = "Pflanzen brauchen mehrere Dinge..."
+explanation = "Pflanzen brauchen Sonnenlicht, Wasser und Nährstoffe aus der Erde!"
+reward_points = 10
+tags = PackedStringArray("biology", "plants", "easy")
+

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NPCData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "history_teacher"
+display_name = "Geschichts-Lehrer"
+category = "history"
+reward_points = 15
+color = Color(0.7, 0.5, 0.3, 1)
+description = "Kennt alle Geschichten aus der Vergangenheit!"
+

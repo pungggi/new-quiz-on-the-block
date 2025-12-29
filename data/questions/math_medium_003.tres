@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Was ist 25 + 37?"
+answers = PackedStringArray("52", "62", "72")
+correct_answer_index = 1
+category = "math"
+difficulty = 2
+hint = "25 + 35 = 60, dann noch 2 dazu"
+explanation = "25 + 37 = 62. Rechne: 25 + 30 = 55, dann + 7 = 62!"
+reward_points = 20
+tags = PackedStringArray("addition", "two-digit", "medium")
+
