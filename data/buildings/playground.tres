@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/building_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Spielplatz"
+description = "Hier können Kinder spielen und Spaß haben!"
+category = "recreation"
+size = Vector3i(2, 1, 2)
+cost = 25
+required_category = ""
+required_correct_answers = 3
+color = Color(0.3, 0.8, 0.3, 1)
+secondary_color = Color(1.0, 0.8, 0.2, 1)
+stackable = false
+population = 0
+education_bonus = 0.05
+income = 0
+

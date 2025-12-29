@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/building_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Feuerwehr"
+description = "Die tapferen Feuerwehrleute schützen die Stadt."
+category = "public"
+size = Vector3i(2, 2, 1)
+cost = 60
+required_category = ""
+required_correct_answers = 5
+color = Color(0.9, 0.2, 0.1, 1)
+secondary_color = Color(0.3, 0.3, 0.3, 1)
+stackable = false
+population = 0
+education_bonus = 0.0
+income = 2
+
