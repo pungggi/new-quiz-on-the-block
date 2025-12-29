@@ -9,9 +9,11 @@ const PROFILE_SELECTION_SCENE := preload("res://scenes/ui/profile_selection.tscn
 const PROFILE_CREATION_SCENE := preload("res://scenes/ui/profile_creation.tscn")
 const SETTINGS_DIALOG_SCENE := preload("res://scenes/ui/settings_dialog.tscn")
 const CREDITS_DIALOG_SCENE := preload("res://scenes/ui/credits_dialog.tscn")
+const CHARACTER_EDITOR_SCENE := preload("res://scenes/ui/character_editor.tscn")
 
 @onready var play_button: Button = %PlayButton
 @onready var profiles_button: Button = %ProfilesButton
+@onready var character_button: Button = %CharacterButton
 @onready var settings_button: Button = %SettingsButton
 @onready var credits_button: Button = %CreditsButton
 @onready var quit_button: Button = %QuitButton
@@ -22,6 +24,7 @@ const CREDITS_DIALOG_SCENE := preload("res://scenes/ui/credits_dialog.tscn")
 func _ready() -> void:
 	play_button.pressed.connect(_on_play_pressed)
 	profiles_button.pressed.connect(_on_profiles_pressed)
+	character_button.pressed.connect(_on_character_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
 	credits_button.pressed.connect(_on_credits_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
@@ -89,6 +92,20 @@ func _on_profiles_pressed() -> void:
 	else:
 		var dialog: Control = PROFILE_SELECTION_SCENE.instantiate()
 		add_child(dialog)
+
+
+func _on_character_pressed() -> void:
+	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
+
+	if ProfileManager.needs_profile_creation():
+		# Need a profile first
+		var dialog: Control = PROFILE_CREATION_SCENE.instantiate()
+		dialog.profile_completed.connect(_on_profile_changed)
+		add_child(dialog)
+	else:
+		var editor: Control = CHARACTER_EDITOR_SCENE.instantiate()
+		add_child(editor)
+		editor.open()
 
 
 func _on_settings_pressed() -> void:

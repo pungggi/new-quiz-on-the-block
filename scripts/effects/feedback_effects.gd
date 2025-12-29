@@ -7,65 +7,87 @@ extends Node
 ## Add to Autoloads as "Effects"
 
 
-## Spawn confetti particles at position (for building placement)
+## Spawn colorful confetti particles at position (for building placement)
 func spawn_confetti(world_pos: Vector3) -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUILDING_PLACE)
-	var particles := GPUParticles3D.new()
-	particles.emitting = true
-	particles.one_shot = true
-	particles.explosiveness = 0.9
-	particles.amount = 20
-	particles.lifetime = 1.0
 
-	var mat := ParticleProcessMaterial.new()
-	mat.direction = Vector3(0, 1, 0)
-	mat.spread = 45.0
-	mat.initial_velocity_min = 3.0
-	mat.initial_velocity_max = 6.0
-	mat.gravity = Vector3(0, -9.8, 0)
-	mat.scale_min = 0.1
-	mat.scale_max = 0.2
-	mat.color = Color(1, 0.8, 0.2)
-	particles.process_material = mat
+	# Spawn multiple particle systems with different colors
+	var colors: Array[Color] = [
+		Color(1.0, 0.3, 0.3), # Red
+		Color(0.3, 1.0, 0.3), # Green
+		Color(0.3, 0.5, 1.0), # Blue
+		Color(1.0, 0.9, 0.2), # Yellow
+		Color(1.0, 0.5, 0.8), # Pink
+	]
 
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.15, 0.15, 0.15)
-	particles.draw_pass_1 = mesh
+	for i in range(3):
+		var particles := GPUParticles3D.new()
+		particles.emitting = true
+		particles.one_shot = true
+		particles.explosiveness = 0.95
+		particles.amount = 15
+		particles.lifetime = 1.2
 
-	particles.position = world_pos + Vector3(0.5, 0.5, 0.5)
-	get_tree().current_scene.add_child(particles)
-	get_tree().create_timer(2.0).timeout.connect(particles.queue_free)
+		var mat := ParticleProcessMaterial.new()
+		mat.direction = Vector3(0, 1, 0)
+		mat.spread = 60.0
+		mat.initial_velocity_min = 4.0
+		mat.initial_velocity_max = 8.0
+		mat.gravity = Vector3(0, -12.0, 0)
+		mat.scale_min = 0.08
+		mat.scale_max = 0.15
+		mat.color = colors[i % colors.size()]
+		mat.damping_min = 2.0
+		mat.damping_max = 4.0
+		particles.process_material = mat
+
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.12, 0.12, 0.12)
+		particles.draw_pass_1 = mesh
+
+		particles.position = world_pos + Vector3(0.5, 0.5 + i * 0.1, 0.5)
+		get_tree().current_scene.add_child(particles)
+		get_tree().create_timer(2.5).timeout.connect(particles.queue_free)
 
 
-## Spawn success particles (green stars for correct answer)
+## Spawn success particles (sparkles for correct answer)
 func spawn_success(world_pos: Vector3) -> void:
 	AudioManager.play_sfx(AudioManager.SFX.QUIZ_CORRECT)
-	var particles := GPUParticles3D.new()
-	particles.emitting = true
-	particles.one_shot = true
-	particles.explosiveness = 1.0
-	particles.amount = 15
-	particles.lifetime = 0.8
 
-	var mat := ParticleProcessMaterial.new()
-	mat.direction = Vector3(0, 1, 0)
-	mat.spread = 60.0
-	mat.initial_velocity_min = 2.0
-	mat.initial_velocity_max = 4.0
-	mat.gravity = Vector3(0, -5, 0)
-	mat.scale_min = 0.15
-	mat.scale_max = 0.25
-	mat.color = Color(0.2, 1.0, 0.3)
-	particles.process_material = mat
+	# Ring of sparkles
+	for i in range(2):
+		var particles := GPUParticles3D.new()
+		particles.emitting = true
+		particles.one_shot = true
+		particles.explosiveness = 0.8 + i * 0.1
+		particles.amount = 20
+		particles.lifetime = 1.0
 
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.1
-	mesh.height = 0.2
-	particles.draw_pass_1 = mesh
+		var mat := ParticleProcessMaterial.new()
+		mat.direction = Vector3(0, 1, 0)
+		mat.spread = 80.0
+		mat.initial_velocity_min = 3.0
+		mat.initial_velocity_max = 5.0
+		mat.gravity = Vector3(0, -4, 0)
+		mat.scale_min = 0.1
+		mat.scale_max = 0.2
+		# Golden sparkles
+		mat.color = Color(1.0, 0.85 + i * 0.1, 0.2)
+		mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		mat.emission_sphere_radius = 0.3
+		particles.process_material = mat
 
-	particles.position = world_pos + Vector3(0, 1, 0)
-	get_tree().current_scene.add_child(particles)
-	get_tree().create_timer(1.5).timeout.connect(particles.queue_free)
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.08
+		mesh.height = 0.16
+		particles.draw_pass_1 = mesh
+
+		particles.position = world_pos + Vector3(0, 1.2 + i * 0.2, 0)
+		get_tree().current_scene.add_child(particles)
+		get_tree().create_timer(2.0).timeout.connect(particles.queue_free)
+
+	# Star burst effect
+	_spawn_star_burst(world_pos + Vector3(0, 1.5, 0))
 
 
 ## Spawn failure particles (red X for wrong answer)
@@ -116,3 +138,25 @@ func spawn_floating_text(world_pos: Vector3, text: String, color: Color = Color.
 	tween.tween_property(label, "position:y", label.position.y + 1.5, 1.0)
 	tween.tween_property(label, "modulate:a", 0.0, 1.0).set_delay(0.3)
 	tween.chain().tween_callback(label.queue_free)
+
+
+## Spawn star burst effect
+func _spawn_star_burst(world_pos: Vector3) -> void:
+	var star := Label3D.new()
+	star.text = "⭐"
+	star.font_size = 64
+	star.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	star.position = world_pos
+	star.modulate = Color(1.0, 0.9, 0.3)
+	star.scale = Vector3.ZERO
+
+	get_tree().current_scene.add_child(star)
+
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(star, "scale", Vector3(1.5, 1.5, 1.5), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(star, "position:y", world_pos.y + 0.5, 0.3)
+	tween.chain()
+	tween.tween_property(star, "scale", Vector3.ZERO, 0.2)
+	tween.tween_property(star, "modulate:a", 0.0, 0.2)
+	tween.tween_callback(star.queue_free)

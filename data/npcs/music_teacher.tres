@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="NPCData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = "music_teacher"
+display_name = "Musik-Lehrer"
+category = "music"
+reward_points = 10
+color = Color(0.9, 0.2, 0.5, 1)
+shape_type = 3
+emoji = "🎵"
+description = "Macht die Welt bunter mit Musik!"
+

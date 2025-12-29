@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wie viele Noten hat eine Tonleiter?"
+answers = PackedStringArray("5", "7", "8")
+correct_answer_index = 2
+category = "music"
+difficulty = 1
+hint = "Do, Re, Mi, Fa, Sol, La, Si, Do"
+explanation = "Eine Tonleiter hat 8 Noten: Do, Re, Mi, Fa, Sol, La, Si, Do!"
+reward_points = 10
+tags = PackedStringArray("notes", "scales", "easy")
+

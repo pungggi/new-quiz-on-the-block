@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wie viele Silben hat das Wort 'Schmetterling'?"
+answers = PackedStringArray("2", "3", "4")
+correct_answer_index = 1
+category = "language"
+difficulty = 1
+hint = "Klatsche das Wort: Schmet-ter-ling"
+explanation = "Schmet-ter-ling hat 3 Silben!"
+reward_points = 10
+tags = PackedStringArray("syllables", "easy")
+

@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://mainmenu001"]
+[gd_scene load_steps=2 format=3 uid="uid://cfkhqojsqa3ts"]
 
-[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cri377hjtrex8" path="res://scripts/ui/main_menu.gd" id="1_script"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -43,8 +43,8 @@ horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
+theme_override_font_sizes/font_size = 18
 text = "Lerne und baue deine Stadt!"
 horizontal_alignment = 1
 
@@ -77,6 +77,13 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "👤  Profile verwalten"
 
+[node name="CharacterButton" type="Button" parent="VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "🎨  Charakter"
+
 [node name="SettingsButton" type="Button" parent="VBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
@@ -108,7 +115,6 @@ offset_left = 16.0
 offset_top = -32.0
 offset_right = 116.0
 grow_vertical = 0
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.5, 0.5, 0.55, 1)
+theme_override_font_sizes/font_size = 14
 text = "v0.6.0"
-

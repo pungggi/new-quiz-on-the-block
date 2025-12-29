@@ -94,6 +94,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _ui_blocking:
 		return
 
+	# Block building when not in BUILD mode
+	var game_mode: Node = get_node_or_null("/root/GameMode")
+	if game_mode and not game_mode.is_build_mode():
+		return
+
 	# Escape to deselect building (exit build mode)
 	if event is InputEventKey:
 		if event.keycode == KEY_ESCAPE and event.pressed and not event.echo:
@@ -202,6 +207,13 @@ func _process(delta: float) -> void:
 	# Hide and skip when UI is blocking
 	if _ui_blocking:
 		visible = false
+		return
+
+	# Hide cursor when not in BUILD mode
+	var game_mode: Node = get_node_or_null("/root/GameMode")
+	if game_mode and not game_mode.is_build_mode():
+		visible = false
+		_clear_preview()
 		return
 
 	# Hide cursor if no building is selected (allows NPC clicks)
@@ -429,6 +441,9 @@ func _play_building_pop_animation(building: Node3D) -> void:
 	tween.tween_property(building, "position:x", original_pos.x - 0.03, 0.06)
 	tween.tween_property(building, "position:x", original_pos.x, 0.03)
 
+	# Spawn particles
+	_spawn_placement_particles(building.position)
+
 func _try_remove_block() -> void:
 	if not camera:
 		return
@@ -458,3 +473,39 @@ func _try_remove_block() -> void:
 	var collider: Node = result.get("collider")
 	if collider and collider.is_in_group("placed_buildings"):
 		collider.queue_free()
+
+
+func _spawn_placement_particles(pos: Vector3) -> void:
+	# Create simple particle burst using GPUParticles3D
+	var particles := GPUParticles3D.new()
+	particles.position = pos + Vector3(0, 0.5, 0)
+	particles.emitting = true
+	particles.one_shot = true
+	particles.explosiveness = 1.0
+	particles.amount = 12
+	particles.lifetime = 0.6
+
+	# Create particle material
+	var mat := ParticleProcessMaterial.new()
+	mat.direction = Vector3(0, 1, 0)
+	mat.spread = 45.0
+	mat.initial_velocity_min = 2.0
+	mat.initial_velocity_max = 4.0
+	mat.gravity = Vector3(0, -8, 0)
+	mat.scale_min = 0.1
+	mat.scale_max = 0.2
+	mat.color = Color(1.0, 0.9, 0.5, 1.0) # Golden sparkle
+	particles.process_material = mat
+
+	# Create simple mesh for particles
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.05
+	mesh.height = 0.1
+	particles.draw_pass_1 = mesh
+
+	get_tree().current_scene.add_child(particles)
+
+	# Auto-cleanup
+	await get_tree().create_timer(1.0).timeout
+	if is_instance_valid(particles):
+		particles.queue_free()

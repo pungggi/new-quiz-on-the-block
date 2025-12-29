@@ -16,11 +16,23 @@ const ACHIEVEMENTS_DIALOG_SCENE := preload("res://scenes/ui/achievements_dialog.
 @onready var stats_label: Label = %StatsLabel
 @onready var toast_container: VBoxContainer = %ToastContainer
 @onready var hint_label: Label = %HintLabel
+@onready var progress_bar: ProgressBar = %ProgressBar
+@onready var progress_label: Label = %ProgressLabel
+@onready var time_label: Label = %TimeLabel
+@onready var mode_panel: PanelContainer = %ModePanel
+@onready var mode_label: Label = %ModeLabel
 
 var _building_manager: Node = null
+var _game_mode: Node = null
 var _quiz_manager: Node = null
 var _npc_manager: Node = null
+var _day_night: Node = null
 var _hint_tween: Tween = null
+
+## Animated points display
+var _displayed_points: int = 0
+var _target_points: int = 0
+var _points_tween: Tween = null
 
 ## Hint tracking
 var _has_clicked_npc: bool = false
@@ -41,6 +53,7 @@ func _ready() -> void:
 	_building_manager = get_node_or_null("/root/BuildingManager")
 	_quiz_manager = get_node_or_null("/root/QuizManager")
 	_npc_manager = get_node_or_null("/root/NPCManager")
+	_game_mode = get_node_or_null("/root/GameMode")
 
 	# Connect to signals
 	if _building_manager:
@@ -52,10 +65,22 @@ func _ready() -> void:
 	if _npc_manager:
 		_npc_manager.npc_quiz_completed.connect(_on_quiz_completed_hint)
 
+	# Connect to game mode changes
+	if _game_mode:
+		_game_mode.mode_changed.connect(_on_mode_changed)
+		_update_mode_display()
+
 	# Connect to achievement unlocks
 	var ach_mgr: Node = get_node_or_null("/root/AchievementManager")
 	if ach_mgr:
 		ach_mgr.achievement_unlocked.connect(_on_achievement_unlocked)
+
+	# Connect to day/night cycle
+	await get_tree().process_frame
+	_day_night = get_tree().current_scene.get_node_or_null("DayNightCycle")
+	if _day_night:
+		_day_night.time_changed.connect(_on_time_changed)
+		_update_time_display()
 
 	# Start showing hints after a short delay
 	await get_tree().create_timer(2.0).timeout
@@ -89,17 +114,90 @@ func _on_achievements_button_pressed() -> void:
 	get_tree().root.add_child(dialog)
 
 
-func _on_points_changed(_new_total: int) -> void:
+func _on_points_changed(new_total: int) -> void:
+	_animate_points(new_total)
 	_update_stats()
+	_update_progress()
 
 
 func _on_building_unlocked(building: BuildingData) -> void:
 	show_toast("🎉 %s freigeschaltet!" % building.display_name, Color.GOLD)
+	_pulse_stats_panel()
 
 
 func _on_achievement_unlocked(achievement: Resource) -> void:
 	show_toast("🏆 %s %s!" % [achievement.icon, achievement.title], Color(1.0, 0.85, 0.3))
 	AudioManager.play_sfx(AudioManager.SFX.UNLOCK)
+
+
+## Animate points counting up
+func _animate_points(new_total: int) -> void:
+	_target_points = new_total
+
+	if _points_tween:
+		_points_tween.kill()
+
+	_points_tween = create_tween()
+	_points_tween.tween_method(_update_points_display, _displayed_points, _target_points, 0.5)
+	_points_tween.set_ease(Tween.EASE_OUT)
+
+
+func _update_points_display(value: int) -> void:
+	_displayed_points = value
+	if points_label:
+		var profile_mgr: Node = get_node_or_null("/root/ProfileManager")
+		var player_name := "Spieler"
+		var avatar_emoji := "👤"
+		if profile_mgr and profile_mgr.current_profile:
+			var profile: Resource = profile_mgr.current_profile
+			player_name = profile.player_name
+			avatar_emoji = profile.get_avatar_emoji()
+		points_label.text = "%s %s\n📚 %d Punkte" % [avatar_emoji, player_name, value]
+
+
+## Pulse animation for stats panel
+func _pulse_stats_panel() -> void:
+	if not stats_panel:
+		return
+	var tween := create_tween()
+	tween.tween_property(stats_panel, "scale", Vector2(1.05, 1.05), 0.1)
+	tween.tween_property(stats_panel, "scale", Vector2(1.0, 1.0), 0.1)
+
+
+## Update progress bar towards next unlock
+func _update_progress() -> void:
+	if not progress_bar or not _building_manager:
+		return
+
+	var points: int = _building_manager.education_points
+	var next_unlock_cost: int = _get_next_unlock_cost()
+
+	if next_unlock_cost > 0:
+		progress_bar.max_value = next_unlock_cost
+		progress_bar.value = mini(points, next_unlock_cost)
+		if progress_label:
+			progress_label.text = "Nächstes: %d/%d 📚" % [mini(points, next_unlock_cost), next_unlock_cost]
+		progress_bar.visible = true
+		if progress_label:
+			progress_label.visible = true
+	else:
+		progress_bar.visible = false
+		if progress_label:
+			progress_label.visible = false
+
+
+func _get_next_unlock_cost() -> int:
+	if not _building_manager:
+		return 0
+	var buildings: Array = _building_manager.get_all_buildings()
+	var current_points: int = _building_manager.education_points
+	var next_cost: int = 0
+
+	for building: BuildingData in buildings:
+		if building.cost > current_points:
+			if next_cost == 0 or building.cost < next_cost:
+				next_cost = building.cost
+	return next_cost
 
 
 func _update_stats() -> void:
@@ -118,9 +216,11 @@ func _update_stats() -> void:
 		grade_name = profile.get_grade_name(profile.grade_level)
 		avatar_emoji = profile.get_avatar_emoji()
 
-	# Update points display with player name and avatar
-	if points_label:
-		points_label.text = "%s %s\n📚 %d Punkte" % [avatar_emoji, player_name, _building_manager.education_points]
+	# Update points display with player name and avatar (only if not animating)
+	if points_label and _displayed_points == 0:
+		_displayed_points = _building_manager.education_points
+		_target_points = _displayed_points
+		points_label.text = "%s %s\n📚 %d Punkte" % [avatar_emoji, player_name, _displayed_points]
 
 	# Update stats
 	if stats_label:
@@ -131,32 +231,84 @@ func _update_stats() -> void:
 		stats_label.text = text
 
 
-## Show a toast notification
+#region Time Display
+
+func _on_time_changed(_hour: float) -> void:
+	_update_time_display()
+
+
+func _update_time_display() -> void:
+	if not time_label or not _day_night:
+		return
+
+	var time_str: String = _day_night.get_time_string()
+	var phase: int = _day_night.current_phase
+	var emoji := "🌞"
+
+	match phase:
+		0: # DAWN
+			emoji = "🌅"
+		1: # DAY
+			emoji = "🌞"
+		2: # DUSK
+			emoji = "🌇"
+		3: # NIGHT
+			emoji = "🌙"
+
+	time_label.text = "%s %s" % [emoji, time_str]
+
+#endregion
+
+
+## Show a toast notification with slide-in animation
 func show_toast(message: String, color: Color = Color.WHITE) -> void:
 	if not toast_container:
 		return
+
+	# Create toast panel for better visibility
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.15, 0.9)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	style.border_width_left = 3
+	style.border_color = color
+	panel.add_theme_stylebox_override("panel", style)
 
 	# Create toast label
 	var toast := Label.new()
 	toast.text = message
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.add_theme_color_override("font_color", color)
-	toast.add_theme_font_size_override("font_size", 20)
+	toast.add_theme_font_size_override("font_size", 18)
 
 	# Add shadow for readability
 	toast.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	toast.add_theme_constant_override("shadow_offset_x", 2)
-	toast.add_theme_constant_override("shadow_offset_y", 2)
+	toast.add_theme_constant_override("shadow_offset_x", 1)
+	toast.add_theme_constant_override("shadow_offset_y", 1)
 
-	toast_container.add_child(toast)
+	panel.add_child(toast)
+	toast_container.add_child(panel)
 
-	# Animate in and out
-	toast.modulate.a = 0.0
+	# Slide-in animation from top
+	panel.modulate.a = 0.0
+	panel.position.y = -30
 	var tween := create_tween()
-	tween.tween_property(toast, "modulate:a", 1.0, 0.3)
-	tween.tween_interval(2.0)
-	tween.tween_property(toast, "modulate:a", 0.0, 0.5)
-	tween.tween_callback(toast.queue_free)
+	tween.set_parallel(true)
+	tween.tween_property(panel, "modulate:a", 1.0, 0.25).set_ease(Tween.EASE_OUT)
+	tween.tween_property(panel, "position:y", 0.0, 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+	# Wait and slide out
+	tween.chain().tween_interval(2.5)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.4)
+	tween.tween_property(panel, "position:y", -20.0, 0.4)
+	tween.tween_callback(panel.queue_free)
 
 
 #region Hint System
@@ -201,5 +353,23 @@ func _update_hint() -> void:
 	_hint_tween.set_loops()
 	_hint_tween.tween_property(hint_label, "modulate:a", 0.6, 1.0)
 	_hint_tween.tween_property(hint_label, "modulate:a", 1.0, 1.0)
+
+#endregion
+
+
+#region Game Mode Display
+
+func _on_mode_changed(_new_mode: int) -> void:
+	_update_mode_display()
+
+
+func _update_mode_display() -> void:
+	if not mode_label or not _game_mode:
+		return
+
+	if _game_mode.is_walk_mode():
+		mode_label.text = "LAUFEN [Tab]"
+	else:
+		mode_label.text = "BAUEN [Tab]"
 
 #endregion

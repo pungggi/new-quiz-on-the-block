@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches Instrument hat Tasten?"
+answers = PackedStringArray("Gitarre", "Klavier", "Trommel")
+correct_answer_index = 1
+category = "music"
+difficulty = 1
+hint = "Man drückt die Tasten mit den Fingern."
+explanation = "Das Klavier hat schwarze und weiße Tasten!"
+reward_points = 10
+tags = PackedStringArray("instruments", "easy")
+

@@ -100,15 +100,15 @@ func _on_answer_pressed(answer_index: int) -> void:
 	# Play sound
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
 
-	# Visual feedback
+	# Visual feedback with animations
 	for i in range(_answer_buttons.size()):
 		var btn := _answer_buttons[i]
 		btn.disabled = true
 
 		if i == _current_question.correct_answer_index:
-			btn.modulate = Color.GREEN
+			_animate_correct_button(btn)
 		elif i == answer_index and not is_correct:
-			btn.modulate = Color.RED
+			_animate_wrong_button(btn)
 
 	# Emit question_answered signal for BuildingManager and AchievementManager
 	if _quiz_manager and _current_question:
@@ -124,6 +124,23 @@ func _on_answer_pressed(answer_index: int) -> void:
 	# Auto-close after delay
 	await get_tree().create_timer(1.5).timeout
 	close()
+
+
+func _animate_correct_button(btn: Button) -> void:
+	var tween := create_tween()
+	tween.tween_property(btn, "modulate", Color.GREEN, 0.2)
+	tween.parallel().tween_property(btn, "scale", Vector2(1.1, 1.1), 0.1)
+	tween.tween_property(btn, "scale", Vector2.ONE, 0.1)
+
+
+func _animate_wrong_button(btn: Button) -> void:
+	btn.modulate = Color.RED
+	var tween := create_tween()
+	var original_pos := btn.position.x
+	tween.tween_property(btn, "position:x", original_pos - 10, 0.05)
+	tween.tween_property(btn, "position:x", original_pos + 10, 0.1)
+	tween.tween_property(btn, "position:x", original_pos - 5, 0.05)
+	tween.tween_property(btn, "position:x", original_pos, 0.05)
 
 
 func _reset_button_colors() -> void:

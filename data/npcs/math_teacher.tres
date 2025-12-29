@@ -9,5 +9,7 @@ display_name = "Mathe-Lehrer"
 category = "math"
 reward_points = 15
 color = Color(0.2, 0.4, 0.9, 1)
+shape_type = 0
+emoji = "🔢"
 description = "Liebt Zahlen und Formeln!"
 

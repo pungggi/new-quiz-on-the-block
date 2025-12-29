@@ -1,16 +1,18 @@
-[gd_scene load_steps=15 format=3 uid="uid://3b5c7eae1f2g"]
+[gd_scene load_steps=17 format=3 uid="uid://3b5c7eae1f2g"]
 
 [ext_resource type="Script" uid="uid://bvvbiqt10ac5d" path="res://scripts/main.gd" id="1_x8k2m"]
 [ext_resource type="Script" uid="uid://ismfc1a4wtga" path="res://scripts/camera/rts_camera.gd" id="2_camera"]
 [ext_resource type="PackedScene" path="res://scenes/player/build_cursor.tscn" id="3_cursor"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" uid="uid://cri86tqk751qh" path="res://scenes/ui/hud.tscn" id="4_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/quiz_window.tscn" id="5_quiz_window"]
 [ext_resource type="PackedScene" path="res://scenes/ui/building_panel.tscn" id="6_o6xl0"]
-[ext_resource type="Script" path="res://scripts/ui/building_panel.gd" id="7_tipki"]
-[ext_resource type="PackedScene" uid="uid://npc_entity_001" path="res://scenes/entities/npc.tscn" id="8_npc"]
+[ext_resource type="PackedScene" path="res://scenes/entities/npc.tscn" id="8_npc"]
 [ext_resource type="Resource" path="res://data/npcs/math_teacher.tres" id="9_math"]
 [ext_resource type="Resource" path="res://data/npcs/science_teacher.tres" id="10_science"]
 [ext_resource type="Resource" path="res://data/npcs/geography_teacher.tres" id="11_geo"]
+[ext_resource type="Script" uid="uid://b6s6h3512qtjp" path="res://scripts/world/day_night_cycle.gd" id="12_daynight"]
+[ext_resource type="PackedScene" uid="uid://bi6o3f0wean0w" path="res://scenes/entities/player.tscn" id="12_trceg"]
+[ext_resource type="Script" uid="uid://btipgfhubkl2k" path="res://scripts/entities/player.gd" id="13_a8y0u"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.25, 0.45, 0.85, 1)
@@ -39,6 +41,9 @@ environment = SubResource("Environment_1")
 transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 10, 20, 10)
 shadow_enabled = true
 
+[node name="DayNightCycle" type="Node3D" parent="."]
+script = ExtResource("12_daynight")
+
 [node name="CameraRig" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 8)
 script = ExtResource("2_camera")
@@ -63,17 +68,7 @@ current = true
 
 [node name="QuizWindow" parent="UI" instance=ExtResource("5_quiz_window")]
 
-[node name="BuildingPanel" type="Control" parent="UI" instance=ExtResource("6_o6xl0")]
-layout_mode = 3
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -120.0
-grow_horizontal = 2
-grow_vertical = 0
-mouse_filter = 2
-script = ExtResource("7_tipki")
+[node name="BuildingPanel" parent="UI" instance=ExtResource("6_o6xl0")]
 
 [node name="NPCs" type="Node3D" parent="."]
 
@@ -88,3 +83,7 @@ npc_data = ExtResource("10_science")
 [node name="GeoTeacher" parent="NPCs" instance=ExtResource("8_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1, 4)
 npc_data = ExtResource("11_geo")
+
+[node name="Player" type="CharacterBody3D" parent="." instance=ExtResource("12_trceg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 5)
+script = ExtResource("13_a8y0u")
