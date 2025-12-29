@@ -11,9 +11,18 @@ signal answer_submitted(was_correct: bool)
 
 var _current_question: Resource # QuizQuestion type
 var _answer_buttons: Array[Button] = []
+var _current_category: String = ""
+var _npc_manager: Node = null
+var _quiz_manager: Node = null
 
 
 func _ready() -> void:
+	_npc_manager = get_node_or_null("/root/NPCManager")
+	_quiz_manager = get_node_or_null("/root/QuizManager")
+
+	# Register with NPCManager
+	if _npc_manager:
+		_npc_manager.quiz_window = self
 	close_button.pressed.connect(_on_close_button_pressed)
 
 	# Setup answer buttons
@@ -26,20 +35,35 @@ func _ready() -> void:
 
 
 func open() -> void:
+	open_with_category("")
+
+
+## Open quiz with optional category filter (used by NPCs)
+func open_with_category(category: String) -> void:
+	_current_category = category
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_set_build_cursor_blocking(true)
 	_load_random_question()
 
 
 func close() -> void:
 	visible = false
+	_current_category = ""
 	_reset_button_colors()
+	_set_build_cursor_blocking(false)
+
+
+func _set_build_cursor_blocking(blocking: bool) -> void:
+	# Find BuildCursor in scene and block/unblock it
+	var build_cursor := get_tree().get_first_node_in_group("build_cursor")
+	if build_cursor and build_cursor.has_method("set_ui_blocking"):
+		build_cursor.set_ui_blocking(blocking)
 
 
 func _load_random_question() -> void:
-	var quiz_mgr = get_node_or_null("/root/QuizManager")
-	if quiz_mgr:
-		_current_question = quiz_mgr.get_random_question()
+	if _quiz_manager:
+		_current_question = _quiz_manager.get_random_question(_current_category)
 	else:
 		_current_question = null
 
@@ -80,6 +104,14 @@ func _on_answer_pressed(answer_index: int) -> void:
 			btn.modulate = Color.GREEN
 		elif i == answer_index and not is_correct:
 			btn.modulate = Color.RED
+
+	# Record answer in QuizManager
+	if _quiz_manager:
+		_quiz_manager.record_answer(_current_category, is_correct)
+
+	# Notify NPCManager (which notifies the NPC)
+	if _npc_manager:
+		_npc_manager.on_quiz_answer(is_correct)
 
 	answer_submitted.emit(is_correct)
 

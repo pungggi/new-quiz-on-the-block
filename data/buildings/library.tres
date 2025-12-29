@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/building_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Bibliothek"
+description = "Bücher aus aller Welt! Großer Bildungsbonus für Geografie und Geschichte."
+category = "education"
+size = Vector3i(2, 3, 2)
+cost = 80
+required_category = "geography"
+required_correct_answers = 5
+color = Color(0.55, 0.27, 0.07, 1)
+secondary_color = Color(0.9, 0.85, 0.7, 1)
+stackable = false
+population = 0
+education_bonus = 2.0
+income = 0
+

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Was ist 7 × 8?"
+answers = PackedStringArray("54", "56", "58", "64")
+correct_answer_index = 1
+category = "math"
+difficulty = 2
+hint = "7 × 8 ist das gleiche wie 8 × 7. Denk an die 7er-Reihe!"
+explanation = "7 × 8 = 56. Das ist eine der schwierigeren Aufgaben im kleinen Einmaleins."
+reward_points = 15
+tags = PackedStringArray("multiplication", "times-table", "medium")
+
