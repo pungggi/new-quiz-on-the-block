@@ -26,6 +26,7 @@ signal game_ended()
 # Network configuration
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 4
+const _DEBUG := false # Set to true for network debugging
 
 # Connection state
 enum ConnectionState {DISCONNECTED, CONNECTING, CONNECTED, HOSTING}
@@ -69,7 +70,8 @@ func host_game(port: int = DEFAULT_PORT) -> Error:
 	# Register host as player
 	_register_player(local_peer_id)
 	
-	print("NetworkManager: Server started on port %d" % port)
+	if _DEBUG:
+		print("NetworkManager: Server started on port %d" % port)
 	connection_established.emit()
 	return OK
 
@@ -90,8 +92,9 @@ func join_game(address: String, port: int = DEFAULT_PORT) -> Error:
 	
 	multiplayer.multiplayer_peer = _peer
 	state = ConnectionState.CONNECTING
-	
-	print("NetworkManager: Connecting to %s:%d..." % [address, port])
+
+	if _DEBUG:
+		print("NetworkManager: Connecting to %s:%d..." % [address, port])
 	return OK
 
 
@@ -109,8 +112,9 @@ func disconnect_game() -> void:
 	
 	multiplayer.multiplayer_peer = null
 	state = ConnectionState.DISCONNECTED
-	
-	print("NetworkManager: Disconnected")
+
+	if _DEBUG:
+		print("NetworkManager: Disconnected")
 
 
 ## Check if this instance is the server/host
@@ -136,25 +140,29 @@ func get_peer_ids() -> Array[int]:
 func _register_player(peer_id: int) -> void:
 	if not players.has(peer_id):
 		players[peer_id] = {"peer_id": peer_id}
-		print("NetworkManager: Player registered: %d" % peer_id)
+		if _DEBUG:
+			print("NetworkManager: Player registered: %d" % peer_id)
 
 
 func _unregister_player(peer_id: int) -> void:
 	if players.has(peer_id):
 		players.erase(peer_id)
-		print("NetworkManager: Player unregistered: %d" % peer_id)
+		if _DEBUG:
+			print("NetworkManager: Player unregistered: %d" % peer_id)
 
 
 # --- Signal Callbacks ---
 
 func _on_peer_connected(peer_id: int) -> void:
-	print("NetworkManager: Peer connected: %d" % peer_id)
+	if _DEBUG:
+		print("NetworkManager: Peer connected: %d" % peer_id)
 	_register_player(peer_id)
 	player_connected.emit(peer_id)
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
-	print("NetworkManager: Peer disconnected: %d" % peer_id)
+	if _DEBUG:
+		print("NetworkManager: Peer disconnected: %d" % peer_id)
 	_unregister_player(peer_id)
 	player_disconnected.emit(peer_id)
 
@@ -163,7 +171,8 @@ func _on_connected_to_server() -> void:
 	state = ConnectionState.CONNECTED
 	local_peer_id = multiplayer.get_unique_id()
 	_register_player(local_peer_id)
-	print("NetworkManager: Connected to server as peer %d" % local_peer_id)
+	if _DEBUG:
+		print("NetworkManager: Connected to server as peer %d" % local_peer_id)
 	connection_established.emit()
 
 
@@ -171,7 +180,8 @@ func _on_connection_failed() -> void:
 	state = ConnectionState.DISCONNECTED
 	_peer = null
 	multiplayer.multiplayer_peer = null
-	print("NetworkManager: Connection failed")
+	if _DEBUG:
+		print("NetworkManager: Connection failed")
 	connection_failed.emit()
 
 
@@ -179,5 +189,6 @@ func _on_server_disconnected() -> void:
 	var was_connected := state == ConnectionState.CONNECTED
 	disconnect_game()
 	if was_connected:
-		print("NetworkManager: Server disconnected")
+		if _DEBUG:
+			print("NetworkManager: Server disconnected")
 		server_disconnected.emit()
