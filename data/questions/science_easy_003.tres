@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Was ist der größte Planet in unserem Sonnensystem?"
+answers = PackedStringArray("Erde", "Jupiter", "Saturn")
+correct_answer_index = 1
+category = "science"
+difficulty = 1
+hint = "Er hat einen großen roten Fleck."
+explanation = "Jupiter ist der größte Planet - mehr als 1000 Erden würden hineinpassen!"
+reward_points = 10
+tags = PackedStringArray("planets", "astronomy", "easy")
+

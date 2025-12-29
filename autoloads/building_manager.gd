@@ -10,7 +10,8 @@ signal building_unlocked(building: BuildingData)
 signal building_placed_event(building: BuildingData, position: Vector3i)
 
 ## Player's education points (earned from quizzes)
-var education_points: int = 50: # Start with some points
+## BALANCE: Start=50, House=10, NPC reward=10-15, so 3-5 NPCs to afford a house
+var education_points: int = 50:
 	set(value):
 		education_points = maxi(0, value)
 		education_points_changed.emit(education_points)

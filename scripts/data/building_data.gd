@@ -73,12 +73,93 @@ func can_afford(education_points: int) -> bool:
 func get_unlock_progress(stats: Dictionary) -> float:
 	if required_correct_answers <= 0:
 		return 1.0
-	
+
 	var current: int = 0
 	if required_category != "":
 		current = stats.get("correct_" + required_category, 0)
 	else:
 		current = stats.get("total_correct", 0)
-	
+
 	return clampf(float(current) / float(required_correct_answers), 0.0, 1.0)
 
+
+## Create a preview mesh for this building
+func create_preview_mesh(transparent: bool = true) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+
+	# Create combined mesh for multi-block buildings
+	var surface_tool := SurfaceTool.new()
+	surface_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	# Generate boxes for each cell of the building
+	for x in range(size.x):
+		for y in range(size.y):
+			for z in range(size.z):
+				_add_box_to_surface(surface_tool, Vector3(x, y, z))
+
+	surface_tool.generate_normals()
+	mesh_instance.mesh = surface_tool.commit()
+
+	# Create material
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	if transparent:
+		mat.albedo_color.a = 0.6
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_BACK
+	mesh_instance.material_override = mat
+
+	return mesh_instance
+
+
+func _add_box_to_surface(st: SurfaceTool, offset: Vector3) -> void:
+	var s := 0.98 # Slightly smaller for gaps
+	var o := offset
+
+	# Front face (+Z)
+	st.add_vertex(Vector3(o.x, o.y, o.z + s))
+	st.add_vertex(Vector3(o.x + s, o.y, o.z + s))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z + s))
+	st.add_vertex(Vector3(o.x, o.y, o.z + s))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z + s))
+	st.add_vertex(Vector3(o.x, o.y + s, o.z + s))
+
+	# Back face (-Z)
+	st.add_vertex(Vector3(o.x + s, o.y, o.z))
+	st.add_vertex(Vector3(o.x, o.y, o.z))
+	st.add_vertex(Vector3(o.x, o.y + s, o.z))
+	st.add_vertex(Vector3(o.x + s, o.y, o.z))
+	st.add_vertex(Vector3(o.x, o.y + s, o.z))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z))
+
+	# Right face (+X)
+	st.add_vertex(Vector3(o.x + s, o.y, o.z + s))
+	st.add_vertex(Vector3(o.x + s, o.y, o.z))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z))
+	st.add_vertex(Vector3(o.x + s, o.y, o.z + s))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z + s))
+
+	# Left face (-X)
+	st.add_vertex(Vector3(o.x, o.y, o.z))
+	st.add_vertex(Vector3(o.x, o.y, o.z + s))
+	st.add_vertex(Vector3(o.x, o.y + s, o.z + s))
+	st.add_vertex(Vector3(o.x, o.y, o.z))
+	st.add_vertex(Vector3(o.x, o.y + s, o.z + s))
+	st.add_vertex(Vector3(o.x, o.y + s, o.z))
+
+	# Top face (+Y)
+	st.add_vertex(Vector3(o.x, o.y + s, o.z + s))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z + s))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z))
+	st.add_vertex(Vector3(o.x, o.y + s, o.z + s))
+	st.add_vertex(Vector3(o.x + s, o.y + s, o.z))
+	st.add_vertex(Vector3(o.x, o.y + s, o.z))
+
+	# Bottom face (-Y)
+	st.add_vertex(Vector3(o.x, o.y, o.z))
+	st.add_vertex(Vector3(o.x + s, o.y, o.z))
+	st.add_vertex(Vector3(o.x + s, o.y, o.z + s))
+	st.add_vertex(Vector3(o.x, o.y, o.z))
+	st.add_vertex(Vector3(o.x + s, o.y, o.z + s))
+	st.add_vertex(Vector3(o.x, o.y, o.z + s))

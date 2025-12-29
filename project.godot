@@ -25,6 +25,8 @@ QuizManager="*res://scripts/data/quiz_manager.gd"
 NetworkManager="*res://autoloads/network_manager.gd"
 BuildingManager="*res://autoloads/building_manager.gd"
 NPCManager="*res://autoloads/npc_manager.gd"
+Effects="*res://scripts/effects/feedback_effects.gd"
+SaveManager="*res://autoloads/save_manager.gd"
 
 [editor_plugins]
 
