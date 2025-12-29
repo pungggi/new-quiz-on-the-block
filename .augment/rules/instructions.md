@@ -59,6 +59,12 @@ Although running in Augment, we adhere to the strict verification logic of the *
     * Ensure that UI updates happen via Signals, not direct function calls across scene boundaries.
     * Validate that custom signal names (`signal health_changed(new_value)`) match the `emit_signal` parameters strictly.
 
+
+# 🧮 REAL MCP Tool: `local-math` (Python/NumPy)
+**TRIGGER:** Whenever you need to calculate complex math, especially for Voxel chunks, noise generation, or vector/matrix operations.
+* **Rule:** Do not hallucinate math results.
+* **Action:** Write a Python script using `numpy` to verify the formula or generate lookup tables, then translate the logic to GDScript.
+* *Example:* "Use `local-math` to calculate the vertices for a hexagon grid before writing the SurfaceTool code."
 ---
 
 # Workflow Personas
