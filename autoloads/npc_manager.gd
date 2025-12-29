@@ -110,6 +110,7 @@ func _spawn_random_npc() -> void:
 	var npc := spawn_npc(spawn_pos, npc_data)
 	if npc:
 		npc_spawned.emit(npc)
+		AudioManager.play_sfx(AudioManager.SFX.NPC_SPAWN)
 
 
 func _input(event: InputEvent) -> void:

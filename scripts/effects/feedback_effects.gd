@@ -9,6 +9,7 @@ extends Node
 
 ## Spawn confetti particles at position (for building placement)
 func spawn_confetti(world_pos: Vector3) -> void:
+	AudioManager.play_sfx(AudioManager.SFX.BUILDING_PLACE)
 	var particles := GPUParticles3D.new()
 	particles.emitting = true
 	particles.one_shot = true
@@ -38,6 +39,7 @@ func spawn_confetti(world_pos: Vector3) -> void:
 
 ## Spawn success particles (green stars for correct answer)
 func spawn_success(world_pos: Vector3) -> void:
+	AudioManager.play_sfx(AudioManager.SFX.QUIZ_CORRECT)
 	var particles := GPUParticles3D.new()
 	particles.emitting = true
 	particles.one_shot = true
@@ -68,6 +70,7 @@ func spawn_success(world_pos: Vector3) -> void:
 
 ## Spawn failure particles (red X for wrong answer)
 func spawn_failure(world_pos: Vector3) -> void:
+	AudioManager.play_sfx(AudioManager.SFX.QUIZ_WRONG)
 	var particles := GPUParticles3D.new()
 	particles.emitting = true
 	particles.one_shot = true
@@ -97,6 +100,7 @@ func spawn_failure(world_pos: Vector3) -> void:
 
 ## Spawn floating text (like "+10 points")
 func spawn_floating_text(world_pos: Vector3, text: String, color: Color = Color.WHITE) -> void:
+	AudioManager.play_sfx(AudioManager.SFX.POINTS_GAIN, 0.7)
 	var label := Label3D.new()
 	label.text = text
 	label.font_size = 48

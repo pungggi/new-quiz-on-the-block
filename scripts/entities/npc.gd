@@ -43,6 +43,29 @@ func _ready() -> void:
 	# Register with NPCManager (for NPCs placed in scene, not spawned)
 	_register_with_manager()
 
+	# Play spawn animation
+	_play_spawn_animation()
+
+	# Start idle animation
+	_start_idle_animation()
+
+
+func _play_spawn_animation() -> void:
+	# Scale from 0 to 1 with bounce
+	scale = Vector3.ZERO
+	var tween := create_tween()
+	tween.tween_property(self, "scale", Vector3(1.2, 1.2, 1.2), 0.2).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector3.ONE, 0.1).set_ease(Tween.EASE_IN_OUT)
+
+
+func _start_idle_animation() -> void:
+	# Gentle bobbing animation
+	var tween := create_tween()
+	tween.set_loops()
+	var base_y := position.y
+	tween.tween_property(self, "position:y", base_y + 0.1, 0.8).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(self, "position:y", base_y, 0.8).set_ease(Tween.EASE_IN_OUT)
+
 
 func _register_with_manager() -> void:
 	var npc_manager: Node = get_node_or_null("/root/NPCManager")
@@ -115,6 +138,7 @@ func on_quiz_result(was_correct: bool) -> void:
 
 func _on_correct_answer() -> void:
 	# Happy animation - jump and disappear
+	AudioManager.play_sfx(AudioManager.SFX.NPC_DESPAWN)
 	var tween := create_tween()
 	tween.tween_property(self, "position:y", position.y + 2.0, 0.3).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(self, "scale", Vector3(0.1, 0.1, 0.1), 0.3)

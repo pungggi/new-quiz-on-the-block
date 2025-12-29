@@ -23,14 +23,37 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_hud")
 
-[node name="QuizButton" type="Button" parent="."]
-unique_name_in_owner = true
+[node name="TopLeftButtons" type="HBoxContainer" parent="."]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 116.0
-offset_bottom = 48.0
-text = "Quiz"
+offset_right = 250.0
+offset_bottom = 52.0
+theme_override_constants/separation = 8
+
+[node name="QuizButton" type="Button" parent="TopLeftButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+text = "📝 Quiz"
+
+[node name="SettingsButton" type="Button" parent="TopLeftButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 36)
+layout_mode = 2
+text = "⚙️"
+
+[node name="StatsButton" type="Button" parent="TopLeftButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 36)
+layout_mode = 2
+text = "📊"
+
+[node name="AchievementsButton" type="Button" parent="TopLeftButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 36)
+layout_mode = 2
+text = "🏆"
 
 [node name="StatsPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
@@ -38,10 +61,10 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -160.0
+offset_left = -180.0
 offset_top = 16.0
 offset_right = -16.0
-offset_bottom = 100.0
+offset_bottom = 140.0
 grow_horizontal = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_stats")
 
@@ -51,14 +74,16 @@ layout_mode = 2
 [node name="PointsLabel" type="Label" parent="StatsPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "📚 0 Punkte"
+theme_override_font_sizes/font_size = 16
+text = "👤 Spieler
+📚 100 Punkte"
 
 [node name="StatsLabel" type="Label" parent="StatsPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "✅ 0 richtig
+theme_override_font_sizes/font_size = 13
+text = "📖 1. Klasse
+✅ 0 richtig
 🏠 0 Gebäude"
 
 [node name="ToastContainer" type="VBoxContainer" parent="."]
@@ -73,3 +98,26 @@ offset_right = 150.0
 offset_bottom = 200.0
 grow_horizontal = 2
 mouse_filter = 2
+
+[node name="HintLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -140.0
+offset_right = 200.0
+offset_bottom = -120.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 0.8, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 16
+text = "💡 Klicke auf einen NPC!"
+horizontal_alignment = 1
+vertical_alignment = 1

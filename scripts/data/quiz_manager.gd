@@ -64,8 +64,43 @@ func get_questions(category: String = "", min_difficulty: int = 1, max_difficult
 
 
 ## Get a random question matching criteria
-func get_random_question(category: String = "", max_difficulty: int = 5) -> QuizQuestion:
-	var pool := get_questions(category, 1, max_difficulty)
+## If use_profile is true, filters by player's grade level and enabled categories
+func get_random_question(category: String = "", max_difficulty: int = 5, use_profile: bool = true) -> QuizQuestion:
+	var allowed_difficulties: Array = [1, 2, 3]
+	var enabled_categories: Array = []
+
+	# Get allowed difficulties and categories from profile
+	if use_profile:
+		var profile_mgr: Node = get_node_or_null("/root/ProfileManager")
+		if profile_mgr:
+			if profile_mgr.has_method("get_allowed_difficulties"):
+				allowed_difficulties = profile_mgr.get_allowed_difficulties()
+			if profile_mgr.has_method("get_enabled_categories"):
+				enabled_categories = profile_mgr.get_enabled_categories()
+
+	# Filter questions by allowed difficulties and categories
+	var pool: Array[QuizQuestion] = []
+	for q in _questions:
+		# Check category filter
+		if category != "" and q.category != category:
+			continue
+		# Check if category is enabled (if profile filtering active)
+		if enabled_categories.size() > 0 and q.category not in enabled_categories:
+			continue
+		if q.difficulty > max_difficulty:
+			continue
+		if q.difficulty in allowed_difficulties:
+			pool.append(q)
+
+	# Fallback: if no questions found, try all difficulties but keep category filter
+	if pool.is_empty():
+		for q in _questions:
+			if category != "" and q.category != category:
+				continue
+			if enabled_categories.size() > 0 and q.category not in enabled_categories:
+				continue
+			pool.append(q)
+
 	if pool.is_empty():
 		return null
 	return pool[randi() % pool.size()]
