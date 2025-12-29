@@ -53,6 +53,10 @@ const TERRAIN_COLLISION_LAYER: int = 1 # Layer 1 for terrain
 var material_valid: StandardMaterial3D
 var material_invalid: StandardMaterial3D
 
+# Current preview mesh (changes based on selected building)
+var _preview_mesh: MeshInstance3D = null
+var _current_preview_building: BuildingData = null
+
 func _ready() -> void:
 	# Add to group so UI can find us
 	add_to_group("build_cursor")
@@ -70,6 +74,10 @@ func _ready() -> void:
 	_buildings_root = Node3D.new()
 	_buildings_root.name = "Buildings"
 	get_tree().current_scene.add_child.call_deferred(_buildings_root)
+
+	# Hide default mesh (we'll use preview meshes instead)
+	if mesh_instance:
+		mesh_instance.visible = false
 
 	# Hide cursor initially
 	visible = false
@@ -167,6 +175,29 @@ func _find_camera() -> void:
 				break
 			parent = parent.get_parent()
 
+
+func _update_preview_mesh() -> void:
+	var selected: BuildingData = _building_manager.selected_building
+
+	# Only update if building changed
+	if selected == _current_preview_building:
+		return
+
+	_clear_preview()
+	_current_preview_building = selected
+
+	if selected:
+		_preview_mesh = selected.create_preview_mesh(true)
+		add_child(_preview_mesh)
+
+
+func _clear_preview() -> void:
+	if _preview_mesh:
+		_preview_mesh.queue_free()
+		_preview_mesh = null
+	_current_preview_building = null
+
+
 func _process(delta: float) -> void:
 	# Hide and skip when UI is blocking
 	if _ui_blocking:
@@ -176,12 +207,16 @@ func _process(delta: float) -> void:
 	# Hide cursor if no building is selected (allows NPC clicks)
 	if not _building_manager or not _building_manager.selected_building:
 		visible = false
+		_clear_preview()
 		return
 
 	if not camera:
 		_find_camera()
 		if not camera:
 			return
+
+	# Update preview mesh if building changed
+	_update_preview_mesh()
 
 	_update_cursor_position()
 
@@ -293,9 +328,14 @@ func _update_cursor_position() -> void:
 	# Check if placement is valid
 	_can_place = _is_placement_valid(grid_x, grid_y, grid_z)
 
-	# Update cursor material based on validity
-	if mesh_instance:
-		mesh_instance.material_override = material_valid if _can_place else material_invalid
+	# Update preview mesh color based on validity
+	if _preview_mesh:
+		var mat: StandardMaterial3D = _preview_mesh.material_override as StandardMaterial3D
+		if mat:
+			if _can_place:
+				mat.albedo_color.a = 0.6
+			else:
+				mat.albedo_color = Color(1.0, 0.3, 0.3, 0.6) # Red tint
 
 	visible = true
 

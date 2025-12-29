@@ -8,9 +8,17 @@ extends Node
 
 signal npc_clicked(npc: NPC)
 signal npc_quiz_completed(npc: NPC, was_correct: bool)
+signal npc_spawned(npc: NPC)
 
 const NPC_SCENE: PackedScene = preload("res://scenes/entities/npc.tscn")
 const NPC_COLLISION_LAYER: int = 4
+
+## Spawning configuration - BALANCED VALUES
+const BASE_SPAWN_INTERVAL: float = 12.0 # Seconds between spawns (was 15)
+const MIN_SPAWN_INTERVAL: float = 4.0 # Minimum interval (was 5)
+const MAX_ACTIVE_NPCS: int = 6 # Maximum NPCs at once (was 8, less overwhelming)
+const SPAWN_RADIUS_MIN: float = 4.0 # Min distance from center
+const SPAWN_RADIUS_MAX: float = 18.0 # Max distance from center
 
 ## All loaded NPC data resources
 var _npc_types: Dictionary = {}
@@ -33,15 +41,75 @@ var _building_manager: Node = null
 ## Camera reference for raycasts
 var _camera: Camera3D = null
 
+## Spawn timer
+var _spawn_timer: float = 0.0
+var _spawning_enabled: bool = true
+
 
 func _ready() -> void:
 	_load_npc_types()
 	_building_manager = get_node_or_null("/root/BuildingManager")
 	print("NPCManager: Loaded %d NPC types" % _npc_types.size())
 
+	# Start spawning after a short delay
+	_spawn_timer = 3.0 # First spawn after 3 seconds
 
-func _process(_delta: float) -> void:
+
+func _process(delta: float) -> void:
 	_update_hover()
+	_update_spawning(delta)
+
+
+func _update_spawning(delta: float) -> void:
+	if not _spawning_enabled:
+		return
+
+	# Clean up invalid NPC references
+	_active_npcs = _active_npcs.filter(func(npc: NPC) -> bool: return is_instance_valid(npc))
+
+	# Check if we can spawn more
+	if _active_npcs.size() >= MAX_ACTIVE_NPCS:
+		return
+
+	# Update timer
+	_spawn_timer -= delta
+	if _spawn_timer <= 0.0:
+		_spawn_random_npc()
+		_spawn_timer = _get_spawn_interval()
+
+
+func _get_spawn_interval() -> float:
+	# Spawn faster if player has more buildings
+	var building_count: int = 0
+	if _building_manager:
+		building_count = _building_manager.player_stats.get("buildings_placed", 0)
+
+	# Reduce interval by 1 second per 5 buildings, minimum MIN_SPAWN_INTERVAL
+	var reduction: float = (building_count / 5.0) * 1.0
+	return maxf(MIN_SPAWN_INTERVAL, BASE_SPAWN_INTERVAL - reduction)
+
+
+func _spawn_random_npc() -> void:
+	if _npc_types.is_empty():
+		return
+
+	# Pick random NPC type
+	var types: Array = _npc_types.values()
+	var npc_data: NPCData = types[randi() % types.size()]
+
+	# Generate random position on terrain
+	var angle: float = randf() * TAU
+	var distance: float = randf_range(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX)
+	var spawn_pos := Vector3(
+		cos(angle) * distance,
+		1.0, # Slightly above ground
+		sin(angle) * distance
+	)
+
+	# Spawn the NPC
+	var npc := spawn_npc(spawn_pos, npc_data)
+	if npc:
+		npc_spawned.emit(npc)
 
 
 func _input(event: InputEvent) -> void:
@@ -183,6 +251,16 @@ func _on_npc_quiz_completed(npc: NPC, was_correct: bool) -> void:
 func on_quiz_answer(was_correct: bool) -> void:
 	if _current_quiz_npc:
 		_current_quiz_npc.on_quiz_result(was_correct)
+
+
+## Enable/disable automatic spawning
+func set_spawning_enabled(enabled: bool) -> void:
+	_spawning_enabled = enabled
+
+
+## Get spawning state
+func is_spawning_enabled() -> bool:
+	return _spawning_enabled
 
 
 ## Get count of active NPCs
