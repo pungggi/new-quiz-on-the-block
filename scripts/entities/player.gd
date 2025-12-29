@@ -6,21 +6,8 @@ class_name Player
 ## Player-controlled character that can walk around the world.
 ## Only moves when GameMode is WALK.
 
-const GROUND_Y: float = 0.7 # Same as NPCs - feet touch ground at Y=1.0
 const WALK_SPEED: float = 5.0
 const ROTATION_SPEED: float = 10.0
-
-## World boundaries (3x3 chunks: chunk -1 to 1, each 16 units)
-## Chunk -1: x=-16 to -1, Chunk 0: x=0 to 15, Chunk 1: x=16 to 31
-## Total: x/z from -16 to 32 (48 units, but NOT centered at origin)
-const WORLD_MIN_X: float = -15.5
-const WORLD_MAX_X: float = 31.5
-const WORLD_MIN_Z: float = -15.5
-const WORLD_MAX_Z: float = 31.5
-
-## Collision layers
-const TERRAIN_COLLISION_LAYER: int = 1
-const BUILDING_COLLISION_LAYER: int = 2
 
 ## Body part references for animations
 var _body_parts: Dictionary = {}
@@ -28,13 +15,8 @@ var _is_walking: bool = false
 var _was_walking: bool = false
 var _walk_tween: Tween
 
-## Material references (stored for runtime updates)
-var _skin_material: StandardMaterial3D
-var _hair_material: StandardMaterial3D
-var _body_material: StandardMaterial3D
-var _leg_material: StandardMaterial3D
-var _glasses_material: StandardMaterial3D
-var _hat_material: StandardMaterial3D
+## Build result from BlockyCharacterBuilder (contains materials)
+var _build_result: BlockyCharacterBuilder.BuildResult
 
 ## Current customization reference
 var _customization: PlayerCustomization
@@ -49,13 +31,13 @@ func _ready() -> void:
 	GameMode.player = self
 
 	# Setup collision to detect buildings
-	collision_mask = BUILDING_COLLISION_LAYER
+	collision_mask = Config.BUILDING_COLLISION_LAYER
 
 	# Create the blocky character mesh
 	_create_blocky_person()
 
 	# Set initial position
-	position.y = GROUND_Y
+	position.y = Config.GROUND_Y
 
 
 func _physics_process(delta: float) -> void:
@@ -103,11 +85,11 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	# Clamp position to world boundaries
-	position.x = clampf(position.x, WORLD_MIN_X, WORLD_MAX_X)
-	position.z = clampf(position.z, WORLD_MIN_Z, WORLD_MAX_Z)
+	position.x = clampf(position.x, Config.WORLD_MIN_X, Config.WORLD_MAX_X)
+	position.z = clampf(position.z, Config.WORLD_MIN_Z, Config.WORLD_MAX_Z)
 
 	# Keep on ground
-	position.y = GROUND_Y
+	position.y = Config.GROUND_Y
 
 	# Update walk animation based on movement
 	if _is_walking and not _was_walking:
@@ -118,175 +100,21 @@ func _physics_process(delta: float) -> void:
 
 
 func _create_blocky_person() -> void:
-	# Remove default mesh and old children
+	# Remove default mesh
 	mesh_instance.mesh = null
-	for child in mesh_instance.get_children():
-		child.queue_free()
 
 	# Load customization from profile
 	_customization = _get_customization()
 
-	# Create materials from customization
-	_skin_material = StandardMaterial3D.new()
-	_skin_material.albedo_color = _customization.skin_color
-
-	_hair_material = StandardMaterial3D.new()
-	_hair_material.albedo_color = _customization.hair_color
-
-	_body_material = StandardMaterial3D.new()
-	_body_material.albedo_color = _customization.shirt_color
-
-	_leg_material = StandardMaterial3D.new()
-	_leg_material.albedo_color = _customization.pants_color
-
-	_glasses_material = StandardMaterial3D.new()
-	_glasses_material.albedo_color = _customization.glasses_color
-
-	_hat_material = StandardMaterial3D.new()
-	_hat_material.albedo_color = _customization.hat_color
-
-	# HEAD
-	var head := MeshInstance3D.new()
-	var head_mesh := BoxMesh.new()
-	head_mesh.size = Vector3(0.35, 0.35, 0.35)
-	head.mesh = head_mesh
-	head.position = Vector3(0, 0.9, 0)
-	head.material_override = _skin_material
-	mesh_instance.add_child(head)
-
-	# HAIR (based on style)
-	_create_hair(head)
-
-	# GLASSES (if enabled)
-	if _customization.glasses_type != PlayerCustomization.GlassesType.NONE:
-		_create_glasses(head)
-
-	# HAT (if enabled)
-	if _customization.hat_type != PlayerCustomization.HatType.NONE:
-		_create_hat(head)
-
-	# BODY/TORSO
-	var body := MeshInstance3D.new()
-	var body_mesh := BoxMesh.new()
-	body_mesh.size = Vector3(0.4, 0.5, 0.25)
-	body.mesh = body_mesh
-	body.position = Vector3(0, 0.45, 0)
-	body.material_override = _body_material
-	mesh_instance.add_child(body)
-
-	# LEFT ARM
-	var left_arm := MeshInstance3D.new()
-	var arm_mesh := BoxMesh.new()
-	arm_mesh.size = Vector3(0.15, 0.45, 0.15)
-	left_arm.mesh = arm_mesh
-	left_arm.position = Vector3(-0.275, 0.45, 0)
-	left_arm.material_override = _skin_material
-	mesh_instance.add_child(left_arm)
-
-	# RIGHT ARM
-	var right_arm := MeshInstance3D.new()
-	right_arm.mesh = arm_mesh
-	right_arm.position = Vector3(0.275, 0.45, 0)
-	right_arm.material_override = _skin_material
-	mesh_instance.add_child(right_arm)
-
-	# LEFT LEG
-	var left_leg := MeshInstance3D.new()
-	var leg_mesh := BoxMesh.new()
-	leg_mesh.size = Vector3(0.18, 0.4, 0.18)
-	left_leg.mesh = leg_mesh
-	left_leg.position = Vector3(-0.1, 0, 0)
-	left_leg.material_override = _leg_material
-	mesh_instance.add_child(left_leg)
-
-	# RIGHT LEG
-	var right_leg := MeshInstance3D.new()
-	right_leg.mesh = leg_mesh
-	right_leg.position = Vector3(0.1, 0, 0)
-	right_leg.material_override = _leg_material
-	mesh_instance.add_child(right_leg)
-
-	# Store references
-	_body_parts = {
-		"head": head,
-		"body": body,
-		"left_arm": left_arm,
-		"right_arm": right_arm,
-		"left_leg": left_leg,
-		"right_leg": right_leg
-	}
+	# Use BlockyCharacterBuilder for unified character creation
+	_build_result = BlockyCharacterBuilder.build_from_customization(mesh_instance, _customization)
+	_body_parts = _build_result.body_parts
 
 
 func _get_customization() -> PlayerCustomization:
 	if ProfileManager and ProfileManager.current_profile:
 		return ProfileManager.current_profile.get_customization()
 	return PlayerCustomization.create_default()
-
-
-func _create_hair(head: MeshInstance3D) -> void:
-	var hair := MeshInstance3D.new()
-	hair.name = "Hair"
-	var hair_mesh := BoxMesh.new()
-
-	match _customization.hair_style:
-		PlayerCustomization.HairStyle.SHORT:
-			hair_mesh.size = Vector3(0.37, 0.12, 0.37)
-			hair.position = Vector3(0, 0.17, 0)
-		PlayerCustomization.HairStyle.LONG:
-			hair_mesh.size = Vector3(0.38, 0.25, 0.38)
-			hair.position = Vector3(0, 0.12, 0)
-		PlayerCustomization.HairStyle.SPIKY:
-			hair_mesh.size = Vector3(0.32, 0.18, 0.32)
-			hair.position = Vector3(0, 0.20, 0)
-		PlayerCustomization.HairStyle.BALD:
-			return # No hair
-
-	hair.mesh = hair_mesh
-	hair.material_override = _hair_material
-	head.add_child(hair)
-
-
-func _create_glasses(head: MeshInstance3D) -> void:
-	var glasses := MeshInstance3D.new()
-	glasses.name = "Glasses"
-	var glasses_mesh := BoxMesh.new()
-
-	match _customization.glasses_type:
-		PlayerCustomization.GlassesType.ROUND:
-			glasses_mesh.size = Vector3(0.36, 0.08, 0.05)
-		PlayerCustomization.GlassesType.SQUARE:
-			glasses_mesh.size = Vector3(0.38, 0.10, 0.05)
-
-	glasses.mesh = glasses_mesh
-	glasses.position = Vector3(0, 0.02, 0.16)
-	glasses.material_override = _glasses_material
-	head.add_child(glasses)
-
-
-func _create_hat(head: MeshInstance3D) -> void:
-	var hat := MeshInstance3D.new()
-	hat.name = "Hat"
-	var hat_mesh := BoxMesh.new()
-
-	match _customization.hat_type:
-		PlayerCustomization.HatType.CAP:
-			hat_mesh.size = Vector3(0.40, 0.10, 0.42)
-			hat.position = Vector3(0, 0.20, 0.02)
-			# Add cap visor
-			var visor := MeshInstance3D.new()
-			var visor_mesh := BoxMesh.new()
-			visor_mesh.size = Vector3(0.30, 0.03, 0.15)
-			visor.mesh = visor_mesh
-			visor.position = Vector3(0, -0.03, 0.22)
-			visor.material_override = _hat_material
-			hat.add_child(visor)
-		PlayerCustomization.HatType.BEANIE:
-			hat_mesh.size = Vector3(0.38, 0.15, 0.38)
-			hat.position = Vector3(0, 0.22, 0)
-
-	hat.mesh = hat_mesh
-	hat.material_override = _hat_material
-	head.add_child(hat)
 
 
 ## Rebuild character with new customization

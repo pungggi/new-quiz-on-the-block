@@ -9,8 +9,7 @@ class_name NPC
 signal clicked(npc: NPC)
 signal quiz_completed(npc: NPC, was_correct: bool)
 
-## NPC collision layer for raycast detection
-const NPC_COLLISION_LAYER: int = 4
+## NPC collision layer for raycast detection (uses Config.NPC_COLLISION_LAYER)
 
 ## NPC data resource defining category, rewards, etc.
 @export var npc_data: NPCData
@@ -19,12 +18,13 @@ const NPC_COLLISION_LAYER: int = 4
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 @onready var label_3d: Label3D = $Label3D
 
-## Material for the NPC mesh
+## Material for the NPC mesh (body material from build result)
 var _material: StandardMaterial3D
 var _base_color: Color
 
 ## Body part references for animations
 var _body_parts: Dictionary = {}
+var _build_result: BlockyCharacterBuilder.BuildResult
 
 ## Is this NPC currently in a quiz?
 var _in_quiz: bool = false
@@ -40,7 +40,6 @@ var _is_walking: bool = false
 var _was_walking: bool = false
 var _walk_tween: Tween
 var _walk_range: float = 8.0
-const GROUND_Y: float = 0.7 # Adjusted so feet touch ground at Y=1.0
 
 
 func _ready() -> void:
@@ -84,7 +83,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 
 		# Keep on ground
-		position.y = GROUND_Y
+		position.y = Config.GROUND_Y
 	else:
 		_is_walking = false
 		velocity = Vector3.ZERO
@@ -109,13 +108,13 @@ func _pick_new_target() -> void:
 
 	_target_position = Vector3(
 		global_position.x + cos(angle) * distance,
-		GROUND_Y,
+		Config.GROUND_Y,
 		global_position.z + sin(angle) * distance
 	)
 
-	# Clamp to world bounds (terrain goes from -16 to +32)
-	_target_position.x = clampf(_target_position.x, -14.0, 30.0)
-	_target_position.z = clampf(_target_position.z, -14.0, 30.0)
+	# Clamp to world bounds using Config constants
+	_target_position.x = clampf(_target_position.x, Config.WORLD_MIN_X + 0.5, Config.WORLD_MAX_X - 0.5)
+	_target_position.z = clampf(_target_position.z, Config.WORLD_MIN_Z + 0.5, Config.WORLD_MAX_Z - 0.5)
 
 	# Wait 2-5 seconds before moving again after reaching target
 	_walk_timer = randf_range(2.0, 5.0)
@@ -194,90 +193,11 @@ func _create_blocky_person() -> void:
 	# Remove default mesh
 	mesh_instance.mesh = null
 
-	# Colors
-	var body_color := _base_color
-	var skin_color := Color(0.96, 0.84, 0.73) # Peach skin tone
+	# Use BlockyCharacterBuilder for unified character creation
 	var hair_color := _get_hair_color()
-
-	# Create body material
-	_material = StandardMaterial3D.new()
-	_material.albedo_color = body_color
-
-	var skin_mat := StandardMaterial3D.new()
-	skin_mat.albedo_color = skin_color
-
-	var hair_mat := StandardMaterial3D.new()
-	hair_mat.albedo_color = hair_color
-
-	# HEAD (with face)
-	var head := MeshInstance3D.new()
-	var head_mesh := BoxMesh.new()
-	head_mesh.size = Vector3(0.35, 0.35, 0.35)
-	head.mesh = head_mesh
-	head.position = Vector3(0, 0.9, 0)
-	head.material_override = skin_mat
-	mesh_instance.add_child(head)
-
-	# HAIR (on top of head)
-	var hair := MeshInstance3D.new()
-	var hair_mesh := BoxMesh.new()
-	hair_mesh.size = Vector3(0.37, 0.12, 0.37)
-	hair.mesh = hair_mesh
-	hair.position = Vector3(0, 0.17, 0)
-	hair.material_override = hair_mat
-	head.add_child(hair)
-
-	# BODY/TORSO
-	var body := MeshInstance3D.new()
-	var body_mesh := BoxMesh.new()
-	body_mesh.size = Vector3(0.4, 0.5, 0.25)
-	body.mesh = body_mesh
-	body.position = Vector3(0, 0.45, 0)
-	body.material_override = _material
-	mesh_instance.add_child(body)
-
-	# LEFT ARM
-	var left_arm := MeshInstance3D.new()
-	var arm_mesh := BoxMesh.new()
-	arm_mesh.size = Vector3(0.15, 0.45, 0.15)
-	left_arm.mesh = arm_mesh
-	left_arm.position = Vector3(-0.275, 0.45, 0)
-	left_arm.material_override = skin_mat
-	mesh_instance.add_child(left_arm)
-
-	# RIGHT ARM
-	var right_arm := MeshInstance3D.new()
-	right_arm.mesh = arm_mesh
-	right_arm.position = Vector3(0.275, 0.45, 0)
-	right_arm.material_override = skin_mat
-	mesh_instance.add_child(right_arm)
-
-	# LEFT LEG
-	var left_leg := MeshInstance3D.new()
-	var leg_mesh := BoxMesh.new()
-	leg_mesh.size = Vector3(0.18, 0.4, 0.18)
-	left_leg.mesh = leg_mesh
-	left_leg.position = Vector3(-0.1, 0, 0)
-	left_leg.material_override = _material.duplicate()
-	(left_leg.material_override as StandardMaterial3D).albedo_color = body_color.darkened(0.3)
-	mesh_instance.add_child(left_leg)
-
-	# RIGHT LEG
-	var right_leg := MeshInstance3D.new()
-	right_leg.mesh = leg_mesh
-	right_leg.position = Vector3(0.1, 0, 0)
-	right_leg.material_override = left_leg.material_override
-	mesh_instance.add_child(right_leg)
-
-	# Store references for animations
-	_body_parts = {
-		"head": head,
-		"body": body,
-		"left_arm": left_arm,
-		"right_arm": right_arm,
-		"left_leg": left_leg,
-		"right_leg": right_leg
-	}
+	_build_result = BlockyCharacterBuilder.build_npc(mesh_instance, _base_color, hair_color)
+	_body_parts = _build_result.body_parts
+	_material = _build_result.materials.get("body") as StandardMaterial3D
 
 
 func _get_hair_color() -> Color:
