@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches ist der tiefste Punkt der Erde?"
+answers = PackedStringArray("Dead Sea", "Marianengraben", "Lake Baikal")
+correct_answer_index = 1
+category = "geography"
+difficulty = 2
+hint = "Es ist im Pazifischen Ozean und wird auch Challenger-Tiefe genannt!"
+explanation = "Der Marianengraben ist der tiefste Punkt der Erde mit über 11.000 Metern Tiefe! Es ist tiefer als der Mount Everest hoch ist."
+reward_points = 20
+tags = PackedStringArray("geography", "oceans", "records", "deep-sea", "medium")

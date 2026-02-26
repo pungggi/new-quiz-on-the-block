@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wer war der erste Mensch, der auf dem Mond gelaufen ist?"
+answers = PackedStringArray("Buzz Aldrin", "Neil Armstrong", "John Glenn")
+correct_answer_index = 1
+category = "history"
+difficulty = 1
+hint = "Er sagte: 'Das ist ein kleiner Schritt für einen Menschen...' "
+explanation = "Neil Armstrong war 1969 der erste Mensch auf dem Mond! Seine berühmten Worte werden immer in Erinnerung bleiben."
+reward_points = 10
+tags = PackedStringArray("space", "history", "astronauts", "records", "easy")

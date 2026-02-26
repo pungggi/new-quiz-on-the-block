@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches Tier wechselt seine Farbe je nach Stimmung?"
+answers = PackedStringArray("Gecko", "Chamäleon", "Eidechse")
+correct_answer_index = 1
+category = "science"
+difficulty = 1
+hint = "Wenn es wütend ist, wird es rot oder dunkel!"
+explanation = "Das Chamäleon wechselt seine Farbe - nicht nur zur Tarnung, sondern auch je nach Stimmung! Rote Farben bedeuten Wut, grüne Farben bedeuten Frieden."
+reward_points = 10
+tags = PackedStringArray("reptiles", "animals", "camouflage", "amazing", "easy")

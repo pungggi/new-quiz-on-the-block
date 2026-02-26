@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Was ist 3 * 3?"
+answers = PackedStringArray("6", "9", "12")
+correct_answer_index = 1
+category = "math"
+difficulty = 1
+hint = "Drei mal drei."
+explanation = "3 * 3 = 9."
+reward_points = 10
+tags = PackedStringArray("multiplication", "single-digit", "easy")

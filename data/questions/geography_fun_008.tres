@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welcher Fluss ist der längste in Europa?"
+answers = PackedStringArray("Donau", "Wolga", "Rhein")
+correct_answer_index = 1
+category = "geography"
+difficulty = 2
+hint = "Dieser Fluss fließt durch Russland und ist über 3.000 km lang!"
+explanation = "Die Wolga ist der längste Fluss in Europa mit 3.530 Kilometern! Sie fließt durch Russland und mündet ins Kaspische Meer."
+reward_points = 20
+tags = PackedStringArray("geography", "rivers", "europe", "russia", "medium")

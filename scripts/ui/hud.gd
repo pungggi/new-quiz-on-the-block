@@ -1,12 +1,20 @@
 extends Control
 class_name HUD
 
+## HUD - Heads Up Display
+##
+## Main gameplay UI orchestrator. Delegates to specialized components:
+## - ToastManager for notifications
+## - HintDisplay for contextual hints (via Label with script)
+## - Points/Stats display
+
 signal quiz_requested
 
 const SETTINGS_DIALOG_SCENE := preload("res://scenes/ui/settings_dialog.tscn")
 const STATS_DIALOG_SCENE := preload("res://scenes/ui/stats_dialog.tscn")
 const ACHIEVEMENTS_DIALOG_SCENE := preload("res://scenes/ui/achievements_dialog.tscn")
 
+# UI Elements
 @onready var quiz_button: Button = %QuizButton
 @onready var settings_button: Button = %SettingsButton
 @onready var stats_button: Button = %StatsButton
@@ -22,25 +30,56 @@ const ACHIEVEMENTS_DIALOG_SCENE := preload("res://scenes/ui/achievements_dialog.
 @onready var mode_panel: PanelContainer = %ModePanel
 @onready var mode_label: Label = %ModeLabel
 
+# Manager references
 var _building_manager: Node = null
 var _game_mode: Node = null
 var _quiz_manager: Node = null
 var _npc_manager: Node = null
 var _day_night: Node = null
-var _hint_tween: Tween = null
 
-## Animated points display
+# Toast manager (created dynamically or use existing container)
+var _toast_manager: ToastManager = null
+
+# Animated points display
 var _displayed_points: int = 0
 var _target_points: int = 0
 var _points_tween: Tween = null
 
-## Hint tracking
+# Hint tracking
+var _hint_tween: Tween = null
 var _has_clicked_npc: bool = false
 var _has_placed_building: bool = false
 var _has_answered_quiz: bool = false
 
 
 func _ready() -> void:
+	_setup_toast_manager()
+	_connect_buttons()
+	_connect_managers()
+
+	# Start showing hints after a short delay
+	await get_tree().create_timer(UIThemeConstants.TOAST_DURATION).timeout
+	_update_hint()
+
+
+func _setup_toast_manager() -> void:
+	# Convert toast_container to ToastManager if it exists
+	if toast_container:
+		_toast_manager = ToastManager.new()
+		_toast_manager.name = "ToastManager"
+		# Copy properties from existing container
+		_toast_manager.size_flags_horizontal = toast_container.size_flags_horizontal
+		_toast_manager.size_flags_vertical = toast_container.size_flags_vertical
+		# Replace container
+		var parent := toast_container.get_parent()
+		var idx := toast_container.get_index()
+		parent.remove_child(toast_container)
+		toast_container.queue_free()
+		parent.add_child(_toast_manager)
+		parent.move_child(_toast_manager, idx)
+
+
+func _connect_buttons() -> void:
 	quiz_button.pressed.connect(_on_quiz_button_pressed)
 	if settings_button:
 		settings_button.pressed.connect(_on_settings_button_pressed)
@@ -49,13 +88,13 @@ func _ready() -> void:
 	if achievements_button:
 		achievements_button.pressed.connect(_on_achievements_button_pressed)
 
-	# Get managers
+
+func _connect_managers() -> void:
 	_building_manager = get_node_or_null("/root/BuildingManager")
 	_quiz_manager = get_node_or_null("/root/QuizManager")
 	_npc_manager = get_node_or_null("/root/NPCManager")
 	_game_mode = get_node_or_null("/root/GameMode")
 
-	# Connect to signals
 	if _building_manager:
 		_building_manager.education_points_changed.connect(_on_points_changed)
 		_building_manager.building_unlocked.connect(_on_building_unlocked)
@@ -65,26 +104,24 @@ func _ready() -> void:
 	if _npc_manager:
 		_npc_manager.npc_quiz_completed.connect(_on_quiz_completed_hint)
 
-	# Connect to game mode changes
 	if _game_mode:
 		_game_mode.mode_changed.connect(_on_mode_changed)
 		_update_mode_display()
 
-	# Connect to achievement unlocks
 	var ach_mgr: Node = get_node_or_null("/root/AchievementManager")
 	if ach_mgr:
 		ach_mgr.achievement_unlocked.connect(_on_achievement_unlocked)
 
-	# Connect to day/night cycle
+	# Connect to day/night cycle (needs frame delay)
+	_connect_day_night_deferred()
+
+
+func _connect_day_night_deferred() -> void:
 	await get_tree().process_frame
 	_day_night = get_tree().current_scene.get_node_or_null("DayNightCycle")
 	if _day_night:
 		_day_night.time_changed.connect(_on_time_changed)
 		_update_time_display()
-
-	# Start showing hints after a short delay
-	await get_tree().create_timer(2.0).timeout
-	_update_hint()
 
 
 func _on_quiz_button_pressed() -> void:
@@ -262,52 +299,44 @@ func _update_time_display() -> void:
 
 ## Show a toast notification with slide-in animation
 func show_toast(message: String, color: Color = Color.WHITE) -> void:
-	if not toast_container:
-		return
+	if _toast_manager:
+		_toast_manager.show_toast(message, color)
+	elif toast_container:
+		# Fallback if ToastManager setup failed
+		_show_toast_fallback(message, color)
 
-	# Create toast panel for better visibility
+
+## Fallback toast implementation
+func _show_toast_fallback(message: String, color: Color) -> void:
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.15, 0.9)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	style.border_width_left = 3
-	style.border_color = color
+	var style := UIThemeConstants.create_bordered_panel_style(
+		UIThemeConstants.PANEL_BG_COLOR,
+		color,
+		UIThemeConstants.BORDER_WIDTH_THICK
+	)
 	panel.add_theme_stylebox_override("panel", style)
 
-	# Create toast label
 	var toast := Label.new()
 	toast.text = message
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.add_theme_color_override("font_color", color)
-	toast.add_theme_font_size_override("font_size", 18)
-
-	# Add shadow for readability
-	toast.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	toast.add_theme_font_size_override("font_size", UIThemeConstants.FONT_SIZE_LARGE)
+	toast.add_theme_color_override("font_shadow_color", UIThemeConstants.SHADOW_COLOR)
 	toast.add_theme_constant_override("shadow_offset_x", 1)
 	toast.add_theme_constant_override("shadow_offset_y", 1)
 
 	panel.add_child(toast)
 	toast_container.add_child(panel)
 
-	# Slide-in animation from top
 	panel.modulate.a = 0.0
 	panel.position.y = -30
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(panel, "modulate:a", 1.0, 0.25).set_ease(Tween.EASE_OUT)
-	tween.tween_property(panel, "position:y", 0.0, 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-
-	# Wait and slide out
-	tween.chain().tween_interval(2.5)
-	tween.tween_property(panel, "modulate:a", 0.0, 0.4)
-	tween.tween_property(panel, "position:y", -20.0, 0.4)
+	tween.tween_property(panel, "modulate:a", 1.0, UIThemeConstants.FADE_DURATION_NORMAL).set_ease(Tween.EASE_OUT)
+	tween.tween_property(panel, "position:y", 0.0, UIThemeConstants.FADE_DURATION_NORMAL).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.chain().tween_interval(UIThemeConstants.TOAST_DURATION)
+	tween.tween_property(panel, "modulate:a", 0.0, UIThemeConstants.FADE_DURATION_SLOW)
+	tween.tween_property(panel, "position:y", -20.0, UIThemeConstants.FADE_DURATION_SLOW)
 	tween.tween_callback(panel.queue_free)
 
 
@@ -367,9 +396,35 @@ func _update_mode_display() -> void:
 	if not mode_label or not _game_mode:
 		return
 
-	if _game_mode.is_walk_mode():
-		mode_label.text = "LAUFEN [Tab]"
-	else:
-		mode_label.text = "BAUEN [Tab]"
+	var is_walk: bool = _game_mode.is_walk_mode() as bool
+	mode_label.text = "🚶 LAUFEN [Tab]" if is_walk else "🏗️ BAUEN [Tab]"
+	
+	if mode_panel:
+		var style := StyleBoxFlat.new()
+		style.corner_radius_top_left = 8
+		style.corner_radius_top_right = 8
+		style.corner_radius_bottom_left = 8
+		style.corner_radius_bottom_right = 8
+		style.content_margin_left = 16
+		style.content_margin_right = 16
+		style.content_margin_top = 8
+		style.content_margin_bottom = 8
+		style.border_width_left = 2
+		style.border_width_top = 2
+		style.border_width_right = 2
+		style.border_width_bottom = 2
+		
+		if is_walk:
+			style.bg_color = Color(0.15, 0.25, 0.45, 0.85)
+			style.border_color = Color(0.3, 0.5, 0.9, 0.8)
+		else:
+			style.bg_color = Color(0.45, 0.25, 0.15, 0.85)
+			style.border_color = Color(0.9, 0.5, 0.3, 0.8)
+			
+		mode_panel.add_theme_stylebox_override("panel", style)
+		
+		# Set bolder font for better readability
+		mode_label.add_theme_font_size_override("font_size", 14)
+		mode_label.add_theme_color_override("font_color", Color.WHITE)
 
 #endregion

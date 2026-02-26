@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PropData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/prop_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Fahrradständer"
+description = "Ein Fahrradständer für geparkte Fahrräder."
+prop_type = 6
+size = Vector3(1.0, 0.5, 0.3)
+primary_color = Color(0.4, 0.4, 0.4, 1)
+secondary_color = Color(0.5, 0.5, 0.5, 1)
+cost = 1
+placement_rule = 0
+min_distance_from_building = 0.5
+can_cluster = false
+category = "decoration"

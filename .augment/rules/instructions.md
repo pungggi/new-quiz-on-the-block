@@ -154,6 +154,62 @@ func _ready() -> void:
     var other = OtherAutoload  # Jetzt sicher
 ```
 
+### 5.11 Typ-Inferenz mit Ternary/Variant
+```gdscript
+# ❌ GEFAHR: Wenn `data` z.B. Variant oder Dictionary ist, 
+# kann Godot 4 den Typ bei Ternary-Zuweisungen nicht immer korrekt inferieren.
+var my_val := data.size if data else 1.0  # Führt oft zu "Warning treated as error" wegen Variant.
+
+# ✅ RICHTIG: Expliziter Typ und expliziter Cast.
+var my_val: float = float(data.size) if data else 1.0
+```
+
+### 5.12 Unbenutzte Variablen in Funktions-Signaturen
+```gdscript
+# ❌ ERZEUGT WARNUNG: Variable wird nicht genutzt.
+func do_something(val1: int, val2: String) -> void:
+    print(val1)
+
+# ✅ RICHTIG: Unbenutzte Parameter mit Unterstrich präfixen.
+func do_something(val1: int, _val2: String) -> void:
+    print(val1)
+```
+
+### 5.13 Globale Klassen (`class_name`) nicht preloaden
+```gdscript
+# ❌ FALSCH: Wenn `MyClass.gd` bereits `class_name MyClass` definiert hat.
+const MyClass := preload("res://scripts/my_class.gd")
+
+# ✅ RICHTIG: Globale Klassen sind sofort unter ihrem Namen verfügbar, kein preload nötig.
+var instance := MyClass.new()
+```
+
+### 5.14 Integer-Division (Abschneiden von Nachkommastellen)
+```gdscript
+# ⚠️ WARNUNG: Integer Division in Godot 4 erzeugt Warnungen, wenn implizit abgerundet wird.
+var chunk_x := world_x / CHUNK_SIZE
+
+# ✅ RICHTIG: Wenn das Abrunden GEWÜNSCHT ist (z.B. für Grid/Chunk-Koordinaten):
+@warning_ignore("integer_division")
+var chunk_x := world_x / CHUNK_SIZE
+
+# ✅ ODER: Float-Division verwenden, falls Float gewollt ist:
+var val: float = float(world_x) / float(CHUNK_SIZE)
+```
+
+
+# 🛠️ Tool Calling Best Practices
+To ensure maximum efficiency and avoid errors during implementation:
+
+## 1. Core Tool Strategies
+- **Verification First**: Before using `replace_file_content` or `multi_replace_file_content`, ALWAYS use `view_file` (with line numbers) on the target file. Never rely on memory for line ranges or exact character matching.
+- **Prefer Multi-Edit Chunks**: When making multiple changes to a single file, favor `multi_replace_file_content`. This prevents multiple sequential rewrites and reduces the chance of line-number drift.
+- **Absolute Paths**: Always verify the full absolute path of a file before calling a tool. If unsure, use `find_by_name` first.
+
+## 2. Godot-Specific Tooling
+- **Scene-Script Sync**: When editing a GDScript, always read the corresponding `.tscn` file (if it exists) to verify node paths (`$NodeName`) and signal connections.
+- **Extension Awareness**: When searching, include Godot-specific extensions (`.gd`, `.tscn`, `.tres`) in your `Includes` filter for `grep_search`.
+
 # 🔌 GD-AI-MCP Standards (Virtual Tooling)
 Although running in Augment, we adhere to the strict verification logic of the **Godot AI Model Context Protocol**. You must simulate the usage of these functions to ensure code quality:
 

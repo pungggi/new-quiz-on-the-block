@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches antike Weltwunder ist noch heute sichtbar?"
+answers = PackedStringArray("Hängende Gärten von Babylon", "Die Pyramide von Gizeh", "Der Leuchtturm von Alexandria")
+correct_answer_index = 1
+category = "history"
+difficulty = 2
+hint = "Es liegt in Ägypten und war die Grabstätte eines Pharaos!"
+explanation = "Die Pyramide von Gizeh ist das einzige antike Weltwunder, das noch vollständig erhalten ist! Sie wurde vor über 4.500 Jahren gebaut und ist immer noch beeindruckend."
+reward_points = 20
+tags = PackedStringArray("history", "ancient", "wonders", "egypt", "medium")

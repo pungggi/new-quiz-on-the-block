@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Was ist 25 + 25 + 25 + 25?"
+answers = PackedStringArray("75", "90", "100")
+correct_answer_index = 2
+category = "math"
+difficulty = 1
+hint = "Das ist das gleiche wie 25 × 4!"
+explanation = "25 + 25 + 25 + 25 = 100! Das ist das gleiche wie 4 × 25 = 100. Das nennt man Multiplikation."
+reward_points = 10
+tags = PackedStringArray("addition", "multiplication", "easy")

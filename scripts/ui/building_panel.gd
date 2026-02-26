@@ -3,15 +3,17 @@ class_name BuildingPanel
 
 ## Building Selection Panel
 ##
-## Displays available buildings in a horizontal bar at the bottom.
+## Displays available buildings organized by category tabs.
 ## Shows unlock status, costs, and allows selection for placement.
 
 signal building_selected(building: BuildingData)
+signal prop_selected(prop: PropData)
 signal panel_toggled(is_open: bool)
 
 @onready var toggle_button: Button = %ToggleButton
 @onready var points_label: Label = %PointsLabel
 @onready var building_container: HBoxContainer = %BuildingContainer
+@onready var category_tabs: HBoxContainer = %CategoryTabs
 @onready var panel: PanelContainer = %Panel
 @onready var tooltip_panel: PanelContainer = %TooltipPanel
 @onready var tooltip_name: Label = %TooltipName
@@ -21,9 +23,23 @@ signal panel_toggled(is_open: bool)
 
 const BUILDING_BUTTON_SCENE := preload("res://scenes/ui/building_button.tscn")
 
+## Category display names and icons
+const CATEGORY_INFO: Dictionary = {
+	"residential": {"name": "🏠 Wohnen", "order": 0},
+	"commercial": {"name": "🏪 Gewerbe", "order": 1},
+	"education": {"name": "🎓 Bildung", "order": 2},
+	"industry": {"name": "🏭 Industrie", "order": 3},
+	"infrastructure": {"name": "🛤️ Infrastruktur", "order": 4},
+	"decoration": {"name": "🌳 Deko", "order": 5},
+}
+
 var _is_open: bool = true
 var _building_buttons: Dictionary = {} # BuildingData -> Button
+var _prop_buttons: Dictionary = {} # PropData -> Button
+var _category_buttons: Dictionary = {} # category_name -> Button
+var _current_category: String = "residential"
 var _building_manager: Node
+var _prop_manager: Node
 
 
 func _ready() -> void:
@@ -36,11 +52,62 @@ func _ready() -> void:
 		push_error("BuildingPanel: BuildingManager autoload not found!")
 		return
 
+	# Get PropManager autoload
+	_prop_manager = get_node_or_null("/root/PropManager")
+
 	# Connect to BuildingManager signals
 	_building_manager.education_points_changed.connect(_on_points_changed)
 	_building_manager.building_unlocked.connect(_on_building_unlocked)
 
 	_update_points_display()
+	_create_category_tabs()
+	_populate_buildings()
+
+
+func _create_category_tabs() -> void:
+	# Clear existing tabs
+	for child in category_tabs.get_children():
+		child.queue_free()
+	_category_buttons.clear()
+
+	# Get available categories from buildings
+	var available_categories: Array[String] = []
+	for building: BuildingData in _building_manager.get_all_buildings():
+		if building.category not in available_categories:
+			available_categories.append(building.category)
+
+	# Add decoration tab if PropManager has props
+	if _prop_manager and not _prop_manager.get_all_props().is_empty():
+		if "decoration" not in available_categories:
+			available_categories.append("decoration")
+
+	# Sort by order
+	available_categories.sort_custom(func(a: String, b: String) -> bool:
+		return CATEGORY_INFO.get(a, {"order": 99}).order < CATEGORY_INFO.get(b, {"order": 99}).order
+	)
+
+	# Create tab buttons
+	for cat: String in available_categories:
+		var info: Dictionary = CATEGORY_INFO.get(cat, {"name": cat.capitalize(), "order": 99})
+		var btn := Button.new()
+		btn.text = info.name
+		btn.toggle_mode = true
+		btn.button_pressed = (cat == _current_category)
+		btn.pressed.connect(_on_category_selected.bind(cat))
+		btn.custom_minimum_size = Vector2(100, 30)
+		category_tabs.add_child(btn)
+		_category_buttons[cat] = btn
+
+
+func _on_category_selected(category: String) -> void:
+	_current_category = category
+	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
+
+	# Update tab visual state
+	for cat: String in _category_buttons:
+		_category_buttons[cat].button_pressed = (cat == category)
+
+	# Refresh buildings display
 	_populate_buildings()
 
 
@@ -49,42 +116,87 @@ func _populate_buildings() -> void:
 	for child in building_container.get_children():
 		child.queue_free()
 	_building_buttons.clear()
-	
-	# Create button for each building
-	var buildings: Array[BuildingData] = _building_manager.get_all_buildings()
+	_prop_buttons.clear()
+
+	# Create button for each building in current category
+	var buildings: Array[BuildingData] = _building_manager.get_buildings_by_category(_current_category)
 	for building: BuildingData in buildings:
-		var btn: Button = BUILDING_BUTTON_SCENE.instantiate()
-		btn.text = building.display_name.substr(0, 1) # First letter
-		btn.tooltip_text = building.display_name
-		
-		# Store reference
-		_building_buttons[building] = btn
-		
-		# Set color based on building
-		var style := StyleBoxFlat.new()
-		style.bg_color = building.color
-		style.set_corner_radius_all(4)
-		btn.add_theme_stylebox_override("normal", style)
-		
-		# Hover style
-		var hover_style := style.duplicate()
-		hover_style.bg_color = building.color.lightened(0.2)
-		btn.add_theme_stylebox_override("hover", hover_style)
-		
-		# Pressed style
-		var pressed_style := style.duplicate()
-		pressed_style.bg_color = building.color.darkened(0.2)
-		pressed_style.border_width_bottom = 4
-		pressed_style.border_color = Color.WHITE
-		btn.add_theme_stylebox_override("pressed", pressed_style)
-		
-		# Connect signals
-		btn.pressed.connect(_on_building_button_pressed.bind(building))
-		btn.mouse_entered.connect(_on_building_hover.bind(building))
-		btn.mouse_exited.connect(_on_building_hover_exit)
-		
-		building_container.add_child(btn)
-		_update_button_state(building)
+		_create_building_button(building)
+
+	# If decoration category, also show props from PropManager
+	if _current_category == "decoration" and _prop_manager:
+		for prop: PropData in _prop_manager.get_all_props():
+			_create_prop_button(prop)
+
+
+func _create_building_button(building: BuildingData) -> void:
+	var btn: Button = BUILDING_BUTTON_SCENE.instantiate()
+	btn.text = building.display_name.substr(0, 1) # First letter
+	btn.tooltip_text = building.display_name
+
+	# Store reference
+	_building_buttons[building] = btn
+
+	# Set color based on building
+	var style := StyleBoxFlat.new()
+	style.bg_color = building.color
+	style.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("normal", style)
+
+	# Hover style
+	var hover_style := style.duplicate()
+	hover_style.bg_color = building.color.lightened(0.2)
+	btn.add_theme_stylebox_override("hover", hover_style)
+
+	# Pressed style
+	var pressed_style := style.duplicate()
+	pressed_style.bg_color = building.color.darkened(0.2)
+	pressed_style.border_width_bottom = 4
+	pressed_style.border_color = Color.WHITE
+	btn.add_theme_stylebox_override("pressed", pressed_style)
+
+	# Connect signals
+	btn.pressed.connect(_on_building_button_pressed.bind(building))
+	btn.mouse_entered.connect(_on_building_hover.bind(building))
+	btn.mouse_exited.connect(_on_building_hover_exit)
+
+	building_container.add_child(btn)
+	_update_button_state(building)
+
+
+func _create_prop_button(prop: PropData) -> void:
+	var btn: Button = BUILDING_BUTTON_SCENE.instantiate()
+	btn.text = prop.display_name.substr(0, 1)
+	btn.tooltip_text = prop.display_name
+
+	_prop_buttons[prop] = btn
+
+	# Style with prop's secondary color (more visual)
+	var style := StyleBoxFlat.new()
+	style.bg_color = prop.secondary_color
+	style.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("normal", style)
+
+	var hover_style := style.duplicate()
+	hover_style.bg_color = prop.secondary_color.lightened(0.2)
+	btn.add_theme_stylebox_override("hover", hover_style)
+
+	var pressed_style := style.duplicate()
+	pressed_style.bg_color = prop.secondary_color.darkened(0.2)
+	pressed_style.border_width_bottom = 4
+	pressed_style.border_color = Color.WHITE
+	btn.add_theme_stylebox_override("pressed", pressed_style)
+
+	# Affordability check
+	var can_afford: bool = prop.can_afford(_building_manager.education_points)
+	if not can_afford:
+		btn.modulate = Color(1.0, 0.7, 0.7, 1.0)
+
+	btn.pressed.connect(_on_prop_button_pressed.bind(prop))
+	btn.mouse_entered.connect(_on_prop_hover.bind(prop))
+	btn.mouse_exited.connect(_on_building_hover_exit)
+
+	building_container.add_child(btn)
 
 
 func _update_button_state(building: BuildingData) -> void:
@@ -161,13 +273,50 @@ func _on_building_hover_exit() -> void:
 	tooltip_panel.visible = false
 
 
+func _on_prop_button_pressed(prop: PropData) -> void:
+	if not _prop_manager:
+		return
+
+	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
+
+	# Deselect any building first
+	if _building_manager:
+		_building_manager.deselect_building()
+
+	prop_selected.emit(prop)
+
+	# Visual feedback - highlight selected prop, deselect buildings
+	for b in _building_buttons:
+		_building_buttons[b].button_pressed = false
+	for p in _prop_buttons:
+		_prop_buttons[p].button_pressed = (p == prop)
+
+
+func _on_prop_hover(prop: PropData) -> void:
+	AudioManager.play_sfx(AudioManager.SFX.BUTTON_HOVER, 0.5)
+
+	tooltip_name.text = prop.display_name
+	tooltip_desc.text = prop.description
+	tooltip_cost.text = "Kosten: %d 📚" % prop.cost
+	tooltip_unlock.visible = false
+	tooltip_panel.visible = true
+
+
 func _on_points_changed(_new_total: int) -> void:
 	_update_points_display()
 	# Update all button states
 	for building in _building_buttons:
 		_update_button_state(building)
+	# Update prop affordability
+	for prop: PropData in _prop_buttons:
+		var btn: Button = _prop_buttons[prop]
+		if prop.can_afford(_building_manager.education_points):
+			btn.modulate = Color.WHITE
+		else:
+			btn.modulate = Color(1.0, 0.7, 0.7, 1.0)
 
 
 func _on_building_unlocked(building: BuildingData) -> void:
 	_update_button_state(building)
 	AudioManager.play_sfx(AudioManager.SFX.UNLOCK)
+

@@ -13,7 +13,7 @@ class_name BuildingData
 @export_multiline var description: String = ""
 
 ## Building category for organization
-@export_enum("residential", "commercial", "education", "industry", "decoration") var category: String = "residential"
+@export_enum("residential", "commercial", "education", "industry", "decoration", "infrastructure") var category: String = "residential"
 
 ## Size in voxel units (width, height, depth)
 @export var size: Vector3i = Vector3i(1, 1, 1)
@@ -48,37 +48,64 @@ class_name BuildingData
 ## Income generated per cycle (for commercial buildings)
 @export var income: int = 0
 
+## Maximum level for building progression (0 = base, increases when answering quizzes correctly)
+@export var max_level: int = 3
+
+## Quiz category to use when interacting with this building (empty = random category)
+@export var quiz_category: String = ""
+
 
 ## Check if player meets unlock requirements
-func is_unlocked(stats: Dictionary) -> bool:
-	# Check category requirement
-	if required_category != "":
-		var category_correct: int = stats.get("correct_" + required_category, 0)
-		if category_correct < required_correct_answers:
-			return false
+## Accepts either a PlayerProfile or a legacy stats Dictionary
+func is_unlocked(stats_or_profile: Variant) -> bool:
+	var total_correct: int = 0
+	var category_correct: int = 0
+
+	if stats_or_profile is PlayerProfile:
+		var profile: PlayerProfile = stats_or_profile
+		total_correct = profile.total_correct_answers
+		if required_category != "":
+			category_correct = profile.category_correct.get(required_category, 0)
 	else:
-		# Any category counts
-		var total_correct: int = stats.get("total_correct", 0)
-		if total_correct < required_correct_answers:
-			return false
-	return true
+		# Legacy Dictionary support
+		var stats: Dictionary = stats_or_profile
+		total_correct = stats.get("total_correct", 0)
+		if required_category != "":
+			category_correct = stats.get("correct_" + required_category, 0)
+
+	# Check requirement
+	if required_category != "":
+		return category_correct >= required_correct_answers
+	else:
+		return total_correct >= required_correct_answers
 
 
 ## Check if player can afford this building
-func can_afford(education_points: int) -> bool:
-	return education_points >= cost
+func can_afford(points: int) -> bool:
+	return points >= cost
 
 
 ## Get unlock progress as percentage (0.0 to 1.0)
-func get_unlock_progress(stats: Dictionary) -> float:
+## Accepts either a PlayerProfile or a legacy stats Dictionary
+func get_unlock_progress(stats_or_profile: Variant) -> float:
 	if required_correct_answers <= 0:
 		return 1.0
 
 	var current: int = 0
-	if required_category != "":
-		current = stats.get("correct_" + required_category, 0)
+
+	if stats_or_profile is PlayerProfile:
+		var profile: PlayerProfile = stats_or_profile
+		if required_category != "":
+			current = profile.category_correct.get(required_category, 0)
+		else:
+			current = profile.total_correct_answers
 	else:
-		current = stats.get("total_correct", 0)
+		# Legacy Dictionary support
+		var stats: Dictionary = stats_or_profile
+		if required_category != "":
+			current = stats.get("correct_" + required_category, 0)
+		else:
+			current = stats.get("total_correct", 0)
 
 	return clampf(float(current) / float(required_correct_answers), 0.0, 1.0)
 

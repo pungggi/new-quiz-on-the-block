@@ -1,0 +1,72 @@
+[gd_scene load_steps=6 format=3 uid="uid://campfire_001"]
+
+[sub_resource type="Gradient" id="Gradient_001"]
+offsets = PackedFloat32Array(0, 0.3, 0.7, 1)
+colors = PackedColorArray(1, 0.9, 0.2, 1, 1, 0.5, 0.1, 1, 0.8, 0.2, 0.05, 1, 0.2, 0.05, 0.02, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_001"]
+gradient = SubResource("Gradient_001")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_001"]
+lifetime_randomness = 0.3
+emission_shape = 6
+emission_ring_axis = Vector3(0, 1, 0)
+emission_ring_height = 0.1
+emission_ring_radius = 0.15
+emission_ring_inner_radius = 0.0
+spread = 15.0
+gravity = Vector3(0, 2, 0)
+initial_velocity_min = 0.5
+initial_velocity_max = 1.5
+angular_velocity_min = -30.0
+angular_velocity_max = 30.0
+damping_min = 1.0
+damping_max = 2.0
+scale_min = 0.05
+scale_max = 0.15
+color_ramp = SubResource("GradientTexture1D_001")
+
+[sub_resource type="SphereMesh" id="SphereMesh_001"]
+radial_segments = 8
+rings = 4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_001"]
+albedo_color = Color(0.8, 0.3, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.4, 0.1, 1)
+emission_energy_multiplier = 2.0
+
+[node name="Campfire" type="Node3D"]
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+light_color = Color(1, 0.6, 0.2, 1)
+light_energy = 2.0
+light_size = 0.5
+omni_range = 8.0
+omni_attenuation = 1.5
+
+[node name="FireParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+amount = 30
+lifetime = 1.2
+process_material = SubResource("ParticleProcessMaterial_001")
+draw_pass_1 = SubResource("SphereMesh_001")
+
+[node name="Logs" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+
+[node name="Log1" type="MeshInstance3D" parent="Logs"]
+transform = Transform3D(0.866, -0.5, 0, 0.5, 0.866, 0, 0, 0, 1, -0.1, 0.05, 0)
+mesh = SubResource("SphereMesh_001")
+surface_material_override/0 = SubResource("StandardMaterial3D_001")
+
+[node name="Log2" type="MeshInstance3D" parent="Logs"]
+transform = Transform3D(0.866, 0.5, 0, -0.5, 0.866, 0, 0, 0, 1, 0.1, 0.05, 0)
+mesh = SubResource("SphereMesh_001")
+surface_material_override/0 = SubResource("StandardMaterial3D_001")
+
+[node name="Log3" type="MeshInstance3D" parent="Logs"]
+transform = Transform3D(0.5, 0, 0.866, 0, 1, 0, -0.866, 0, 0.5, 0, 0.05, 0.1)
+mesh = SubResource("SphereMesh_001")
+surface_material_override/0 = SubResource("StandardMaterial3D_001")

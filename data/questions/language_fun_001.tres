@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welche Sprache wird von den meisten Menschen gesprochen?"
+answers = PackedStringArray("Englisch", "Spanisch", "Chinesisch (Mandarin)")
+correct_answer_index = 2
+category = "language"
+difficulty = 2
+hint = "Über 1 Milliarde Menschen sprechen diese Sprache!"
+explanation = "Chinesisch (Mandarin) wird von über 1 Milliarde Menschen als Muttersprache gesprochen! Es ist die meistgesprochene Sprache der Welt."
+reward_points = 20
+tags = PackedStringArray("languages", "world", "communication", "medium")

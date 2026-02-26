@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welcher Ozean ist der größte der Welt?"
+answers = PackedStringArray("Atlantischer Ozean", "Pazifischer Ozean", "Indischer Ozean")
+correct_answer_index = 1
+category = "geography"
+difficulty = 1
+hint = "Dieser Ozean grenzt an so viele Länder wie die anderen Ozeane zusammen!"
+explanation = "Der Pazifische Ozean ist der größte und tiefste Ozean der Welt! Er bedeckt eine Fläche größer als die ganze Landfläche der Erde."
+reward_points = 10
+tags = PackedStringArray("geography", "oceans", "water", "records", "easy")

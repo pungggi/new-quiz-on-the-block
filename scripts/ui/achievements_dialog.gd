@@ -35,23 +35,13 @@ func _populate_achievements() -> void:
 		var is_unlocked: bool = ach_mgr.is_unlocked(achievement.id)
 		if is_unlocked:
 			unlocked_count += 1
-		
+
 		var panel := PanelContainer.new()
 		panel.custom_minimum_size = Vector2(180, 100)
-		
-		var style := StyleBoxFlat.new()
-		if is_unlocked:
-			style.bg_color = Color(0.2, 0.35, 0.25, 0.9)
-		else:
-			style.bg_color = Color(0.15, 0.15, 0.2, 0.7)
-		style.corner_radius_top_left = 8
-		style.corner_radius_top_right = 8
-		style.corner_radius_bottom_left = 8
-		style.corner_radius_bottom_right = 8
-		style.content_margin_left = 8
-		style.content_margin_right = 8
-		style.content_margin_top = 8
-		style.content_margin_bottom = 8
+
+		# Use UIThemeConstants for consistent styling
+		var bg_color := UIThemeConstants.UNLOCKED_BG_COLOR if is_unlocked else UIThemeConstants.LOCKED_BG_COLOR
+		var style := UIThemeConstants.create_panel_style(bg_color, UIThemeConstants.CORNER_RADIUS_MEDIUM, UIThemeConstants.MARGIN_SMALL)
 		panel.add_theme_stylebox_override("panel", style)
 		
 		var vbox := VBoxContainer.new()

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches ist das kleinste Land der Welt?"
+answers = PackedStringArray("Monaco", "Vatikanstadt", "San Marino")
+correct_answer_index = 1
+category = "geography"
+difficulty = 1
+hint = "Es liegt in Rom und ist ein unabhängiger Staat!"
+explanation = "Der Vatikan ist das kleinste Land der Welt mit nur 0,44 Quadratkilometern! Es ist der Sitz des Papstes."
+reward_points = 10
+tags = PackedStringArray("geography", "countries", "records", "europe", "easy")

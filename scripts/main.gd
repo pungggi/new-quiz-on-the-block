@@ -10,12 +10,16 @@ const PAUSE_MENU_SCENE := preload("res://scenes/ui/pause_menu.tscn")
 @onready var ui: CanvasLayer = $UI
 
 var _npc_manager: Node = null
+var _prop_manager: Node = null
 var _effects: Node = null
 var _pause_menu: Control = null
 
 
 func _ready() -> void:
-	_spawn_chunks()
+	# Initialize ChunkManager and load initial chunks
+	ChunkManager.initialize(chunk_root)
+	ChunkManager.load_initial_chunks()
+
 	hud.quiz_requested.connect(_on_hud_quiz_requested)
 
 	# Get autoloads
@@ -24,6 +28,15 @@ func _ready() -> void:
 
 	if _npc_manager:
 		_npc_manager.npc_quiz_completed.connect(_on_npc_quiz_completed)
+
+	# Initialize PropManager
+	_prop_manager = get_node_or_null("/root/PropManager")
+	if _prop_manager:
+		var props_root := Node3D.new()
+		props_root.name = "Props"
+		add_child(props_root)
+		_prop_manager.initialize(props_root)
+		_prop_manager.decorate_world()
 
 	if build_cursor:
 		build_cursor.building_placed.connect(_on_building_placed)
@@ -57,20 +70,6 @@ func _on_npc_quiz_completed(npc: NPC, was_correct: bool) -> void:
 		_effects.spawn_floating_text(pos, "+%d 📚" % points, Color.GREEN)
 	else:
 		_effects.spawn_failure(pos)
-
-
-func _spawn_chunks() -> void:
-	for x in range(-1, 2):
-		for z in range(-1, 2):
-			_spawn_chunk(x, z)
-
-
-func _spawn_chunk(chunk_x: int, chunk_z: int) -> void:
-	var chunk_scene := preload("res://scenes/world/chunk.tscn")
-	var chunk: Node3D = chunk_scene.instantiate()
-	chunk.chunk_x = chunk_x
-	chunk.chunk_z = chunk_z
-	chunk_root.add_child(chunk)
 
 
 func _show_pause_menu() -> void:

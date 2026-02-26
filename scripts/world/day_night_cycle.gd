@@ -6,6 +6,8 @@ class_name DayNightCycle
 
 signal time_changed(hour: float)
 signal day_phase_changed(phase: DayPhase)
+signal night_started
+signal night_ended
 
 enum DayPhase {DAWN, DAY, DUSK, NIGHT}
 
@@ -15,12 +17,14 @@ enum DayPhase {DAWN, DAY, DUSK, NIGHT}
 
 ## References (set in _ready)
 var _sun: DirectionalLight3D
+var _moon: DirectionalLight3D
 var _environment: Environment
 var _sky_material: ProceduralSkyMaterial
 
 ## Current time (0-24 hours)
 var current_hour: float = 8.0
 var current_phase: DayPhase = DayPhase.DAY
+var _was_night: bool = false
 
 ## Sky color presets
 const SKY_COLORS := {
@@ -66,8 +70,9 @@ const SKY_COLORS := {
 func _ready() -> void:
 	current_hour = start_hour
 	
-	# Find sun and environment in parent scene
+	# Find sun, moon and environment in parent scene
 	_sun = get_parent().get_node_or_null("DirectionalLight3D")
+	_moon = get_parent().get_node_or_null("MoonLight3D")
 	var world_env: WorldEnvironment = get_parent().get_node_or_null("WorldEnvironment")
 	if world_env:
 		_environment = world_env.environment
@@ -93,6 +98,14 @@ func _process(delta: float) -> void:
 	if new_phase != current_phase:
 		current_phase = new_phase
 		day_phase_changed.emit(current_phase)
+		
+		# Emit night started/ended signals
+		var is_night: bool = current_phase == DayPhase.NIGHT
+		if is_night and not _was_night:
+			night_started.emit()
+		elif not is_night and _was_night:
+			night_ended.emit()
+		_was_night = is_night
 	
 	time_changed.emit(current_hour)
 
@@ -103,15 +116,34 @@ func _update_visuals() -> void:
 
 
 func _update_sun_position() -> void:
-	if not _sun:
-		return
-	
 	# Sun angle based on time (0h = midnight, 12h = noon)
 	var sun_angle := (current_hour - 6.0) * 15.0 # 15 degrees per hour
 	var sun_pitch := deg_to_rad(-sun_angle)
 	var sun_yaw := deg_to_rad(-30.0) # Slight angle for nicer shadows
 	
-	_sun.rotation = Vector3(sun_pitch, sun_yaw, 0)
+	if _sun:
+		_sun.rotation = Vector3(sun_pitch, sun_yaw, 0)
+		# Disable sun when below horizon (night time)
+		var sun_elevation := sun_angle
+		if sun_elevation < -5.0 or sun_elevation > 185.0:
+			_sun.visible = false
+		else:
+			_sun.visible = true
+	
+	# Moon is opposite to sun (12 hours offset)
+	if _moon:
+		var moon_angle := (current_hour + 6.0) * 15.0 # Moon rises when sun sets
+		var moon_pitch := deg_to_rad(-moon_angle)
+		var moon_yaw := deg_to_rad(30.0) # Opposite direction
+		
+		_moon.rotation = Vector3(moon_pitch, moon_yaw, 0)
+		
+		# Only show moon during night (when it's above horizon)
+		var moon_elevation := moon_angle
+		if moon_elevation > -5.0 and moon_elevation < 175.0:
+			_moon.visible = true
+		else:
+			_moon.visible = false
 
 
 func _update_sky_colors() -> void:

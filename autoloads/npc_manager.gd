@@ -9,6 +9,8 @@ extends Node
 signal npc_clicked(npc: NPC)
 signal npc_quiz_completed(npc: NPC, was_correct: bool)
 signal npc_spawned(npc: NPC)
+signal interaction_prompt_show(npc: NPC)
+signal interaction_prompt_hide()
 
 const NPC_SCENE: PackedScene = preload("res://scenes/entities/npc.tscn")
 const NPC_COLLISION_LAYER: int = 4
@@ -46,6 +48,9 @@ var _camera: Camera3D = null
 var _spawn_timer: float = 0.0
 var _spawning_enabled: bool = true
 
+## Building positions for smart spawning
+var _building_positions: Array[Vector3] = []
+
 
 func _ready() -> void:
 	_load_npc_types()
@@ -53,6 +58,13 @@ func _ready() -> void:
 
 	# Start spawning after a short delay
 	_spawn_timer = 3.0 # First spawn after 3 seconds
+
+	# Connect to Player's nearest_npc_changed (deferred to ensure Player exists)
+	call_deferred("_connect_to_player")
+
+	# Track building positions for smart spawning
+	if _building_manager and _building_manager.has_signal("building_placed_event"):
+		_building_manager.building_placed_event.connect(_on_building_placed)
 
 
 func _process(delta: float) -> void:
@@ -101,14 +113,8 @@ func _spawn_random_npc() -> void:
 	var types: Array = _npc_types.values()
 	var npc_data: NPCData = types[randi() % types.size()]
 
-	# Generate random position on terrain (centered around chunk 0,0)
-	var angle: float = randf() * TAU
-	var distance: float = randf_range(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX)
-	var spawn_pos := Vector3(
-		cos(angle) * distance + 8.0, # Offset to center of chunk 0
-		SPAWN_Y, # On top of grass voxels (y=1)
-		sin(angle) * distance + 8.0 # Offset to center of chunk 0
-	)
+	# Smart spawn position
+	var spawn_pos := _get_spawn_position()
 
 	# Spawn the NPC
 	var npc := spawn_npc(spawn_pos, npc_data)
@@ -117,8 +123,48 @@ func _spawn_random_npc() -> void:
 		AudioManager.play_sfx(AudioManager.SFX.NPC_SPAWN)
 
 
+## Get a smart spawn position — prefers near buildings
+func _get_spawn_position() -> Vector3:
+	# 60% chance to spawn near a building if any exist
+	if not _building_positions.is_empty() and randf() < 0.6:
+		var base_pos: Vector3 = _building_positions[randi() % _building_positions.size()]
+		# Offset 2-5 blocks from building (on the street)
+		var offset_angle: float = randf() * TAU
+		var offset_dist: float = randf_range(2.0, 5.0)
+		var pos := Vector3(
+			base_pos.x + cos(offset_angle) * offset_dist,
+			SPAWN_Y,
+			base_pos.z + sin(offset_angle) * offset_dist
+		)
+		# Clamp to world bounds
+		pos.x = clampf(pos.x, Config.WORLD_MIN_X + 0.5, Config.WORLD_MAX_X - 0.5)
+		pos.z = clampf(pos.z, Config.WORLD_MIN_Z + 0.5, Config.WORLD_MAX_Z - 0.5)
+		return pos
+
+	# Fallback: random position
+	return _get_random_spawn_position()
+
+
+## Pure random spawn position (original logic)
+func _get_random_spawn_position() -> Vector3:
+	var angle: float = randf() * TAU
+	var distance: float = randf_range(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX)
+	return Vector3(
+		cos(angle) * distance + 8.0, # Offset to center of chunk 0
+		SPAWN_Y,
+		sin(angle) * distance + 8.0
+	)
+
+
+## Track building positions for smart NPC spawning
+func _on_building_placed(_building: BuildingData, grid_pos: Vector3i) -> void:
+	_building_positions.append(Vector3(grid_pos.x, 0, grid_pos.z))
+
 func _input(event: InputEvent) -> void:
-	# Handle NPC clicks (left click only - more intuitive)
+	# Handle NPC clicks only in BUILD mode (WALK uses E-key proximity)
+	if not GameMode.is_build_mode():
+		return
+
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if _hovered_npc and is_instance_valid(_hovered_npc):
@@ -127,6 +173,13 @@ func _input(event: InputEvent) -> void:
 
 
 func _update_hover() -> void:
+	# Only raycast hover in BUILD mode
+	if not GameMode.is_build_mode():
+		if _hovered_npc and is_instance_valid(_hovered_npc):
+			_hovered_npc.set_hovered(false)
+			_hovered_npc = null
+		return
+
 	var npc := _raycast_for_npc()
 
 	# Update hover state
@@ -250,6 +303,27 @@ func _on_npc_quiz_completed(npc: NPC, was_correct: bool) -> void:
 		_active_npcs.erase(npc)
 
 	_current_quiz_npc = null
+
+
+## Called by Player when E is pressed near an NPC (WALK mode)
+func interact_with(npc: NPC) -> void:
+	if not is_instance_valid(npc) or _current_quiz_npc:
+		return
+	npc.interact()
+
+
+## Connect to Player signals (deferred)
+func _connect_to_player() -> void:
+	var player: Node = get_tree().get_first_node_in_group("player")
+	if player and player.has_signal("nearest_npc_changed"):
+		player.nearest_npc_changed.connect(_on_nearest_npc_changed)
+
+
+func _on_nearest_npc_changed(npc: NPC) -> void:
+	if npc:
+		interaction_prompt_show.emit(npc)
+	else:
+		interaction_prompt_hide.emit()
 
 
 ## Called by QuizWindow when answer is submitted

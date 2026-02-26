@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches Tier hat die längste Lebensdauer?"
+answers = PackedStringArray("Elefant", "Grönlandwal", "Schildkröte")
+correct_answer_index = 1
+category = "science"
+difficulty = 2
+hint = "Dieses Meerestier lebt über 200 Jahre!"
+explanation = "Der Grönlandwal kann über 200 Jahre alt werden - das ist länger als jedes andere Tier! Manche Wissenschaftler denken, dass sie sogar bis zu 400 Jahre alt werden können."
+reward_points = 20
+tags = PackedStringArray("animals", "marine", "lifespan", "records", "medium")

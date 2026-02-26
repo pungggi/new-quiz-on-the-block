@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wie heißt der größte Blutgefäß in deinem Körper?"
+answers = PackedStringArray("Herz", "Arterie", "Aorta")
+correct_answer_index = 2
+category = "science"
+difficulty = 2
+hint = "Dieses Gefäß kommt direkt vom Herzen!"
+explanation = "Die Aorta ist die größte Arterie in deinem Körper! Sie transportiert sauerstoffreiches Blut vom Herzen zu allen Teilen deines Körpers."
+reward_points = 20
+tags = PackedStringArray("biology", "human-body", "anatomy", "medium")

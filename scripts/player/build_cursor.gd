@@ -6,6 +6,8 @@ extends Node3D
 ## Casts a ray from the active Camera3D through the mouse position
 ## and snaps to the voxel grid. Click to place a building.
 
+const BuildingMeshGen := preload("res://scripts/visuals/building_mesh_generator.gd")
+
 signal building_placed(grid_position: Vector3i)
 
 # Visual references
@@ -38,7 +40,9 @@ const PLACE_DELAY: float = 0.30 # Seconds between continuous placements
 # Grid settings
 const VOXEL_SIZE: float = 1.0
 const PLACEMENT_HEIGHT: float = 1.0 # y=1 placement above grass at y=0
+const INFRASTRUCTURE_HEIGHT: float = 1.0 # y=1 on top of grass (mesh itself is only 0.15 high)
 const BUILDING_COLLISION_LAYER: int = 2 # Layer for placed buildings
+const PROP_COLLISION_LAYER: int = 8 # Layer for props
 
 # World bounds (3x3 chunks at 16x16 each = 48x48 units centered at origin)
 const WORLD_MIN_X: float = -24.0
@@ -57,6 +61,11 @@ var material_invalid: StandardMaterial3D
 var _preview_mesh: MeshInstance3D = null
 var _current_preview_building: BuildingData = null
 
+# Prop placement support
+var _selected_prop: PropData = null
+var _current_preview_prop: PropData = null
+var _prop_manager: Node = null
+
 func _ready() -> void:
 	# Add to group so UI can find us
 	add_to_group("build_cursor")
@@ -69,6 +78,10 @@ func _ready() -> void:
 
 	# Get BuildingManager
 	_building_manager = get_node_or_null("/root/BuildingManager")
+	_prop_manager = get_node_or_null("/root/PropManager")
+
+	# Connect to BuildingPanel prop selection (deferred)
+	call_deferred("_connect_prop_selection")
 
 	# Create buildings container
 	_buildings_root = Node3D.new()
@@ -81,6 +94,20 @@ func _ready() -> void:
 
 	# Hide cursor initially
 	visible = false
+
+
+func _connect_prop_selection() -> void:
+	await get_tree().process_frame
+	var panel: Node = get_tree().current_scene.get_node_or_null("UI/BuildingPanel")
+	if panel and panel.has_signal("prop_selected"):
+		panel.prop_selected.connect(_on_prop_selected)
+
+
+func _on_prop_selected(prop: PropData) -> void:
+	_selected_prop = prop
+	# Deselect building
+	if _building_manager:
+		_building_manager.deselect_building()
 
 ## Call this to block building input (e.g., when a dialog opens)
 func set_ui_blocking(blocking: bool) -> void:
@@ -99,17 +126,23 @@ func _unhandled_input(event: InputEvent) -> void:
 	if game_mode and not game_mode.is_build_mode():
 		return
 
-	# Escape to deselect building (exit build mode)
+	# Escape to deselect building or prop (exit build mode)
 	if event is InputEventKey:
 		if event.keycode == KEY_ESCAPE and event.pressed and not event.echo:
+			if _selected_prop:
+				_selected_prop = null
+				_is_mouse_held = false
+				visible = false
+				return
 			if _building_manager and _building_manager.selected_building:
 				_building_manager.deselect_building()
 				_is_mouse_held = false
 				visible = false
 				return
 
-	# Only handle build input if a building is selected
-	if not _building_manager or not _building_manager.selected_building:
+	# Only handle build input if a building or prop is selected
+	var has_selection: bool = (_building_manager and _building_manager.selected_building != null) or _selected_prop != null
+	if not has_selection:
 		return
 
 	# Track mouse button state for continuous building
@@ -182,6 +215,27 @@ func _find_camera() -> void:
 
 
 func _update_preview_mesh() -> void:
+	# Check if we're previewing a prop
+	if _selected_prop:
+		if _selected_prop == _current_preview_prop:
+			return
+		_clear_preview()
+		_current_preview_prop = _selected_prop
+		# Create prop preview mesh
+		var prop_mesh := PropMeshGenerator.generate(_selected_prop)
+		_preview_mesh = MeshInstance3D.new()
+		_preview_mesh.mesh = prop_mesh
+		var mat := StandardMaterial3D.new()
+		mat.vertex_color_use_as_albedo = true
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color = Color(1, 1, 1, 0.6)
+		_preview_mesh.material_override = mat
+		add_child(_preview_mesh)
+		return
+
+	# Otherwise preview building
+	if not _building_manager:
+		return
 	var selected: BuildingData = _building_manager.selected_building
 
 	# Only update if building changed
@@ -201,6 +255,7 @@ func _clear_preview() -> void:
 		_preview_mesh.queue_free()
 		_preview_mesh = null
 	_current_preview_building = null
+	_current_preview_prop = null
 
 
 func _process(delta: float) -> void:
@@ -214,10 +269,14 @@ func _process(delta: float) -> void:
 	if game_mode and not game_mode.is_build_mode():
 		visible = false
 		_clear_preview()
+		_selected_prop = null
 		return
 
-	# Hide cursor if no building is selected (allows NPC clicks)
-	if not _building_manager or not _building_manager.selected_building:
+	# Show cursor if either building or prop is selected
+	var has_building: bool = _building_manager and _building_manager.selected_building != null
+	var has_prop: bool = _selected_prop != null
+
+	if not has_building and not has_prop:
 		visible = false
 		_clear_preview()
 		return
@@ -313,7 +372,19 @@ func _update_cursor_position() -> void:
 	var grid_y: int
 	var grid_z: int
 
-	if hit_collider and hit_collider.is_in_group("placed_buildings"):
+	# Get selected building to determine placement rules
+	var selected_building: BuildingData = null
+	if _building_manager:
+		selected_building = _building_manager.selected_building
+
+	var is_infrastructure: bool = selected_building and selected_building.category == "infrastructure"
+
+	if is_infrastructure:
+		# Infrastructure (roads, sidewalks) - always place at ground level
+		grid_x = int(floor(hit_position.x))
+		grid_y = int(INFRASTRUCTURE_HEIGHT)
+		grid_z = int(floor(hit_position.z))
+	elif hit_collider and hit_collider.is_in_group("placed_buildings"):
 		# Hit a placed block - place adjacent block using normal
 		# Get the center of the hit block
 		var block_center: Vector3 = hit_collider.global_position
@@ -326,7 +397,7 @@ func _update_cursor_position() -> void:
 		grid_y = int(round(new_block_pos.y))
 		grid_z = int(round(new_block_pos.z - 0.5))
 	else:
-		# Hit terrain - place at ground level
+		# Hit terrain - place at normal building level
 		grid_x = int(floor(hit_position.x))
 		grid_y = int(PLACEMENT_HEIGHT)
 		grid_z = int(floor(hit_position.z))
@@ -371,22 +442,43 @@ func _is_placement_valid(grid_x: int, grid_y: int, grid_z: int) -> bool:
 				if cx == grid_x and cy == grid_y and cz == grid_z:
 					return false
 
+	# Check if position already has a prop
+	var props_root: Node = get_tree().current_scene.get_node_or_null("Props")
+	if props_root:
+		for child in props_root.get_children():
+			var child_node := child as Node3D
+			if child_node:
+				var px: int = int(floor(child_node.global_position.x))
+				var pz: int = int(floor(child_node.global_position.z))
+				if px == grid_x and pz == grid_z:
+					return false
+
 	return true
 
 func _place_building() -> void:
+	# Handle prop placement
+	if _selected_prop and _prop_manager:
+		var prop_pos := Vector3(
+			float(_current_grid_pos.x) + 0.5,
+			Config.GROUND_Y,
+			float(_current_grid_pos.z) + 0.5
+		)
+		var placed: StaticBody3D = _prop_manager.place_prop(prop_pos, _selected_prop, true)
+		if placed:
+			building_placed.emit(_current_grid_pos)
+		return
+
 	if not _buildings_root:
 		return
 
 	# Get selected building from manager
 	var building_data: BuildingData = null
-	var building_color := Color.CORAL
 
 	if _building_manager and _building_manager.selected_building:
 		building_data = _building_manager.selected_building
 		# Check if player can afford
 		if not _building_manager.try_place_building(_current_grid_pos):
 			return # Can't afford or not unlocked
-		building_color = building_data.color
 
 	# Create a StaticBody3D for collision (needed for stacking)
 	var building := StaticBody3D.new()
@@ -394,33 +486,81 @@ func _place_building() -> void:
 	building.collision_layer = BUILDING_COLLISION_LAYER
 	building.collision_mask = 0 # Doesn't need to detect anything
 
-	# Create mesh (tighter blocks - 1.0 size instead of 0.9)
+	# Create detailed mesh using BuildingMeshGen
 	var block_mesh := MeshInstance3D.new()
-	var box_mesh := BoxMesh.new()
-	box_mesh.size = Vector3(1.0, 1.0, 1.0) # Cube blocks, tight fit
-	block_mesh.mesh = box_mesh
+	block_mesh.name = "MeshInstance3D"
 
-	# Use building color from BuildingData or fallback to random
-	var mat := StandardMaterial3D.new()
 	if building_data:
-		mat.albedo_color = building_color
+		# Use procedural detailed mesh
+		block_mesh.mesh = BuildingMeshGen.generate(building_data)
+		# Store building data for save/load
+		building.set_meta("building_id", building_data.display_name)
 	else:
-		var colors := [Color.CORAL, Color.CORNFLOWER_BLUE, Color.GOLD, Color.MEDIUM_PURPLE, Color.TOMATO]
+		# Fallback to simple box
+		var box_mesh := BoxMesh.new()
+		box_mesh.size = Vector3(1.0, 1.0, 1.0)
+		block_mesh.mesh = box_mesh
+		var mat := StandardMaterial3D.new()
+		var colors := [Color.CORAL, Color.CORNFLOWER_BLUE, Color.GOLD]
 		mat.albedo_color = colors[randi() % colors.size()]
-	block_mesh.material_override = mat
+		block_mesh.material_override = mat
+
 	building.add_child(block_mesh)
 
-	# Create collision shape
+	# Create collision shape based on building size
 	var collision := CollisionShape3D.new()
 	var box_shape := BoxShape3D.new()
-	box_shape.size = Vector3(1.0, 1.0, 1.0)
+	var collision_size := Vector3(1.0, 1.0, 1.0)
+	if building_data:
+		collision_size = Vector3(building_data.size)
+	box_shape.size = collision_size
 	collision.shape = box_shape
+	# Center collision for multi-block buildings
+	collision.position = collision_size * 0.5 - Vector3(0.5, 0, 0.5)
 	building.add_child(collision)
 
-	# Position at grid location (centered)
+	# Position at grid location (centered for 1x1, corner for larger)
 	building.position = Vector3(_current_grid_pos.x + 0.5, _current_grid_pos.y, _current_grid_pos.z + 0.5)
 
 	_buildings_root.add_child(building)
+
+	# Set up window emission material (surface index 1) for night illumination
+	if building_data and building_data.category != "infrastructure":
+		var win_mat := StandardMaterial3D.new()
+		win_mat.vertex_color_use_as_albedo = true
+		win_mat.emission_enabled = false
+		win_mat.emission = building_data.secondary_color * 1.5
+		win_mat.emission_energy_multiplier = 1.5
+		block_mesh.set_surface_override_material(1, win_mat)
+		block_mesh.set_meta("has_window_surface", true)
+
+	# Attach lamp light for street lamp buildings
+	if building_data and building_data.display_name == "Straßenlampe":
+		var lamp := OmniLight3D.new()
+		lamp.name = "LampLight"
+		lamp.position = Vector3(0.5, 2.0, 0.5)
+		lamp.light_color = building_data.secondary_color
+		lamp.light_energy = 2.5
+		lamp.omni_range = 8.0
+		lamp.shadow_enabled = false
+		lamp.visible = false
+		building.add_child(lamp)
+		building.set_meta("is_street_lamp", true)
+
+	# Add interaction prompt label (starts invisible)
+	var prompt := Label3D.new()
+	prompt.name = "InteractionPrompt"
+	prompt.text = "[T] Erkunden"
+	var prompt_y: float = float(building_data.size.y) if building_data else 1.0
+	prompt.position = Vector3(0.5, prompt_y + 0.3, 0.5)
+	prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	prompt.modulate = Color(1, 0.95, 0.6, 0)  # alpha = 0 (invisible)
+	prompt.pixel_size = 0.01
+	prompt.outline_modulate = Color(0.1, 0.1, 0.1, 1)
+	building.add_child(prompt)
+
+	# Initialize building level (progression state)
+	building.set_meta("building_level", 0)
 
 	# Play pop-in animation
 	_play_building_pop_animation(building)
@@ -456,23 +596,29 @@ func _try_remove_block() -> void:
 	var ray_origin: Vector3 = camera.project_ray_origin(mouse_pos)
 	var ray_direction: Vector3 = camera.project_ray_normal(mouse_pos)
 
-	# Setup raycast - only hit buildings (layer 2)
+	# Setup raycast - hit buildings (layer 2) and props (layer 8)
 	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(
 		ray_origin,
 		ray_origin + ray_direction * 100.0
 	)
-	query.collision_mask = BUILDING_COLLISION_LAYER # Only buildings
+	query.collision_mask = BUILDING_COLLISION_LAYER | PROP_COLLISION_LAYER
 
 	var result: Dictionary = space_state.intersect_ray(query)
 
 	if result.is_empty():
 		return
 
-	# Get the collider (StaticBody3D building)
+	# Get the collider (StaticBody3D building or prop)
 	var collider: Node = result.get("collider")
 	if collider and collider.is_in_group("placed_buildings"):
 		collider.queue_free()
+	elif collider and collider.is_in_group("placed_props"):
+		var prop_manager: Node = get_node_or_null("/root/PropManager")
+		if prop_manager:
+			prop_manager.remove_prop(collider)
+		else:
+			collider.queue_free()
 
 
 func _spawn_placement_particles(pos: Vector3) -> void:

@@ -5,6 +5,7 @@ class_name NPC
 ##
 ## Clickable NPC that triggers a quiz when interacted with.
 ## Rewards education points for correct answers.
+## Can make campfires during night if configured.
 
 signal clicked(npc: NPC)
 signal quiz_completed(npc: NPC, was_correct: bool)
@@ -17,6 +18,7 @@ signal quiz_completed(npc: NPC, was_correct: bool)
 ## Reference to mesh for color updates
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 @onready var label_3d: Label3D = $Label3D
+@onready var interaction_prompt: Label3D = $InteractionPrompt
 
 ## Material for the NPC mesh (body material from build result)
 var _material: StandardMaterial3D
@@ -41,6 +43,20 @@ var _was_walking: bool = false
 var _walk_tween: Tween
 var _walk_range: float = 8.0
 
+## Idle animation
+var _idle_tween: Tween
+var _idle_timer: float = 0.0
+const IDLE_ANIM_INTERVAL_MIN: float = 1.5
+const IDLE_ANIM_INTERVAL_MAX: float = 4.0
+
+## Fire
+const FIRE_SCENE: PackedScene = preload("res://scenes/effects/campfire.tscn")
+var _campfire: Node3D = null
+var _can_make_fire: bool = false
+
+## Prompt animation
+var _prompt_tween: Tween
+
 
 func _ready() -> void:
 	add_to_group("npcs")
@@ -51,9 +67,13 @@ func _ready() -> void:
 	# Setup label with emoji
 	if label_3d and npc_data:
 		label_3d.text = "%s %s" % [npc_data.emoji, npc_data.display_name]
+		_can_make_fire = npc_data.can_make_fire
 
 	# Register with NPCManager (for NPCs placed in scene, not spawned)
 	_register_with_manager()
+
+	# Connect to day/night cycle
+	_connect_to_day_night_cycle()
 
 	# Play spawn animation
 	_play_spawn_animation()
@@ -61,6 +81,12 @@ func _ready() -> void:
 	# Initialize walking
 	_target_position = global_position
 	_pick_new_target()
+	
+	# Check if it's night and spawn fire if needed
+	call_deferred("_check_night_fire")
+
+	# Connect to NPCManager prompt signals
+	_connect_to_npc_manager_prompts()
 
 
 func _physics_process(delta: float) -> void:
@@ -88,6 +114,12 @@ func _physics_process(delta: float) -> void:
 		_is_walking = false
 		velocity = Vector3.ZERO
 
+		# Idle animation while waiting
+		_idle_timer -= delta
+		if _idle_timer <= 0:
+			_play_idle_animation()
+			_idle_timer = randf_range(IDLE_ANIM_INTERVAL_MIN, IDLE_ANIM_INTERVAL_MAX)
+
 		# Pick new target after waiting
 		_walk_timer -= delta
 		if _walk_timer <= 0:
@@ -95,6 +127,7 @@ func _physics_process(delta: float) -> void:
 
 	# Update walk animation based on movement
 	if _is_walking and not _was_walking:
+		_kill_idle_animation()
 		_start_walk_animation()
 	elif not _is_walking and _was_walking:
 		_stop_walk_animation()
@@ -102,7 +135,17 @@ func _physics_process(delta: float) -> void:
 
 
 func _pick_new_target() -> void:
-	# Random point within walk range from current position
+	# 30% chance to walk towards a building if any exist
+	var npc_manager: Node = get_node_or_null("/root/NPCManager")
+	if npc_manager and not npc_manager._building_positions.is_empty() and randf() < 0.3:
+		_pick_building_target(npc_manager._building_positions)
+		return
+
+	# Default: random point within walk range
+	_pick_random_target()
+
+
+func _pick_random_target() -> void:
 	var angle := randf() * TAU
 	var distance := randf_range(2.0, _walk_range)
 
@@ -111,13 +154,28 @@ func _pick_new_target() -> void:
 		Config.GROUND_Y,
 		global_position.z + sin(angle) * distance
 	)
+	_clamp_target_to_world()
+	_walk_timer = randf_range(2.0, 5.0)
 
-	# Clamp to world bounds using Config constants
+
+func _pick_building_target(building_positions: Array[Vector3]) -> void:
+	# Pick a random building and walk near it
+	var building_pos: Vector3 = building_positions[randi() % building_positions.size()]
+	var offset_angle := randf() * TAU
+	var offset_dist := randf_range(1.5, 4.0)
+
+	_target_position = Vector3(
+		building_pos.x + cos(offset_angle) * offset_dist,
+		Config.GROUND_Y,
+		building_pos.z + sin(offset_angle) * offset_dist
+	)
+	_clamp_target_to_world()
+	_walk_timer = randf_range(3.0, 7.0) # Stay longer near buildings
+
+
+func _clamp_target_to_world() -> void:
 	_target_position.x = clampf(_target_position.x, Config.WORLD_MIN_X + 0.5, Config.WORLD_MAX_X - 0.5)
 	_target_position.z = clampf(_target_position.z, Config.WORLD_MIN_Z + 0.5, Config.WORLD_MAX_Z - 0.5)
-
-	# Wait 2-5 seconds before moving again after reaching target
-	_walk_timer = randf_range(2.0, 5.0)
 
 
 func _play_spawn_animation() -> void:
@@ -163,6 +221,47 @@ func _stop_walk_animation() -> void:
 		if _body_parts.has(part_name):
 			var part: Node3D = _body_parts[part_name]
 			part.rotation_degrees.x = 0.0
+
+
+## Play a random idle animation while standing still
+func _play_idle_animation() -> void:
+	if _is_walking or _in_quiz:
+		return
+
+	_kill_idle_animation()
+
+	match randi() % 3:
+		0: # Look around - gentle rotation
+			_idle_tween = create_tween()
+			var look_angle := randf_range(-0.5, 0.5)
+			_idle_tween.tween_property(self, "rotation:y", rotation.y + look_angle, 0.8).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+			_idle_tween.tween_interval(randf_range(0.5, 1.5))
+			_idle_tween.tween_property(self, "rotation:y", rotation.y, 0.8).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+
+		1: # Head bob (uses head body part if available)
+			if _body_parts.has("head"):
+				var head: Node3D = _body_parts["head"]
+				_idle_tween = create_tween()
+				_idle_tween.tween_property(head, "rotation_degrees:x", -8.0, 0.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+				_idle_tween.tween_property(head, "rotation_degrees:x", 0.0, 0.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+
+		2: # Body sway - slight left-right rocking
+			_idle_tween = create_tween()
+			_idle_tween.tween_property(self, "rotation:z", 0.03, 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+			_idle_tween.tween_property(self, "rotation:z", -0.03, 1.2).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+			_idle_tween.tween_property(self, "rotation:z", 0.0, 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+
+
+## Kill any running idle animation and reset
+func _kill_idle_animation() -> void:
+	if _idle_tween and _idle_tween.is_valid():
+		_idle_tween.kill()
+	# Reset body sway
+	rotation.z = 0.0
+	# Reset head
+	if _body_parts.has("head"):
+		var head: Node3D = _body_parts["head"]
+		head.rotation_degrees.x = 0.0
 
 
 func _register_with_manager() -> void:
@@ -345,3 +444,101 @@ func get_reward_points() -> int:
 	if npc_data:
 		return npc_data.reward_points
 	return 10
+
+
+## Connect to day/night cycle signals
+func _connect_to_day_night_cycle() -> void:
+	var day_night_cycle: DayNightCycle = get_node_or_null("/root/Main/DayNightCycle")
+	if day_night_cycle:
+		if not day_night_cycle.night_started.is_connected(_on_night_started):
+			day_night_cycle.night_started.connect(_on_night_started)
+		if not day_night_cycle.night_ended.is_connected(_on_night_ended):
+			day_night_cycle.night_ended.connect(_on_night_ended)
+
+
+## Check if it's night and spawn fire
+func _check_night_fire() -> void:
+	var day_night_cycle: DayNightCycle = get_node_or_null("/root/Main/DayNightCycle")
+	if day_night_cycle and day_night_cycle.current_phase == DayNightCycle.DayPhase.NIGHT:
+		_on_night_started()
+
+
+## Called when night starts
+func _on_night_started() -> void:
+	if not _can_make_fire or _campfire != null:
+		return
+	
+	# Spawn campfire
+	_campfire = FIRE_SCENE.instantiate()
+	_campfire.position = Vector3(0.8, 0, 0.8) # Offset from NPC
+	add_child(_campfire)
+	
+	# Animate fire appearance
+	_campfire.scale = Vector3.ZERO
+	var tween := create_tween()
+	tween.tween_property(_campfire, "scale", Vector3.ONE, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+
+## Called when night ends
+func _on_night_ended() -> void:
+	if _campfire == null:
+		return
+	
+	# Animate fire disappearance
+	var tween := create_tween()
+	tween.tween_property(_campfire, "scale", Vector3.ZERO, 0.3).set_ease(Tween.EASE_IN)
+	tween.tween_callback(func() -> void:
+		if _campfire and is_instance_valid(_campfire):
+			_campfire.queue_free()
+		_campfire = null
+	)
+
+
+## Clean up fire on exit
+func _exit_tree() -> void:
+	if _campfire and is_instance_valid(_campfire):
+		_campfire.queue_free()
+		_campfire = null
+
+
+## --- Interaction Prompt ---
+
+func _connect_to_npc_manager_prompts() -> void:
+	var npc_manager: Node = get_node_or_null("/root/NPCManager")
+	if npc_manager:
+		if npc_manager.has_signal("interaction_prompt_show"):
+			npc_manager.interaction_prompt_show.connect(_on_prompt_show)
+		if npc_manager.has_signal("interaction_prompt_hide"):
+			npc_manager.interaction_prompt_hide.connect(_on_prompt_hide)
+
+
+func _on_prompt_show(npc: NPC) -> void:
+	if npc == self:
+		show_interaction_prompt()
+	else:
+		hide_interaction_prompt()
+
+
+func _on_prompt_hide() -> void:
+	hide_interaction_prompt()
+
+
+## Show interaction prompt with fade-in
+func show_interaction_prompt() -> void:
+	if not interaction_prompt:
+		return
+	if _prompt_tween and _prompt_tween.is_valid():
+		_prompt_tween.kill()
+	_prompt_tween = create_tween()
+	_prompt_tween.tween_property(interaction_prompt, "modulate:a", 1.0, 0.2)
+
+
+## Hide interaction prompt with fade-out
+func hide_interaction_prompt() -> void:
+	if not interaction_prompt:
+		return
+	if _prompt_tween and _prompt_tween.is_valid():
+		_prompt_tween.kill()
+	_prompt_tween = create_tween()
+	_prompt_tween.tween_property(interaction_prompt, "modulate:a", 0.0, 0.15)
+

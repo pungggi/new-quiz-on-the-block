@@ -35,6 +35,9 @@ enum ShapeType {CAPSULE, CYLINDER, BOX, SPHERE}
 ## Description shown in tooltip
 @export var description: String = "Ein freundlicher Lehrer."
 
+## Whether this NPC can make a campfire during night
+@export var can_make_fire: bool = false
+
 
 ## Get a formatted reward string
 func get_reward_text() -> String:

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches ist das heißeste Land der Welt?"
+answers = PackedStringArray("Australien", "Dschibuti", "Ägypten")
+correct_answer_index = 1
+category = "geography"
+difficulty = 2
+hint = "Es liegt in Afrika und ist ein sehr kleines Land!"
+explanation = "Dschibuti ist das heißeste Land der Welt mit Durchschnittstemperaturen von über 28°C! Es liegt am Roten Meer in Ostafrika."
+reward_points = 20
+tags = PackedStringArray("geography", "climate", "hot", "africa", "medium")

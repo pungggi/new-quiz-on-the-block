@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "In welchem Jahr fand die erste Mondlandung statt?"
+answers = PackedStringArray("1965", "1969", "1972")
+correct_answer_index = 1
+category = "history"
+difficulty = 1
+hint = "Es war in den 1960er Jahren!"
+explanation = "Die erste Mondlandung fand am 20. Juli 1969 statt! Neil Armstrong und Buzz Aldrin waren die ersten Menschen auf dem Mond."
+reward_points = 10
+tags = PackedStringArray("space", "history", "1960s", "astronauts", "easy")

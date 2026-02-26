@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welche Pflanze ist die größte Blume der Welt?"
+answers = PackedStringArray("Seerose", "Rafflesien", "Sonnenblume")
+correct_answer_index = 1
+category = "science"
+difficulty = 2
+hint = "Diese Blume riecht furchtbar und ist ein Parasit!"
+explanation = "Die Rafflesien hat die größten Blüten - bis zu 1 Meter Durchmesser! Sie ist eine seltene Parasitenplanze aus Südostasien."
+reward_points = 20
+tags = PackedStringArray("plants", "flowers", "nature", "records", "medium")

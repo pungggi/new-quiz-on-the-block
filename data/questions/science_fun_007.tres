@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welcher Vogel kann den längsten Flug machen ohne zu landen?"
+answers = PackedStringArray("Adler", "Albatros", "Schwan")
+correct_answer_index = 1
+category = "science"
+difficulty = 2
+hint = "Dieser Vogel segelt über dem Ozean und braucht kaum zu flügelschlagen!"
+explanation = "Der Albatros kann über 1.000 km ohne zu landen fliegen! Er nutzt Windströmungen zum Segeln und ist ein Meister des effizienten Fliegens."
+reward_points = 20
+tags = PackedStringArray("birds", "animals", "flying", "marine", "medium")

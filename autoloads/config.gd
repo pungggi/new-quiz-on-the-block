@@ -6,8 +6,8 @@ const CHUNK_HEIGHT: int = 32
 #endregion
 
 #region World Constants
-## Height at which entities stand on ground (feet touch Y=1.0 surface)
-const GROUND_Y: float = 0.7
+## Height at which entities stand on ground (top of terrain collision box)
+const GROUND_Y: float = 1.0
 
 ## World boundaries (3x3 chunks centered around origin)
 ## Chunk -1: x=-16 to -1, Chunk 0: x=0 to 15, Chunk 1: x=16 to 31
@@ -21,6 +21,7 @@ const WORLD_MAX_Z: float = 31.5
 const TERRAIN_COLLISION_LAYER: int = 1
 const BUILDING_COLLISION_LAYER: int = 2
 const NPC_COLLISION_LAYER: int = 4
+const PROP_COLLISION_LAYER: int = 8
 #endregion
 
 #region Voxel Types

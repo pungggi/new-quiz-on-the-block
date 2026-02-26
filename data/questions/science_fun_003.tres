@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches Tier kann seine Augen nicht bewegen?"
+answers = PackedStringArray("Schlange", "Eule", "Huhn")
+correct_answer_index = 0
+category = "science"
+difficulty = 2
+hint = "Dieses Reptil muss seinen ganzen Kopf drehen, um etwas zu sehen!"
+explanation = "Schlangen können ihre Augen nicht bewegen! Sie müssen ihren ganzen Kopf drehen, um in eine andere Richtung zu schauen. Das ist eine coole Anpassung!"
+reward_points = 20
+tags = PackedStringArray("animals", "reptiles", "anatomy", "medium")

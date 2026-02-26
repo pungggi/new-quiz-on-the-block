@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welche Wüste ist die größte der Welt?"
+answers = PackedStringArray("Gobi-Wüste", "Sahara", "Kalahari")
+correct_answer_index = 1
+category = "geography"
+difficulty = 1
+hint = "Sie liegt in Afrika und ist größer als ganz Europa!"
+explanation = "Die Sahara ist die größte Wüste der Welt mit über 9 Millionen Quadratkilometern! Sie erstreckt sich über viele afrikanische Länder."
+reward_points = 10
+tags = PackedStringArray("geography", "deserts", "africa", "easy")

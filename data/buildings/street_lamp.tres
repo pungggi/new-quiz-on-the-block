@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BuildingData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/building_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Straßenlampe"
+description = "Beleuchtet die Straßen bei Nacht."
+category = "infrastructure"
+size = Vector3i(1, 1, 1)
+cost = 5
+required_category = ""
+required_correct_answers = 0
+color = Color(0.55, 0.55, 0.6, 1)
+secondary_color = Color(0.95, 0.9, 0.6, 1)
+stackable = false
+population = 0
+education_bonus = 0.0
+income = 0

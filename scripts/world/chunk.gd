@@ -2,11 +2,19 @@ extends Node3D
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 
+var _grass_multimesh: MultiMeshInstance3D
+static var _detail_mesh: BoxMesh
+static var _detail_material: StandardMaterial3D
+
 var chunk_x: int = 0
 var chunk_z: int = 0
 
+## Collision body reference for rebuilding
+var _collision_body: StaticBody3D = null
+
 # Grass material (shared across all chunks)
 static var _grass_material: StandardMaterial3D
+
 
 func _ready() -> void:
 	_setup_material()
@@ -14,13 +22,47 @@ func _ready() -> void:
 	_add_collision()
 
 
+## Rebuild the chunk mesh after voxel data has changed
+func rebuild_mesh() -> void:
+	_build_mesh()
+	_rebuild_collision()
+
+
 func _setup_material() -> void:
 	# Create shared grass material only once
 	if not _grass_material:
 		_grass_material = StandardMaterial3D.new()
 		_grass_material.albedo_color = Color(0.33, 0.65, 0.25) # Fresh grass green
-		_grass_material.roughness = 0.9
+		_grass_material.roughness = 0.85
 		_grass_material.metallic = 0.0
+		
+		# Create a noise texture for details
+		var noise := FastNoiseLite.new()
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+		noise.frequency = 0.05
+		noise.fractal_octaves = 3
+		
+		var gradient := Gradient.new()
+		gradient.set_color(0, Color(0.8, 0.8, 0.8))
+		gradient.set_color(1, Color(1.1, 1.1, 1.1))
+		
+		var noise_texture := NoiseTexture2D.new()
+		noise_texture.noise = noise
+		noise_texture.seamless = true
+		noise_texture.color_ramp = gradient
+		
+		_grass_material.albedo_texture = noise_texture
+		_grass_material.uv1_triplanar = true
+		_grass_material.uv1_scale = Vector3(0.2, 0.2, 0.2)
+		
+		# Set up detail material and mesh
+		_detail_material = StandardMaterial3D.new()
+		_detail_material.albedo_color = Color(0.45, 0.85, 0.35)
+		_detail_material.roughness = 0.9
+		
+		_detail_mesh = BoxMesh.new()
+		_detail_mesh.size = Vector3(0.12, 0.25, 0.12)
+		_detail_mesh.material = _detail_material
 
 	mesh_instance.material_override = _grass_material
 
@@ -35,6 +77,8 @@ func _build_mesh() -> void:
 	
 	var size := Config.CHUNK_SIZE
 	var height := Config.CHUNK_HEIGHT
+	
+	var detail_transforms: Array[Transform3D] = []
 	
 	for x in range(size):
 		for z in range(size):
@@ -86,49 +130,66 @@ func _build_mesh() -> void:
 				st.set_normal(normal)
 				st.set_uv(Vector2(0, 1))
 				st.add_vertex(v4)
+				
+				# Add grass details
+				if voxel == Config.VoxelType.GRASS:
+					seed(hash(Vector3(base_x, top_y, base_z)))
+					var count := randi() % 4
+					for i in range(count):
+						var detail_pos := Vector3(
+							base_x + 0.5 + randf_range(-0.4, 0.4),
+							top_y + 0.125,
+							base_z + 0.5 + randf_range(-0.4, 0.4)
+						)
+						var t := Transform3D(Basis().rotated(Vector3.UP, randf_range(0, TAU)), detail_pos)
+						detail_transforms.append(t)
 	
 	var mesh: Mesh = st.commit()
 	mesh_instance.mesh = mesh
+	
+	_build_details(detail_transforms)
+
+func _build_details(transforms: Array[Transform3D]) -> void:
+	if not _grass_multimesh:
+		_grass_multimesh = MultiMeshInstance3D.new()
+		var multi_mesh := MultiMesh.new()
+		multi_mesh.transform_format = MultiMesh.TRANSFORM_3D
+		multi_mesh.mesh = _detail_mesh
+		_grass_multimesh.multimesh = multi_mesh
+		add_child(_grass_multimesh)
+	
+	_grass_multimesh.multimesh.instance_count = transforms.size()
+	for i in range(transforms.size()):
+		_grass_multimesh.multimesh.set_instance_transform(i, transforms[i])
+
 
 func _add_collision() -> void:
-	# Create a StaticBody3D for collision
-	var static_body := StaticBody3D.new()
-	static_body.collision_layer = Config.TERRAIN_COLLISION_LAYER
-	static_body.collision_mask = 0 # Don't collide with other bodies
-	
-	# Create a box collision shape covering the chunk
+	_collision_body = StaticBody3D.new()
+	_collision_body.collision_layer = Config.TERRAIN_COLLISION_LAYER
+	_collision_body.collision_mask = 0
+
 	var collision_shape := CollisionShape3D.new()
 	var box_shape := BoxShape3D.new()
 	box_shape.size = Vector3(Config.CHUNK_SIZE, 1.0, Config.CHUNK_SIZE)
 	collision_shape.shape = box_shape
-	
-	# Position the collision at y=1 (top of grass layer)
-	# Local position relative to the chunk node
-	# Center of the chunk in X and Z, and center of the 1-unit high block at Y=0.5 (since it's size 1)
-	# Wait, the mesh generation puts vertices at integer coordinates.
-	# A block at (x, 0, z) goes from x to x+1, 0 to 1, z to z+1.
-	# So the center of that block is x+0.5, 0.5, z+0.5.
-	# The chunk mesh is generated relative to the chunk node's position?
-	# Let's check _build_mesh again.
-	# var base_x := x + chunk_x * size
-	# var base_z := z + chunk_z * size
-	# It uses absolute world coordinates for vertices!
-	# But the chunk node itself is positioned at (0,0,0) in main.gd?
-	# In main.gd: chunk_root.add_child(chunk). No position set on chunk node.
-	# So the chunk node is at (0,0,0).
-	# The mesh vertices are offset by chunk_x * size.
-	
-	# So for the collision shape, we need to position it correctly in world space (since it's a child of chunk at 0,0,0).
-	# The collision box should cover the whole chunk area (size * size) at height 1 (y=0 to y=1).
-	# Center X = chunk_x * size + size / 2.0
-	# Center Z = chunk_z * size + size / 2.0
-	# Center Y = 0.5 (since it goes from 0 to 1)
-	
-	static_body.position = Vector3(
+
+	# Position collision at chunk center (y=0.5 for 1-unit tall box)
+	_collision_body.position = Vector3(
 		chunk_x * Config.CHUNK_SIZE + Config.CHUNK_SIZE / 2.0,
 		0.5,
 		chunk_z * Config.CHUNK_SIZE + Config.CHUNK_SIZE / 2.0
 	)
-	
-	static_body.add_child(collision_shape)
-	add_child(static_body)
+
+	_collision_body.add_child(collision_shape)
+	add_child(_collision_body)
+
+
+func _rebuild_collision() -> void:
+	# For now, collision is a simple box covering the chunk
+	# Future: Generate precise collision from voxel data
+	if _collision_body:
+		_collision_body.position = Vector3(
+			chunk_x * Config.CHUNK_SIZE + Config.CHUNK_SIZE / 2.0,
+			0.5,
+			chunk_z * Config.CHUNK_SIZE + Config.CHUNK_SIZE / 2.0
+		)

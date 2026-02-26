@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wie viele Herzen hat ein Oktopus?"
+answers = PackedStringArray("1", "2", "3")
+correct_answer_index = 2
+category = "science"
+difficulty = 1
+hint = "Es sind mehr als eines!"
+explanation = "Ein Oktopus hat 3 Herzen! Zwei Herzen pumpen Blut zu den Kiemen, das dritte Herz pumpt es zum Rest des Körpers. Kraken sind wirklich besondere Tiere!"
+reward_points = 10
+tags = PackedStringArray("animals", "marine", "octopus", "fun")

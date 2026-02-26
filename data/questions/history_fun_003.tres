@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welcher Dinosaurier war der größte, der jemals lebte?"
+answers = PackedStringArray("Tyrannosaurus Rex", "Triceratops", "Brachiosaurus")
+correct_answer_index = 2
+category = "history"
+difficulty = 1
+hint = "Sein Name bedeutet 'kurzer Arm Saurier'!"
+explanation = "Der Brachiosaurus war einer der größten Dinosaurier und konnte bis zu 25 Meter lang werden! Seine Vorderbeine waren besonders lang."
+reward_points = 10
+tags = PackedStringArray("dinosaurs", "prehistory", "animals", "records", "easy")

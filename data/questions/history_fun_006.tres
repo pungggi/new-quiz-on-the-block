@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welcher deutsche Dichter schrieb 'Der Erlkönig'?"
+answers = PackedStringArray("Friedrich Schiller", "Johann Wolfgang von Goethe", "Heinrich Heine")
+correct_answer_index = 1
+category = "history"
+difficulty = 2
+hint = "Er lebte in Weimar und schrieb auch Faust!"
+explanation = "Johann Wolfgang von Goethe schrieb 'Der Erlkönig' - ein berühmtes Gedicht über einen Vater und Sohn. Goethe ist einer der größten deutschen Dichter."
+reward_points = 20
+tags = PackedStringArray("literature", "german", "poetry", "classics", "medium")

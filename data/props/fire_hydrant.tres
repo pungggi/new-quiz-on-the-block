@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PropData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/prop_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Hydrant"
+description = "Ein roter Feuerwehrhydrant."
+prop_type = 9
+size = Vector3(0.2, 0.35, 0.2)
+primary_color = Color(0.75, 0.15, 0.1, 1)
+secondary_color = Color(0.5, 0.5, 0.55, 1)
+cost = 1
+placement_rule = 2
+min_distance_from_building = 0.3
+can_cluster = false
+category = "decoration"

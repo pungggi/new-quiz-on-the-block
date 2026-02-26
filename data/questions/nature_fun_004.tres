@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welche Pflanze ist giftig und wächst überall?"
+answers = PackedStringArray("Brennnessel", "Efeu", "Stechapfel")
+correct_answer_index = 2
+category = "science"
+difficulty = 2
+hint = "Alle Teile dieser Pflanze sind sehr giftig!"
+explanation = "Der Stechapfel ist eine der giftigsten Pflanzen Europas! Alle Teile sind giftig und man sollte sie nicht anfassen oder essen."
+reward_points = 20
+tags = PackedStringArray("plants", "poison", "dangerous", "nature", "medium")

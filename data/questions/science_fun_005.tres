@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches Tier läuft am schnellsten von allen Landtieren?"
+answers = PackedStringArray("Löwe", "Gepard", "Antilope")
+correct_answer_index = 1
+category = "science"
+difficulty = 1
+hint = "Dieses afrikanische Tier hat schwarze Tränenmarkierungen im Gesicht!"
+explanation = "Der Gepard kann bis zu 120 km/h schnell laufen! Damit ist es das schnellste Landtier. Geparden jagen mit ihrer Geschwindigkeit."
+reward_points = 10
+tags = PackedStringArray("animals", "speed", "africa", "predators", "easy")

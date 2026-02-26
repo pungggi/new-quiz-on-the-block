@@ -28,8 +28,33 @@ background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 2
 ambient_light_color = Color(0.7, 0.75, 0.8, 1)
-ambient_light_energy = 0.3
-tonemap_mode = 2
+ambient_light_sky_contribution = 0.5
+ambient_light_energy = 0.5
+tonemap_mode = 3
+tonemap_exposure = 1.15
+tonemap_white = 1.2
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 2.0
+ssao_power = 1.5
+ssil_enabled = true
+ssil_radius = 2.5
+ssil_intensity = 1.0
+sdfgi_enabled = true
+sdfgi_use_occlusion = true
+sdfgi_bounce_feedback = 0.4
+sdfgi_cascades = 4
+sdfgi_min_cell_size = 0.2
+sdfgi_y_scale = 1
+glow_enabled = true
+glow_bloom = 0.05
+glow_blend_mode = 1
+fog_enabled = true
+fog_light_color = Color(0.65, 0.75, 0.9, 1)
+fog_density = 0.0015
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.02
+volumetric_fog_albedo = Color(0.85, 0.9, 1, 1)
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_x8k2m")
@@ -40,6 +65,18 @@ environment = SubResource("Environment_1")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 10, 20, 10)
 shadow_enabled = true
+directional_shadow_split_1 = 0.05
+directional_shadow_split_2 = 0.15
+directional_shadow_split_3 = 0.3
+directional_shadow_blend_splits = true
+shadow_blur = 1.8
+
+[node name="MoonLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, 0.354, -0.354, 0, 0.707, 0.707, 0.5, -0.612, 0.612, 10, 20, 10)
+light_color = Color(0.7, 0.8, 1, 1)
+light_energy = 0.3
+shadow_enabled = true
+visible = false
 
 [node name="DayNightCycle" type="Node3D" parent="."]
 script = ExtResource("12_daynight")

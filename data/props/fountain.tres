@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PropData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/prop_data.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+display_name = "Brunnen"
+description = "Ein dekorativer Brunnen mit Wasserspiel."
+prop_type = 5
+size = Vector3(2, 1, 2)
+primary_color = Color(0.65, 0.63, 0.6, 1)
+secondary_color = Color(0.3, 0.55, 0.8, 1)
+cost = 8
+placement_rule = 0
+min_distance_from_building = 2.0
+can_cluster = false
+category = "decoration"

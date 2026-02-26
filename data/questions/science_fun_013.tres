@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welches Tier hat die besten Augen aller Landtiere?"
+answers = PackedStringArray("Falke", "Adler", "Habicht")
+correct_answer_index = 1
+category = "science"
+difficulty = 1
+hint = "Dieser Greifvogel kann von 1 km Entfernung ein Kaninchen sehen!"
+explanation = "Der Adler hat die beste Sehkraft aller Landtiere! Er kann aus großer Höhe Beute erkennen und fangen."
+reward_points = 10
+tags = PackedStringArray("birds", "animals", "senses", "predators", "easy")

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "In welchem Land gibt es die meisten Inseln der Welt?"
+answers = PackedStringArray("Indonesien", "Norwegen", "Schweden")
+correct_answer_index = 0
+category = "geography"
+difficulty = 2
+hint = "Es liegt in Südostasien und hat über 17.000 Inseln!"
+explanation = "Indonesien hat etwa 17.700 Inseln - mehr als jedes andere Land der Welt! Das längste Land der Welt von West nach Ost."
+reward_points = 20
+tags = PackedStringArray("geography", "islands", "asia", "medium")

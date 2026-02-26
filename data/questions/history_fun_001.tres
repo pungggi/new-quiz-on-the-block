@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welcher berühmte Erfinder war auch Künstler und arbeitete mit beiden Händen?"
+answers = PackedStringArray("Albert Einstein", "Leonardo da Vinci", "Isaac Newton")
+correct_answer_index = 1
+category = "history"
+difficulty = 2
+hint = "Er malte das berühmteste Lächeln der Welt!"
+explanation = "Leonardo da Vinci war nicht nur Künstler und Erfinder, sondern war auch beidhändig! Er malte die Mona Lisa und erfand viele Maschinen."
+reward_points = 20
+tags = PackedStringArray("history", "renaissance", "artists", "inventions", "fun")

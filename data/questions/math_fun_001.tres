@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wenn du einen Würfel rollst, wie viele Seiten hat er?"
+answers = PackedStringArray("4 Seiten", "6 Seiten", "8 Seiten")
+correct_answer_index = 1
+category = "math"
+difficulty = 1
+hint = "Denk an einen normalen Spielwürfel - wie viele Punkte-Seiten gibt es?"
+explanation = "Ein normaler Würfel hat 6 Seiten mit den Zahlen 1 bis 6. Deswegen heißt ein 6-seitiger Würfel auch 'Hexaeder'!"
+reward_points = 10
+tags = PackedStringArray("geometry", "dice", "counting", "fun")

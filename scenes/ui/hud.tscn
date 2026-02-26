@@ -55,25 +55,40 @@ custom_minimum_size = Vector2(50, 36)
 layout_mode = 2
 text = "🏆"
 
-[node name="TimePanel" type="PanelContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 1
+[node name="TopCenterContainer" type="HBoxContainer" parent="."]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -50.0
-offset_top = 12.0
-offset_right = 50.0
-offset_bottom = 44.0
+offset_left = -120.0
+offset_top = 16.0
+offset_right = 120.0
+offset_bottom = 56.0
 grow_horizontal = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="TimePanel" type="PanelContainer" parent="TopCenterContainer"]
+unique_name_in_owner = true
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stats")
 
-[node name="TimeLabel" type="Label" parent="TimePanel"]
+[node name="TimeLabel" type="Label" parent="TopCenterContainer/TimePanel"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "🌞 08:00"
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ModePanel" type="PanelContainer" parent="TopCenterContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ModeLabel" type="Label" parent="TopCenterContainer/ModePanel"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="StatsPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
@@ -160,17 +175,4 @@ text = "💡 Klicke auf einen NPC!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ModePanel" type="PanelContainer" parent="."]
-unique_name_in_owner = true
-layout_mode = 0
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -0.5
-offset_top = 10.0
-offset_right = 0.5
-offset_bottom = 23.0
 
-[node name="ModeLabel" type="Label" parent="ModePanel"]
-unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 1

@@ -136,3 +136,13 @@ alignment = 1
 
 [node name="RandomizeButton" type="Button" parent="Panel/VBox/ButtonRow"]
 layout_mode = 2
+text = "Zufällig"
+
+[node name="SaveButton" type="Button" parent="Panel/VBox/ButtonRow"]
+layout_mode = 2
+text = "Speichern"
+
+[node name="CancelButton" type="Button" parent="Panel/VBox/ButtonRow"]
+layout_mode = 2
+text = "Schließen"
+

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wie viele Knochen hat ein erwachsener Mensch?"
+answers = PackedStringArray("186 Knochen", "206 Knochen", "256 Knochen")
+correct_answer_index = 1
+category = "science"
+difficulty = 2
+hint = "Babys haben mehr Knochen, aber manche verwachsen!"
+explanation = "Ein erwachsener Mensch hat 206 Knochen! Babys werden mit etwa 300 Knochen geboren, aber viele verwachsen später zusammen."
+reward_points = 20
+tags = PackedStringArray("human-body", "anatomy", "bones", "biology", "medium")

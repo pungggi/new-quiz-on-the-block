@@ -4,8 +4,10 @@ extends Node
 ## Signals are organized by category for clarity.
 
 # --- World Events ---
+## Emitted by WorldManager when voxel data changes. Connected by ChunkManager.
 @warning_ignore("unused_signal")
 signal chunk_data_changed(chunk_x: int, chunk_z: int)
+## Request to spawn a chunk. Connected by ChunkManager.
 @warning_ignore("unused_signal")
 signal spawn_chunk_requested(chunk_x: int, chunk_z: int)
 
@@ -22,6 +24,12 @@ signal quiz_question_requested(player_id: int, category: String)
 signal quiz_answer_submitted(player_id: int, question_id: String, answer_index: int)
 @warning_ignore("unused_signal")
 signal quiz_result_received(player_id: int, was_correct: bool, reward: int)
+
+# --- Prop Events ---
+@warning_ignore("unused_signal")
+signal prop_placed(position: Vector3, prop_type: String)
+@warning_ignore("unused_signal")
+signal prop_removed(position: Vector3)
 
 # --- Player Events ---
 @warning_ignore("unused_signal")

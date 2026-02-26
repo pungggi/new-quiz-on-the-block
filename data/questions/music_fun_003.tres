@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Welcher berühmte Komponist war taub?"
+answers = PackedStringArray("Wolfgang Mozart", "Ludwig van Beethoven", "Johann Sebastian Bach")
+correct_answer_index = 1
+category = "music"
+difficulty = 2
+hint = "Er komponierte seine schönste Musik, nachdem er nicht mehr hören konnte!"
+explanation = "Ludwig van Beethoven wurde taub, aber er schrieb immer noch großartige Musik! Seine 9. Symphonie gehört zu den besten Werken der Klassik."
+reward_points = 20
+tags = PackedStringArray("music", "composers", "history", "inspiring", "medium")

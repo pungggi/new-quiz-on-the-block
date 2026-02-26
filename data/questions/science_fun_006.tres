@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="QuizQuestion" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quiz_question.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+question = "Wie viele Augen hat eine Spinne?"
+answers = PackedStringArray("2 Augen", "6 Augen", "8 Augen")
+correct_answer_index = 2
+category = "science"
+difficulty = 1
+hint = "Es sind mehr Augen als bei Menschen!"
+explanation = "Die meisten Spinnen haben 8 Augen! Das hilft ihnen, Beute zu sehen und Raubtiere zu erkennen. Spinnen sind wirklich interessante Tiere."
+reward_points = 10
+tags = PackedStringArray("animals", "insects", "spiders", "anatomy", "easy")
