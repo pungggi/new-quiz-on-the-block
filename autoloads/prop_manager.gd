@@ -215,7 +215,7 @@ func remove_prop(prop: StaticBody3D) -> void:
 
 	# Shrink-out animation then free
 	var tween := create_tween()
-	tween.tween_property(prop, "scale", Vector3.ZERO, 0.15).set_ease(Tween.EASE_IN)
+	tween.tween_property(prop, "scale", MIN_SCALE, 0.15).set_ease(Tween.EASE_IN)
 	tween.tween_callback(prop.queue_free)
 
 	prop_removed.emit(pos)
@@ -362,8 +362,14 @@ func _get_nature_props() -> Array[PropData]:
 	return nature
 
 
+## Smallest visible scale. Never use Vector3.ZERO for animations:
+## a zero-scale basis is non-invertible and spams "det == 0"
+## errors from engine math (physics/culling) on every affected node.
+const MIN_SCALE: Vector3 = Vector3(0.001, 0.001, 0.001)
+
+
 func _play_pop_animation(prop: Node3D) -> void:
-	prop.scale = Vector3.ZERO
+	prop.scale = MIN_SCALE
 	var tween := create_tween()
 	tween.tween_property(prop, "scale", Vector3(1.1, 1.1, 1.1), 0.12).set_ease(Tween.EASE_OUT)
 	tween.tween_property(prop, "scale", Vector3.ONE, 0.08).set_ease(Tween.EASE_IN_OUT)
