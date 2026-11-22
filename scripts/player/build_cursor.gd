@@ -44,11 +44,7 @@ const INFRASTRUCTURE_HEIGHT: float = 1.0 # y=1 on top of grass (mesh itself is o
 const BUILDING_COLLISION_LAYER: int = 2 # Layer for placed buildings
 const PROP_COLLISION_LAYER: int = 8 # Layer for props
 
-# World bounds (3x3 chunks at 16x16 each = 48x48 units centered at origin)
-const WORLD_MIN_X: float = -24.0
-const WORLD_MAX_X: float = 24.0
-const WORLD_MIN_Z: float = -24.0
-const WORLD_MAX_Z: float = 24.0
+# World build bounds derive from Config (auto-scale with world size)
 
 # Collision layer for terrain raycasting
 const TERRAIN_COLLISION_LAYER: int = 1 # Layer 1 for terrain
@@ -424,9 +420,9 @@ func _update_cursor_position() -> void:
 
 func _is_placement_valid(grid_x: int, grid_y: int, grid_z: int) -> bool:
 	# Check if within world bounds
-	if grid_x < WORLD_MIN_X or grid_x >= WORLD_MAX_X:
+	if grid_x < Config.WORLD_MIN_BLOCK or grid_x >= Config.WORLD_MAX_BLOCK:
 		return false
-	if grid_z < WORLD_MIN_Z or grid_z >= WORLD_MAX_Z:
+	if grid_z < Config.WORLD_MIN_BLOCK or grid_z >= Config.WORLD_MAX_BLOCK:
 		return false
 
 	# Check if position already has a building (must check X, Y, AND Z)

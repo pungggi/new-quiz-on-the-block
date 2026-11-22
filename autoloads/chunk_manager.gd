@@ -18,9 +18,6 @@ var _loaded_chunks: Dictionary = {}
 ## Parent node for all chunks
 var _chunk_root: Node3D = null
 
-## Default load radius (in chunks) around origin
-const DEFAULT_LOAD_RADIUS: int = 1
-
 
 func _ready() -> void:
 	# Connect to EventManager signals
@@ -33,8 +30,10 @@ func initialize(chunk_root: Node3D) -> void:
 	_chunk_root = chunk_root
 
 
-## Load initial chunks around origin (3x3 grid by default)
-func load_initial_chunks(radius: int = DEFAULT_LOAD_RADIUS) -> void:
+## Load initial chunks around origin (grid size derives from Config.WORLD_CHUNK_RADIUS)
+func load_initial_chunks(radius: int = -1) -> void:
+	if radius < 0:
+		radius = Config.WORLD_CHUNK_RADIUS
 	if not _chunk_root:
 		push_error("ChunkManager: No chunk root set. Call initialize() first.")
 		return

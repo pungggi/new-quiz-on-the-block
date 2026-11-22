@@ -71,6 +71,11 @@ var _last_mouse_position: Vector2 = Vector2.ZERO
 var _game_mode: Node
 
 func _ready() -> void:
+	if use_world_bounds:
+		world_min_x = Config.WORLD_MIN_X
+		world_max_x = Config.WORLD_MAX_X
+		world_min_z = Config.WORLD_MIN_Z
+		world_max_z = Config.WORLD_MAX_Z
 	_viewport = get_viewport()
 
 	# Wait for scene tree to be fully ready
