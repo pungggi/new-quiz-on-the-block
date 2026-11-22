@@ -154,10 +154,9 @@ func decorate_world() -> void:
 		push_warning("PropManager: No props root set. Call initialize() first.")
 		return
 
-	# A restored save already filled the records; don't scatter on top.
-	if not _prop_records.is_empty():
-		return
-
+	# A restored save already provides records for visited chunks; fill in
+	# records for any chunk that has none yet (world may have grown since
+	# the save was created).
 	var nature_props: Array[PropData] = _get_nature_props()
 	if nature_props.is_empty():
 		return
@@ -165,7 +164,9 @@ func decorate_world() -> void:
 	var world_r: int = Config.WORLD_CHUNK_RADIUS
 	for cx in range(-world_r, world_r + 1):
 		for cz in range(-world_r, world_r + 1):
-			_decorate_chunk(Vector2i(cx, cz), nature_props)
+			var chunk_key := Vector2i(cx, cz)
+			if not _prop_records.has(chunk_key):
+				_decorate_chunk(chunk_key, nature_props)
 
 	_spawn_props_for_loaded_chunks()
 
@@ -496,8 +497,12 @@ func _is_position_free(pos: Vector3) -> bool:
 	if _occupied_positions.has(key):
 		return false
 
-	# Also check if a building is already here (query Buildings node)
-	var buildings_root: Node = get_tree().current_scene.get_node_or_null("Buildings")
+	# Also check if a building is already here (query Buildings node).
+	# current_scene can be null during early _ready calls (e.g. headless).
+	var buildings_root: Node = null
+	var scene: Node = get_tree().current_scene
+	if scene:
+		buildings_root = scene.get_node_or_null("Buildings")
 	if buildings_root:
 		for child in buildings_root.get_children():
 			var child_node := child as Node3D
