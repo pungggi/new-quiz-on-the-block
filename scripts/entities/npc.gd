@@ -111,10 +111,8 @@ func _physics_process(delta: float) -> void:
 	if direction.length() > 0.5:
 		_is_walking = true
 		direction = direction.normalized()
-		# Wade through shallow water, swim once it gets deep
-		var deep: bool = WorldManager.water_depth(int(floor(global_position.x)), int(floor(global_position.z))) >= Config.SWIM_DEPTH
-		if deep != _swimming:
-			_set_swimming(deep)
+		# Wade through shallow water, paddle once it gets deep
+		_swimming = WorldManager.is_deep_water_at(global_position)
 
 		velocity = direction * _walk_speed * (SWIM_SPEED_FACTOR if _swimming else 1.0)
 
@@ -127,7 +125,7 @@ func _physics_process(delta: float) -> void:
 		# Follow the terrain surface: water beds slope below the water
 		# line, so wading characters stand IN the water and swimmers
 		# naturally disappear under the surface.
-		var ground_y: float = WorldManager.surface_y(int(floor(global_position.x)), int(floor(global_position.z)))
+		var ground_y: float = WorldManager.surface_y_at(global_position)
 		position.y = lerpf(position.y, ground_y, delta * 8.0)
 
 		# Stuck detector: a head-on hit on a tree has no slide direction,
@@ -165,12 +163,6 @@ func _physics_process(delta: float) -> void:
 		_stop_walk_animation()
 	_was_walking = _is_walking
 	_last_position = global_position
-
-
-## Enter/leave swim mode: deep water slows the paddling. The body sinking
-## below the surface comes naturally from following the lowered bed.
-func _set_swimming(active: bool) -> void:
-	_swimming = active
 
 
 func _pick_new_target() -> void:

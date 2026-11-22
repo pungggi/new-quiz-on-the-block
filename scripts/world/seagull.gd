@@ -8,8 +8,6 @@ extends Node3D
 
 enum State { CIRCLE, DIVE, CLIMB }
 
-## Water line (must match WorldManager.WATER_SURFACE_MAX_Y)
-const WATER_Y: float = 1.35
 const DIVE_TIME: float = 1.15
 const CLIMB_TIME: float = 1.7
 const CARRY_TIME: float = 3.5
@@ -118,7 +116,7 @@ func _circle(delta: float) -> void:
 
 func _begin_dive() -> void:
 	_dive_start = global_position
-	_dive_target = Vector3(global_position.x, WATER_Y + 0.05, global_position.z)
+	_dive_target = Vector3(global_position.x, WorldManager.WATER_SURFACE_MAX_Y + 0.05, global_position.z)
 	_t = 0.0
 	state = State.DIVE
 

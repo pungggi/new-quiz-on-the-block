@@ -184,23 +184,12 @@ func _voxel_color(voxel: int) -> Color:
 func _add_column_sides(st: SurfaceTool, base_x: int, base_z: int, surf: float) -> void:
 	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 	for d: Vector2i in dirs:
-		var nx: int = base_x + d.x
-		var nz: int = base_z + d.y
-		var ns: float = _neighbor_surface(nx, nz)
+		var ns: float = _neighbor_surface(base_x + d.x, base_z + d.y)
 		if ns >= surf - 0.02:
 			continue
 		# Cliff walls read as stone, shallow steps as dirt
 		var wall_color: Color = _voxel_color(Config.VoxelType.STONE) if surf - ns > 2.0 else _voxel_color(Config.VoxelType.DIRT)
-		var y0: float = ns
-		var y1: float = surf
-		if d.x == 1:
-			_add_quad(st, Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(base_x + 1, y1, base_z), Vector3(1, 0, 0), wall_color)
-		elif d.x == -1:
-			_add_quad(st, Vector3(base_x, y0, base_z + 1), Vector3(base_x, y0, base_z), Vector3(base_x, y1, base_z), Vector3(base_x, y1, base_z + 1), Vector3(-1, 0, 0), wall_color)
-		elif d.y == 1:
-			_add_quad(st, Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x, y0, base_z + 1), Vector3(base_x, y1, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(0, 0, 1), wall_color)
-		else:
-			_add_quad(st, Vector3(base_x, y0, base_z), Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y1, base_z), Vector3(base_x, y1, base_z), Vector3(0, 0, -1), wall_color)
+		_add_wall(st, base_x, base_z, d, ns, surf, wall_color)
 
 
 ## Water edge walls: wherever water borders land (or the world rim), add
@@ -216,16 +205,20 @@ func _add_water_sides(water_st: SurfaceTool, base_x: int, base_z: int, water_y: 
 		var ns: float = _neighbor_surface(nx, nz)
 		if ns >= water_y - 0.02:
 			continue
-		var y0: float = ns
-		var y1: float = water_y
-		if d.x == 1:
-			_add_quad(water_st, Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(base_x + 1, y1, base_z), Vector3(1, 0, 0), Color.WHITE)
-		elif d.x == -1:
-			_add_quad(water_st, Vector3(base_x, y0, base_z + 1), Vector3(base_x, y0, base_z), Vector3(base_x, y1, base_z), Vector3(base_x, y1, base_z + 1), Vector3(-1, 0, 0), Color.WHITE)
-		elif d.y == 1:
-			_add_quad(water_st, Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x, y0, base_z + 1), Vector3(base_x, y1, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(0, 0, 1), Color.WHITE)
-		else:
-			_add_quad(water_st, Vector3(base_x, y0, base_z), Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y1, base_z), Vector3(base_x, y1, base_z), Vector3(0, 0, -1), Color.WHITE)
+		_add_wall(water_st, base_x, base_z, d, ns, water_y, Color.WHITE)
+
+
+## One vertical quad on the boundary plane towards direction d, spanning
+## y0..y1. Shared by opaque terrain walls and translucent water edges.
+func _add_wall(st: SurfaceTool, base_x: int, base_z: int, d: Vector2i, y0: float, y1: float, color: Color) -> void:
+	if d.x == 1:
+		_add_quad(st, Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(base_x + 1, y1, base_z), Vector3(1, 0, 0), color)
+	elif d.x == -1:
+		_add_quad(st, Vector3(base_x, y0, base_z + 1), Vector3(base_x, y0, base_z), Vector3(base_x, y1, base_z), Vector3(base_x, y1, base_z + 1), Vector3(-1, 0, 0), color)
+	elif d.y == 1:
+		_add_quad(st, Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x, y0, base_z + 1), Vector3(base_x, y1, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(0, 0, 1), color)
+	else:
+		_add_quad(st, Vector3(base_x, y0, base_z), Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y1, base_z), Vector3(base_x, y1, base_z), Vector3(0, 0, -1), color)
 
 
 ## Neighbor column surface; outside the world the ground drops to 0 so the

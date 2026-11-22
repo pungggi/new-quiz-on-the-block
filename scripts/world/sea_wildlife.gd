@@ -10,9 +10,6 @@ extends Node3D
 
 const GULL_COUNT: int = 4
 const FISH_COUNT: int = 6
-## Water line (must match WorldManager.WATER_SURFACE_MAX_Y)
-const WATER_Y: float = 1.35
-
 ## Ocean strip (east side of the world). terrain_column() still validates
 ## every spot so the river mouth and the beach are never hit by accident.
 ## Homes stay this far from the strip edges so the whole circle (+ radius)
@@ -105,7 +102,7 @@ static func _box(size: Vector3, mat: StandardMaterial3D, pos: Vector3 = Vector3.
 func _random_home() -> Vector3:
 	return Vector3(
 		float(randi_range(OCEAN_X_MIN, OCEAN_X_MAX)) + 0.5,
-		WATER_Y,
+		WorldManager.WATER_SURFACE_MAX_Y,
 		clampf(_anchor_z + randf_range(-18.0, 18.0), Z_MIN, Z_MAX)
 	)
 
@@ -127,7 +124,7 @@ func random_ocean_pos(z_spread: float = 25.0) -> Vector3:
 		var z: int = int(round(clampf(_anchor_z + randf_range(-z_spread, z_spread), Z_MIN, Z_MAX)))
 		var col: Dictionary = WorldManager.terrain_column(x, z)
 		if col["water"]:
-			return Vector3(float(x) + 0.5, WATER_Y, float(z) + 0.5)
+			return Vector3(float(x) + 0.5, WorldManager.WATER_SURFACE_MAX_Y, float(z) + 0.5)
 	return _random_home()
 
 

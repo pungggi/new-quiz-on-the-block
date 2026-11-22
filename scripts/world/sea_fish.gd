@@ -6,8 +6,6 @@ extends Node3D
 ## Purely visual - picks its own spot over open water via SeaWildlife.
 
 
-## Water line (must match WorldManager.WATER_SURFACE_MAX_Y)
-const WATER_Y: float = 1.35
 const JUMP_TIME: float = 0.85
 const JUMP_PEAK: float = 1.0
 
@@ -86,7 +84,7 @@ func _jump_step(delta: float) -> void:
 		return
 	global_position = _start_pos.lerp(_end_pos, _t) + Vector3(
 		0.0,
-		(WATER_Y - 0.35) + 4.0 * JUMP_PEAK * _t * (1.0 - _t),
+		(WorldManager.WATER_SURFACE_MAX_Y - 0.35) + 4.0 * JUMP_PEAK * _t * (1.0 - _t),
 		0.0
 	)
 	rotation.z = -_t * 5.5 # playful tumble around the jump
@@ -98,7 +96,7 @@ func _end_jump() -> void:
 	rotation.z = 0.0
 	var manager := get_parent() as SeaWildlife
 	if manager:
-		manager.splash(Vector3(global_position.x, WATER_Y, global_position.z), 0.6)
+		manager.splash(Vector3(global_position.x, WorldManager.WATER_SURFACE_MAX_Y, global_position.z), 0.6)
 	_timer = randf_range(0.5, 1.5) * jump_interval
 
 

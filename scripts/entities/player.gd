@@ -125,10 +125,8 @@ func _physics_process(delta: float) -> void:
 
 			# Calculate movement direction relative to camera
 			var direction := (forward * input_dir.y + right * input_dir.x).normalized()
-			# Wade through shallow water, swim once it gets deep
-			var deep: bool = WorldManager.water_depth(int(floor(global_position.x)), int(floor(global_position.z))) >= Config.SWIM_DEPTH
-			if deep != _swimming:
-				_set_swimming(deep)
+			# Wade through shallow water, paddle once it gets deep
+			_swimming = WorldManager.is_deep_water_at(global_position)
 			var speed: float = WALK_SPEED * (SWIM_SPEED_FACTOR if _swimming else 1.0)
 			velocity.x = direction.x * speed
 			velocity.z = direction.z * speed
@@ -163,12 +161,6 @@ func _physics_process(delta: float) -> void:
 	# Update nearest NPC and building
 	_update_nearest_npc()
 	_update_nearest_building()
-
-
-## Enter/leave swim mode: deep water slows the paddling. The body sinking
-## below the surface comes naturally from following the lowered bed.
-func _set_swimming(active: bool) -> void:
-	_swimming = active
 
 
 func _create_blocky_person() -> void:

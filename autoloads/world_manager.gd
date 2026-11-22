@@ -106,6 +106,16 @@ func surface_y(world_x: int, world_z: int) -> float:
 	return maxf(bed, 0.1)
 
 
+## Position-based helpers so the rounding from world position to column
+## index lives in exactly one place (used by NPC and Player).
+func is_deep_water_at(pos: Vector3) -> bool:
+	return water_depth(int(floor(pos.x)), int(floor(pos.z))) >= Config.SWIM_DEPTH
+
+
+func surface_y_at(pos: Vector3) -> float:
+	return surface_y(int(floor(pos.x)), int(floor(pos.z)))
+
+
 func _generate_flat_terrain() -> void:
 	# Only the spawn area: chunks are created lazily by ChunkManager.load_chunk()
 	# while streaming, which keeps startup fast for large WORLD_CHUNK_RADIUS values.
