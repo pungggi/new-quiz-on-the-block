@@ -2,6 +2,31 @@
 
 > Get access to beta/dev versions exclusively on the [Discord server](/docs/update-guide).
 
+## 0.3.3
+
+- Add optional Streamable HTTP transport to the Python MCP adapter
+- Update MCP SDKs and maintain compatibility with older MCP clients
+- Fix editor shutdown crashes and headless import shutdown
+- Fix runtime debugger capture lifecycle
+- Fix runtime configuration memory leak
+
+## 0.3.2
+
+- Auto-enable runtime plugin
+- Improve performance of runtime tools
+- Update `get_open_scripts` to only return script paths
+- Improve `get_scene_tree` tool
+- Add running scene inspection for `get_scene_tree` tool
+- Add running scene inspection for `get_node_properties` tool
+- Add `search_nodes` tool
+- Add `get_node_properties` tool
+
+## 0.3.1
+
+- Improve `execute_editor_script` with static types
+- Improve `get_godot_errors` and add .NET build errors/output
+- Added support for macOS 10.15+
+
 ## 0.3.0
 
 - Update `move_node` to be able to move node to specific index
