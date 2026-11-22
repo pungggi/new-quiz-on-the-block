@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://cfkhqojsqa3ts"]
+[gd_scene format=3 uid="uid://cfkhqojsqa3ts"]
 
 [ext_resource type="Script" uid="uid://cri377hjtrex8" path="res://scripts/ui/main_menu.gd" id="1_script"]
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=181274112]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1259420205]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,7 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.15, 0.2, 0.25, 1)
 
-[node name="VBox" type="VBoxContainer" parent="."]
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1112028153]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -35,77 +35,77 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="VBox"]
+[node name="Title" type="Label" parent="VBox" unique_id=44976349]
 layout_mode = 2
 theme_override_font_sizes/font_size = 42
 text = "🏘️ New Quiz on the Block"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="VBox"]
+[node name="Subtitle" type="Label" parent="VBox" unique_id=2041418597]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
 theme_override_font_sizes/font_size = 18
 text = "Lerne und baue deine Stadt!"
 horizontal_alignment = 1
 
-[node name="Spacer1" type="Control" parent="VBox"]
+[node name="Spacer1" type="Control" parent="VBox" unique_id=1970452611]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
-[node name="ProfileInfoLabel" type="Label" parent="VBox"]
+[node name="ProfileInfoLabel" type="Label" parent="VBox" unique_id=936543062]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "🦊 Spieler | 1. Klasse | 100 🎓"
 horizontal_alignment = 1
 
-[node name="Spacer2" type="Control" parent="VBox"]
+[node name="Spacer2" type="Control" parent="VBox" unique_id=2039400905]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="PlayButton" type="Button" parent="VBox"]
+[node name="PlayButton" type="Button" parent="VBox" unique_id=1913873778]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "▶️  Spielen"
 
-[node name="ProfilesButton" type="Button" parent="VBox"]
+[node name="ProfilesButton" type="Button" parent="VBox" unique_id=467369156]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "👤  Profile verwalten"
 
-[node name="CharacterButton" type="Button" parent="VBox"]
+[node name="CharacterButton" type="Button" parent="VBox" unique_id=865655894]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "🎨  Charakter"
 
-[node name="SettingsButton" type="Button" parent="VBox"]
+[node name="SettingsButton" type="Button" parent="VBox" unique_id=1605974258]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "⚙️  Einstellungen"
 
-[node name="CreditsButton" type="Button" parent="VBox"]
+[node name="CreditsButton" type="Button" parent="VBox" unique_id=1733459982]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "ℹ️  Credits"
 
-[node name="QuitButton" type="Button" parent="VBox"]
+[node name="QuitButton" type="Button" parent="VBox" unique_id=1369484102]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "🚪  Beenden"
 
-[node name="VersionLabel" type="Label" parent="."]
+[node name="VersionLabel" type="Label" parent="." unique_id=1624893900]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2

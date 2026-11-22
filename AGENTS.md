@@ -80,11 +80,11 @@ var nodes := get_children()  # Array (untyped)
 # ⚠️ GEFAHR: Alle Instanzen teilen dasselbe Material!
 @export var material: StandardMaterial3D
 func change_color() -> void:
-    material.albedo_color = Color.RED  # ALLE werden rot!
+	material.albedo_color = Color.RED  # ALLE werden rot!
 
 # ✅ FIX 1: In _ready() duplizieren
 func _ready() -> void:
-    material = material.duplicate()
+	material = material.duplicate()
 
 # ✅ FIX 2: Im Editor "resource_local_to_scene = true" setzen
 ```
@@ -94,10 +94,10 @@ func _ready() -> void:
 ```gdscript
 # ⚠️ Funktion mit await MUSS Rückgabetyp haben!
 func do_something():  # ❌ Kein Rückgabetyp = Probleme
-    await get_tree().process_frame
+	await get_tree().process_frame
 
 func do_something() -> void:  # ✅ RICHTIG
-    await get_tree().process_frame
+	await get_tree().process_frame
 ```
 
 ### 5.6 queue_free() Timing
@@ -111,7 +111,7 @@ print(node)  # Noch da bis Frame-Ende!
 # ✅ Nach Timer/Tween ist is_instance_valid() sicher:
 await get_tree().create_timer(1.0).timeout
 if is_instance_valid(node):
-    node.do_something()  # Sicher
+	node.do_something()  # Sicher
 ```
 
 ### 5.7 Collision Layers vs Masks
@@ -129,14 +129,14 @@ collision_mask = Config.BUILDING_COLLISION_LAYER
 ```gdscript
 # ⚠️ Visuelle Updates in _physics_process = Stottern!
 func _physics_process(delta: float) -> void:
-    sprite.rotation += delta  # ❌ Kann ruckeln
+	sprite.rotation += delta  # ❌ Kann ruckeln
 
 # ✅ RICHTIG - Trennung
 func _process(delta: float) -> void:
-    sprite.rotation += delta  # Visuals hier
+	sprite.rotation += delta  # Visuals hier
 
 func _physics_process(delta: float) -> void:
-    move_and_slide()  # Physik hier
+	move_and_slide()  # Physik hier
 ```
 
 ### 5.9 Debug-Output in Production
@@ -152,7 +152,7 @@ push_error("Critical failure!")
 # ✅ ODER - Debug-Flag verwenden
 const DEBUG := false
 if DEBUG:
-    print("Debug info")
+	print("Debug info")
 ```
 
 ### 5.10 Autoload-Reihenfolge
@@ -163,8 +163,8 @@ if DEBUG:
 
 # ✅ FIX: Verzögern
 func _ready() -> void:
-    await get_tree().process_frame
-    var other = OtherAutoload  # Jetzt sicher
+	await get_tree().process_frame
+	var other = OtherAutoload  # Jetzt sicher
 ```
 
 ### 5.11 Typ-Inferenz mit Ternary/Variant
@@ -183,11 +183,11 @@ var my_val: float = float(data.size) if data else 1.0
 ```gdscript
 # ❌ ERZEUGT WARNUNG: Variable wird nicht genutzt.
 func do_something(val1: int, val2: String) -> void:
-    print(val1)
+	print(val1)
 
 # ✅ RICHTIG: Unbenutzte Parameter mit Unterstrich präfixen.
 func do_something(val1: int, _val2: String) -> void:
-    print(val1)
+	print(val1)
 ```
 
 ### 5.13 Globale Klassen (`class_name`) nicht preloaden
@@ -231,7 +231,7 @@ To ensure maximum efficiency and avoid errors during implementation:
 
 # 🔌 GD-AI-MCP Standards (Virtual Tooling)
 
-Although running in Augment, we adhere to the strict verification logic of the **Godot AI Model Context Protocol**. You must simulate the usage of these functions to ensure code quality:
+We adhere to the strict verification logic of the **Godot AI Model Context Protocol**. You must simulate the usage of these functions to ensure code quality:
 
 ## Core MCP Capabilities & Rules
 
@@ -312,3 +312,41 @@ _Trigger: When asked "What next?" or "How do we start?"._
   1. Review the current project state.
   2. Propose the next logical sub-task.
   3. Delegate conceptually to the Architect or Developer roles by suggesting the user asks for a plan or code.
+
+
+## 9. 🤖 KI-gestützter Workflow (GDAI MCP)
+
+Grundlagen und Quellen: `docs/research/godot-gdai-mcp-ai-workflows.md`.
+
+### 9.1 Der 4-Stufen-Loop
+
+Jede KI-gestützte Änderung folgt: **Intent → Edit → Run → Feedback**.
+
+- **Kontext vor Edit:** Vor strukturellen Änderungen echte Szene/Daten abfragen (`get_scene_tree`, `get_scene_file_content`, `view_script`), nicht raten.
+- **Feedback nach Edit:** Nach jedem nicht-trivialen Change `play_scene` + `get_godot_errors`; bei visuellen Features zusätzlich Screenshot.
+- **Nicht stoppen bei "Datei geschrieben":** Erst ein kompletter Lauf mit Fehler-Suche macht aus Code ein funktionierendes Feature.
+
+### 9.2 Godot-4-Drift-Check (Pflicht vor jeder KI-Ausgabe)
+
+1. `@` vor `export`/`onready` vorhanden? Ohne `@` = Godot 3.
+2. `move_and_slide()` **ohne** Argumente (liest `velocity`/`up_direction`).
+3. `connect(...)` mit Callable, nicht mit Methoden-String.
+4. `CharacterBody2D`/`Node3D` statt `KinematicBody2D`/`Spatial`.
+5. Alle referenzierten Klassen/Methoden in der Class Reference der genutzten Version vorhanden?
+6. Läuft die Szene? Ohne Lauf zählt nichts.
+
+**Prompting:** Version immer nennen ("Godot 4.7.2, GDScript strict typed"), echtes Projektbeispiel mitschicken, Annahmen benennen lassen.
+
+### 9.3 GDAI MCP Sicherheitsregeln
+
+- **Least Privilege:** `gdai_mcp_project_config.json` mit `GDAI_DISABLE_*` auf den benötigten Tool-Satz reduzieren; `execute_editor_script` und `delete_*` defaultmäßig aus.
+- **Human-in-the-Loop:** `delete_scene`, `delete_node`, `execute_editor_script`, `edit_file` nie auto-approve; volle Parameter anzeigen.
+- **MCP-Server pinnen:** Per URL/Kommando allowlisten, Version pinnen, bei Änderung neu reviewen; repo-declared `.mcp.json` manuell prüfen.
+- **HTTP nur localhost:** `127.0.0.1`, nicht `0.0.0.0`, außer bewusste Netzwerk-Entscheidung.
+- **Frische Session nach untrusted Tool-Output** statt Compaction, wenn Rollen/Regeln erhalten bleiben müssen.
+
+### 9.4 Verifikation
+
+- **Pr:** `godot --headless --check-only` + Linter/Formatter (z.B. godot-gdscript-toolkit) + Suche nach `SCRIPT ERROR` (Exit-Code nicht trauen).
+- **Post-Edit:** `play_scene` → `get_godot_errors` → optional Screenshot/`simulate_input`.
+- **Nicht delegieren:** Szenen-Ownership, Performance ohne Profiler-Beweis, Shader ohne Render-Check, Code den der Entwickler nicht erklären kann.

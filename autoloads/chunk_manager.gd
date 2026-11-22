@@ -26,6 +26,10 @@ const STREAM_TICK: float = 0.25
 ## panning never produces frame spikes)
 const MAX_LOADS_PER_TICK: int = 2
 
+## Emitted when streaming loads/unloads a chunk (props/NPCs can react)
+signal chunk_became_loaded(chunk_x: int, chunk_z: int)
+signal chunk_became_unloaded(chunk_x: int, chunk_z: int)
+
 ## Currently loaded chunks: Key = Vector2i(chunk_x, chunk_z), Value = Chunk node
 var _loaded_chunks: Dictionary = {}
 
@@ -145,6 +149,7 @@ func load_chunk(chunk_x: int, chunk_z: int) -> Node3D:
 
 	_chunk_root.add_child(chunk)
 	_loaded_chunks[key] = chunk
+	chunk_became_loaded.emit(chunk_x, chunk_z)
 
 	return chunk
 
@@ -159,6 +164,7 @@ func unload_chunk(chunk_x: int, chunk_z: int) -> void:
 	var chunk: Node3D = _loaded_chunks[key]
 	chunk.queue_free()
 	_loaded_chunks.erase(key)
+	chunk_became_unloaded.emit(chunk_x, chunk_z)
 
 
 ## Rebuild a chunk's mesh (after voxel data changed)
@@ -177,6 +183,21 @@ func rebuild_chunk(chunk_x: int, chunk_z: int) -> void:
 ## Check if a chunk is loaded
 func is_chunk_loaded(chunk_x: int, chunk_z: int) -> bool:
 	return _loaded_chunks.has(Vector2i(chunk_x, chunk_z))
+
+
+## Check whether a world position currently has a loaded chunk beneath it
+func is_position_loaded(pos: Vector3) -> bool:
+	var key := Vector2i(
+		floori(pos.x / float(Config.CHUNK_SIZE)),
+		floori(pos.z / float(Config.CHUNK_SIZE)))
+	return _loaded_chunks.has(key)
+
+
+## Center of the streamed area (follow target position, e.g. camera rig)
+func get_stream_center() -> Vector3:
+	if _follow_target and is_instance_valid(_follow_target):
+		return _follow_target.global_position
+	return Vector3.ZERO
 
 
 ## Get a loaded chunk (or null)

@@ -7,3 +7,7 @@ Godot*.exe
 
 # Agent session scratchpads
 .pi/
+
+# Export output
+build/
+export_templates.tpz

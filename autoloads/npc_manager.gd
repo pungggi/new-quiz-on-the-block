@@ -44,6 +44,9 @@ var _building_manager: Node = null
 ## Camera reference for raycasts
 var _camera: Camera3D = null
 
+## ChunkManager reference for streaming-aware spawning
+var _chunk_manager: Node = null
+
 ## Spawn timer
 var _spawn_timer: float = 0.0
 var _spawning_enabled: bool = true
@@ -55,6 +58,7 @@ var _building_positions: Array[Vector3] = []
 func _ready() -> void:
 	_load_npc_types()
 	_building_manager = get_node_or_null("/root/BuildingManager")
+	_chunk_manager = get_node_or_null("/root/ChunkManager")
 
 	# Start spawning after a short delay
 	_spawn_timer = 3.0 # First spawn after 3 seconds
@@ -82,6 +86,18 @@ func _update_spawning(delta: float) -> void:
 		if is_instance_valid(npc):
 			valid_npcs.append(npc)
 	_active_npcs = valid_npcs
+
+	# Despawn NPCs whose terrain chunk streamed out (they would fall or
+	# float over nothing). Never despawn the NPC currently in a quiz.
+	if _chunk_manager and not _active_npcs.is_empty():
+		var snapshot: Array[NPC] = []
+		snapshot.assign(_active_npcs)
+		for npc: NPC in snapshot:
+			if npc == _current_quiz_npc:
+				continue
+			if not _chunk_manager.is_position_loaded(npc.global_position):
+				_active_npcs.erase(npc)
+				npc.queue_free()
 
 	# Check if we can spawn more
 	if _active_npcs.size() >= MAX_ACTIVE_NPCS:
@@ -113,14 +129,23 @@ func _spawn_random_npc() -> void:
 	var types: Array = _npc_types.values()
 	var npc_data: NPCData = types[randi() % types.size()]
 
-	# Smart spawn position
-	var spawn_pos := _get_spawn_position()
+	# Try a few candidates: spawns must land on loaded (visible) terrain
+	for _attempt: int in range(6):
+		var spawn_pos: Vector3 = _get_spawn_position()
+		if not _is_position_spawnable(spawn_pos):
+			continue
+		var npc := spawn_npc(spawn_pos, npc_data)
+		if npc:
+			npc_spawned.emit(npc)
+			AudioManager.play_sfx(AudioManager.SFX.NPC_SPAWN)
+		return
 
-	# Spawn the NPC
-	var npc := spawn_npc(spawn_pos, npc_data)
-	if npc:
-		npc_spawned.emit(npc)
-		AudioManager.play_sfx(AudioManager.SFX.NPC_SPAWN)
+
+## Spawn positions must be on streamed-in terrain near the camera
+func _is_position_spawnable(pos: Vector3) -> bool:
+	if _chunk_manager and not _chunk_manager.is_position_loaded(pos):
+		return false
+	return true
 
 
 ## Get a smart spawn position — prefers near buildings
@@ -145,14 +170,17 @@ func _get_spawn_position() -> Vector3:
 	return _get_random_spawn_position()
 
 
-## Pure random spawn position (original logic)
+## Random position in a ring around the streaming center (camera rig)
 func _get_random_spawn_position() -> Vector3:
+	var center: Vector3 = Vector3(8.0, 0.0, 8.0) # spawn plaza fallback
+	if _chunk_manager:
+		center = _chunk_manager.get_stream_center()
 	var angle: float = randf() * TAU
 	var distance: float = randf_range(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX)
 	return Vector3(
-		cos(angle) * distance + 8.0, # Offset to center of chunk 0
+		clampf(center.x + cos(angle) * distance, Config.WORLD_MIN_X + 0.5, Config.WORLD_MAX_X - 0.5),
 		SPAWN_Y,
-		sin(angle) * distance + 8.0
+		clampf(center.z + sin(angle) * distance, Config.WORLD_MIN_Z + 0.5, Config.WORLD_MAX_Z - 0.5)
 	)
 
 

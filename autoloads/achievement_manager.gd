@@ -119,7 +119,7 @@ func _check_quiz_achievements() -> void:
 				try_unlock(ach.id)
 
 
-func _on_building_placed(_pos: Vector3i, _building: BuildingData) -> void:
+func _on_building_placed(_building: BuildingData, _pos: Vector3i) -> void:
 	var profile: PlayerProfile = ProfileManager.current_profile
 	if not profile:
 		return
