@@ -127,6 +127,20 @@ func _load_random_question() -> void:
 
 	_reset_button_colors()
 
+	# Keyboard focus on the first answer so questions can be answered
+	# with arrows + Enter immediately (deferred until visibility settles)
+	_focus_first_answer.call_deferred()
+
+
+## Give keyboard focus to the first selectable answer button.
+## Falls back to the close button when no answers are available.
+func _focus_first_answer() -> void:
+	for btn in _answer_buttons:
+		if btn.visible and not btn.disabled:
+			btn.grab_focus()
+			return
+	close_button.grab_focus()
+
 
 func _on_answer_pressed(answer_index: int) -> void:
 	if not _current_question:
@@ -161,6 +175,7 @@ func _on_answer_pressed(answer_index: int) -> void:
 			if grade <= 4:
 				# Disable only the wrong button, let player retry
 				_answer_buttons[answer_index].disabled = true
+				_focus_first_answer()
 				return
 
 		# No second chance (or already used): disable all, highlight correct
