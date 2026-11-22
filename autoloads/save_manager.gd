@@ -15,10 +15,24 @@ signal game_loaded()
 var _auto_save_timer: float = 0.0
 const AUTO_SAVE_INTERVAL: float = 60.0 # Auto-save every 60 seconds
 
+## Debounced event saves: bursts of changes (e.g. restoring a save with
+## many props) trigger exactly one write shortly after the last change,
+## instead of one write per placed/removed object.
+const DEBOUNCE_DELAY: float = 2.0
+var _debounce_timer: Timer = null
+var _save_pending: bool = false
+
 
 func _ready() -> void:
 	# Auto-load on startup
 	call_deferred("load_game")
+
+	# Debounce timer for event-driven saves
+	_debounce_timer = Timer.new()
+	_debounce_timer.one_shot = true
+	_debounce_timer.wait_time = DEBOUNCE_DELAY
+	_debounce_timer.timeout.connect(_on_debounce_timeout)
+	add_child(_debounce_timer)
 
 	# Connect to events for auto-save triggers
 	if BuildingManager:
@@ -26,8 +40,8 @@ func _ready() -> void:
 
 	# Connect to PropManager for prop save triggers
 	if PropManager:
-		PropManager.prop_placed.connect(func(_pos: Vector3, _name: String) -> void: save_game())
-		PropManager.prop_removed.connect(func(_pos: Vector3) -> void: save_game())
+		PropManager.prop_placed.connect(_on_prop_changed)
+		PropManager.prop_removed.connect(_on_prop_removed)
 
 
 func _process(delta: float) -> void:
@@ -38,8 +52,28 @@ func _process(delta: float) -> void:
 
 
 func _on_building_placed(_building: BuildingData, _pos: Vector3i) -> void:
-	# Save after placing a building
-	save_game()
+	_mark_save_dirty()
+
+
+func _on_prop_changed(_pos: Vector3, _name: String) -> void:
+	_mark_save_dirty()
+
+
+func _on_prop_removed(_pos: Vector3) -> void:
+	_mark_save_dirty()
+
+
+## Mark the world dirty; a single save fires DEBOUNCE_DELAY seconds
+## after the last change.
+func _mark_save_dirty() -> void:
+	_save_pending = true
+	_debounce_timer.start()
+
+
+func _on_debounce_timeout() -> void:
+	if _save_pending:
+		_save_pending = false
+		save_game()
 
 
 ## Save the current world state (buildings only)
@@ -60,6 +94,11 @@ func save_game() -> bool:
 
 	file.store_string(json_string)
 	file.close()
+
+	# An explicit save covers any pending debounced changes
+	_save_pending = false
+	if _debounce_timer:
+		_debounce_timer.stop()
 
 	game_saved.emit()
 	return true
