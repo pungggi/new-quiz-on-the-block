@@ -12,6 +12,7 @@ const PropMeshGen := preload("res://scripts/visuals/prop_mesh_generator.gd")
 
 signal prop_placed(position: Vector3, prop_name: String)
 signal prop_removed(position: Vector3)
+signal initialized
 
 ## All loaded prop types
 var _prop_types: Array[PropData] = []
@@ -21,6 +22,10 @@ var _placed_props: Array[StaticBody3D] = []
 
 ## Parent node for all props
 var _props_root: Node3D = null
+
+## Props from a save that arrived before the world scene was ready.
+## Flushed by initialize().
+var _pending_props_data: Array = []
 
 ## Track occupied grid positions to avoid overlap
 var _occupied_positions: Dictionary = {}  # Key: Vector2i(x, z), Value: true
@@ -55,6 +60,17 @@ func _connect_signals() -> void:
 ## Initialize with a parent node for all props
 func initialize(props_root: Node3D) -> void:
 	_props_root = props_root
+	_flush_pending_props()
+	initialized.emit()
+
+
+## Restore props that arrived before initialize() (e.g. save loaded from menu)
+func _flush_pending_props() -> void:
+	if _pending_props_data.is_empty():
+		return
+	var pending: Array = _pending_props_data
+	_pending_props_data = []
+	deserialize_props(pending)
 
 
 ## Load all prop definitions from res://data/props/
@@ -385,6 +401,12 @@ func serialize_props() -> Array[Dictionary]:
 
 ## Restore props from saved data
 func deserialize_props(saved_data: Array) -> void:
+	# A save can load while still in the main menu, before the world scene
+	# provides a props root. Buffer instead of dropping the props.
+	if not _props_root:
+		_pending_props_data = saved_data.duplicate()
+		return
+
 	# Clear existing props
 	clear_all_props()
 

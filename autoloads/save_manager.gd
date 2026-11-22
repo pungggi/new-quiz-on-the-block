@@ -90,7 +90,7 @@ func load_game() -> bool:
 	if save_data.has("buildings"):
 		call_deferred("_restore_buildings", save_data["buildings"])
 
-	# Restore props (deferred to ensure PropManager is initialized)
+	# Restore props (deferred so the menu is ready; PropManager buffers until the world loads)
 	if save_data.has("props"):
 		call_deferred("_restore_props", save_data["props"])
 
@@ -251,8 +251,7 @@ func _get_placed_props() -> Array:
 
 
 func _restore_props(props_data: Array) -> void:
-	await get_tree().process_frame
-	await get_tree().process_frame  # Wait an extra frame for PropManager.initialize()
-
+	# PropManager buffers the data internally until the world scene
+	# calls initialize(), so no frame-waiting is needed here.
 	if PropManager:
 		PropManager.deserialize_props(props_data)
