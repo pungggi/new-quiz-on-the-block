@@ -1,9 +1,7 @@
----
-type: "always_apply"
----
-
 # Project Context: New Kids on the Block
+
 We are building "New Kids on the Block", a kid-friendly, non-violent city builder (Sim City Style) combining Voxel mechanics (Minecraft-style) with educational resource management.
+
 - **Engine:** Godot 4.x (Forward+ Renderer)
 - **Language:** GDScript (Strictly Typed)
 - **Platform:** Desktop
@@ -12,42 +10,49 @@ We are building "New Kids on the Block", a kid-friendly, non-violent city builde
 # Core Development Rules (Godot 4)
 
 ## 1. GDScript Standards
+
 - **Strict Typing:** All variables, arguments, and return types must be static typed.
-  - *Bad:* `var health = 100`
-  - *Good:* `var health: int = 100`
+  - _Bad:_ `var health = 100`
+  - _Good:_ `var health: int = 100`
 - **Functions:** Always specify return types, use `-> void` if nothing is returned.
 - **Naming:** Use `snake_case` for variables/functions, `PascalCase` for Classes/Nodes.
 
 ## 2. Architecture & Patterns
+
 - **Signal Up, Call Down:** - Never use `get_parent()` to manipulate logic. Child nodes emit Signals. Parent nodes call functions on children.
 - **Composition over Inheritance:** - Avoid deep class hierarchies. Use distinct Child Nodes (e.g., `HealthComponent`, `InventoryManager`) to add functionality to entities.
 - **Data/View Separation:**
   - The Voxel World is data (Array/Dictionary/PackedByteArray). The `MeshInstance3D` is just the view. Never store game logic inside a visual block mesh.
 
 ## 3. Voxel Performance (Critical)
+
 - **No Node-per-Block:** NEVER suggest creating an individual Node or Object for a single voxel block.
 - **Rendering:** Use `SurfaceTool` with `commit()` or `MultiMeshInstance3D` for rendering chunks.
 - **Data Structure:** Use `PackedByteArray` for large voxel data sets to minimize memory overhead.
 
 ## 4. Godot 4 Specifics
+
 - **Verification:** Before suggesting code, verify if the API exists in Godot 4.x (e.g., `move_and_slide()` takes no arguments now).
 - **Tweens:** Use `create_tween()` instead of the old Tween node.
 - **Exports:** Use `@export var` syntax.
 
 ## 5. ⚠️ Godot 4 Stolperfallen (KRITISCH)
+
 Beim Code-Review und Entwicklung MÜSSEN diese Patterns vermieden/erkannt werden:
 
 ### 5.1 API-Migration (Godot 3 → 4)
-| ❌ FALSCH (Godot 3) | ✅ RICHTIG (Godot 4) |
-|---------------------|----------------------|
-| `move_and_slide(velocity)` | `velocity = ...; move_and_slide()` |
-| `instance()` | `instantiate()` |
-| `connect("signal", obj, "method")` | `signal.connect(method)` |
-| `yield(obj, "signal")` | `await obj.signal` |
-| `$Tween.interpolate_property()` | `create_tween().tween_property()` |
-| `export var` | `@export var` |
+
+| ❌ FALSCH (Godot 3)                | ✅ RICHTIG (Godot 4)               |
+| ---------------------------------- | ---------------------------------- |
+| `move_and_slide(velocity)`         | `velocity = ...; move_and_slide()` |
+| `instance()`                       | `instantiate()`                    |
+| `connect("signal", obj, "method")` | `signal.connect(method)`           |
+| `yield(obj, "signal")`             | `await obj.signal`                 |
+| `$Tween.interpolate_property()`    | `create_tween().tween_property()`  |
+| `export var`                       | `@export var`                      |
 
 ### 5.2 Signal-Verbindungen
+
 ```gdscript
 # ❌ FALSCH
 button.connect("pressed", self, "_on_pressed")
@@ -58,6 +63,7 @@ button.pressed.connect(_on_pressed.bind(extra_arg))
 ```
 
 ### 5.3 Typed Arrays - ACHTUNG!
+
 ```gdscript
 # ❌ FEHLER - Typed Arrays können nicht direkt zugewiesen werden
 var nodes: Array[Node2D] = get_children()  # CRASH!
@@ -69,6 +75,7 @@ var nodes := get_children()  # Array (untyped)
 ```
 
 ### 5.4 Resource-Sharing (GEFÄHRLICH!)
+
 ```gdscript
 # ⚠️ GEFAHR: Alle Instanzen teilen dasselbe Material!
 @export var material: StandardMaterial3D
@@ -83,6 +90,7 @@ func _ready() -> void:
 ```
 
 ### 5.5 await Funktionen
+
 ```gdscript
 # ⚠️ Funktion mit await MUSS Rückgabetyp haben!
 func do_something():  # ❌ Kein Rückgabetyp = Probleme
@@ -93,6 +101,7 @@ func do_something() -> void:  # ✅ RICHTIG
 ```
 
 ### 5.6 queue_free() Timing
+
 ```gdscript
 # ⚠️ Node wird NICHT sofort gelöscht!
 node.queue_free()
@@ -106,6 +115,7 @@ if is_instance_valid(node):
 ```
 
 ### 5.7 Collision Layers vs Masks
+
 ```gdscript
 # Layer = "Ich BIN auf Layer X"
 # Mask = "Ich SEHE/KOLLIDIERE mit Layer X"
@@ -115,6 +125,7 @@ collision_mask = Config.BUILDING_COLLISION_LAYER
 ```
 
 ### 5.8 Physics vs Process
+
 ```gdscript
 # ⚠️ Visuelle Updates in _physics_process = Stottern!
 func _physics_process(delta: float) -> void:
@@ -129,6 +140,7 @@ func _physics_process(delta: float) -> void:
 ```
 
 ### 5.9 Debug-Output in Production
+
 ```gdscript
 # ❌ VERMEIDEN in Production-Code
 print("Debug: %s" % value)
@@ -144,6 +156,7 @@ if DEBUG:
 ```
 
 ### 5.10 Autoload-Reihenfolge
+
 ```gdscript
 # ⚠️ Autoload A greift auf Autoload B in _ready() zu
 # Aber B wird nach A geladen → null!
@@ -155,8 +168,9 @@ func _ready() -> void:
 ```
 
 ### 5.11 Typ-Inferenz mit Ternary/Variant
+
 ```gdscript
-# ❌ GEFAHR: Wenn `data` z.B. Variant oder Dictionary ist, 
+# ❌ GEFAHR: Wenn `data` z.B. Variant oder Dictionary ist,
 # kann Godot 4 den Typ bei Ternary-Zuweisungen nicht immer korrekt inferieren.
 var my_val := data.size if data else 1.0  # Führt oft zu "Warning treated as error" wegen Variant.
 
@@ -165,6 +179,7 @@ var my_val: float = float(data.size) if data else 1.0
 ```
 
 ### 5.12 Unbenutzte Variablen in Funktions-Signaturen
+
 ```gdscript
 # ❌ ERZEUGT WARNUNG: Variable wird nicht genutzt.
 func do_something(val1: int, val2: String) -> void:
@@ -176,6 +191,7 @@ func do_something(val1: int, _val2: String) -> void:
 ```
 
 ### 5.13 Globale Klassen (`class_name`) nicht preloaden
+
 ```gdscript
 # ❌ FALSCH: Wenn `MyClass.gd` bereits `class_name MyClass` definiert hat.
 const MyClass := preload("res://scripts/my_class.gd")
@@ -185,6 +201,7 @@ var instance := MyClass.new()
 ```
 
 ### 5.14 Integer-Division (Abschneiden von Nachkommastellen)
+
 ```gdscript
 # ⚠️ WARNUNG: Integer Division in Godot 4 erzeugt Warnungen, wenn implizit abgerundet wird.
 var chunk_x := world_x / CHUNK_SIZE
@@ -197,67 +214,76 @@ var chunk_x := world_x / CHUNK_SIZE
 var val: float = float(world_x) / float(CHUNK_SIZE)
 ```
 
-
 # 🛠️ Tool Calling Best Practices
+
 To ensure maximum efficiency and avoid errors during implementation:
 
 ## 1. Core Tool Strategies
+
 - **Verification First**: Before using `replace_file_content` or `multi_replace_file_content`, ALWAYS use `view_file` (with line numbers) on the target file. Never rely on memory for line ranges or exact character matching.
 - **Prefer Multi-Edit Chunks**: When making multiple changes to a single file, favor `multi_replace_file_content`. This prevents multiple sequential rewrites and reduces the chance of line-number drift.
 - **Absolute Paths**: Always verify the full absolute path of a file before calling a tool. If unsure, use `find_by_name` first.
 
 ## 2. Godot-Specific Tooling
+
 - **Scene-Script Sync**: When editing a GDScript, always read the corresponding `.tscn` file (if it exists) to verify node paths (`$NodeName`) and signal connections.
 - **Extension Awareness**: When searching, include Godot-specific extensions (`.gd`, `.tscn`, `.tres`) in your `Includes` filter for `grep_search`.
 
 # 🔌 GD-AI-MCP Standards (Virtual Tooling)
+
 Although running in Augment, we adhere to the strict verification logic of the **Godot AI Model Context Protocol**. You must simulate the usage of these functions to ensure code quality:
 
 ## Core MCP Capabilities & Rules
 
 ### 1. Capability: `get_class_documentation`
-* **Function:** Retrieves the official Godot 4 API for a specific class.
-* **Your Rule:** Do not guess API methods.
-    * *Wrong:* "Use `Tween.interpolate_property()`" (Godot 3).
-    * *Right:* Simulate checking the docs and use `create_tween().tween_property()` (Godot 4).
-    * *Constraint:* If you are unsure about a specific argument (e.g., in `SurfaceTool`), explicitly state: "Please verify this method signature in the local documentation."
+
+- **Function:** Retrieves the official Godot 4 API for a specific class.
+- **Your Rule:** Do not guess API methods.
+  - _Wrong:_ "Use `Tween.interpolate_property()`" (Godot 3).
+  - _Right:_ Simulate checking the docs and use `create_tween().tween_property()` (Godot 4).
+  - _Constraint:_ If you are unsure about a specific argument (e.g., in `SurfaceTool`), explicitly state: "Please verify this method signature in the local documentation."
 
 ### 2. Capability: `read_scene_tree`
-* **Function:** Parses a `.tscn` file to understand the node hierarchy.
-* **Your Rule:** Context-Aware Scripting.
-    * Before implementing `Player.gd`, look at `Player.tscn` in the context.
-    * Identify "Unique Names" (Nodes with `%`) and use them (e.g., `%Camera3D`) instead of fragile paths (`get_node("Head/Camera")`).
-    * Check attached signals in the scene file before proposing new `connect()` code.
+
+- **Function:** Parses a `.tscn` file to understand the node hierarchy.
+- **Your Rule:** Context-Aware Scripting.
+  - Before implementing `Player.gd`, look at `Player.tscn` in the context.
+  - Identify "Unique Names" (Nodes with `%`) and use them (e.g., `%Camera3D`) instead of fragile paths (`get_node("Head/Camera")`).
+  - Check attached signals in the scene file before proposing new `connect()` code.
 
 ### 3. Capability: `check_signal_connections`
-* **Function:** Verifies if signals are connected via Editor or Code.
-* **Your Rule:** Decoupling check.
-    * Ensure that UI updates happen via Signals, not direct function calls across scene boundaries.
-    * Validate that custom signal names (`signal health_changed(new_value)`) match the `emit_signal` parameters strictly.
 
+- **Function:** Verifies if signals are connected via Editor or Code.
+- **Your Rule:** Decoupling check.
+  - Ensure that UI updates happen via Signals, not direct function calls across scene boundaries.
+  - Validate that custom signal names (`signal health_changed(new_value)`) match the `emit_signal` parameters strictly.
 
 # 🧮 REAL MCP Tool: `local-math` (Python/NumPy)
+
 **TRIGGER:** Whenever you need to calculate complex math, especially for Voxel chunks, noise generation, or vector/matrix operations.
-* **Rule:** Do not hallucinate math results.
-* **Action:** Write a Python script using `numpy` to verify the formula or generate lookup tables, then translate the logic to GDScript.
-* *Example:* "Use `local-math` to calculate the vertices for a hexagon grid before writing the SurfaceTool code."
+
+- **Rule:** Do not hallucinate math results.
+- **Action:** Write a Python script using `numpy` to verify the formula or generate lookup tables, then translate the logic to GDScript.
+- _Example:_ "Use `local-math` to calculate the vertices for a hexagon grid before writing the SurfaceTool code."
+
 ---
 
 # Workflow Personas
+
 (Adopt these personas when requested or based on the task type)
 
 ## 📐 Role: Architect (Planning)
-*Trigger: When asked to plan, design, or structure a new system.*
+
+_Trigger: When asked to plan, design, or structure a new system._
+
 - **Focus:** Node hierarchies, Scene structure (`.tscn`), and Data flow.
-- **Action:** 1. Analyze the requirements.
-  2. Outline the Scene Tree structure (e.g., `World -> ChunkManager -> Chunk`).
-  3. Define the Signals connecting these nodes.
-  4. Create a Step-by-Step implementation plan.
-  5. Do NOT write full implementation code yet, just the skeletons/class_names.
+- **Action:** 1. Analyze the requirements. 2. Outline the Scene Tree structure (e.g., `World -> ChunkManager -> Chunk`). 3. Define the Signals connecting these nodes. 4. Create a Step-by-Step implementation plan. 5. Do NOT write full implementation code yet, just the skeletons/class_names.
 - **Output:** Use Mermaid diagrams to visualize Node Trees where helpful.
 
 ## 👨‍💻 Role: Developer (Implementation)
-*Trigger: When asked to implement, code, or fix a script.*
+
+_Trigger: When asked to implement, code, or fix a script._
+
 - **Focus:** Writing performant, clean GDScript.
 - **Action:**
   1. Check the Architect's plan (if available).
@@ -267,7 +293,9 @@ Although running in Augment, we adhere to the strict verification logic of the *
 - **Safety:** Always add comments explaining complex math (especially for Voxel meshing).
 
 ## 🐞 Role: Debugger
-*Trigger: When fixing errors or crashes.*
+
+_Trigger: When fixing errors or crashes._
+
 - **Focus:** Root cause analysis.
 - **Action:**
   1. Analyze the error message.
@@ -276,7 +304,9 @@ Although running in Augment, we adhere to the strict verification logic of the *
   4. Only propose a fix after validating the assumption.
 
 ## 🪃 Role: Orchestrator (Project Management)
-*Trigger: When asked "What next?" or "How do we start?".*
+
+_Trigger: When asked "What next?" or "How do we start?"._
+
 - **Focus:** Big picture, breaking down MVPs.
 - **Action:**
   1. Review the current project state.

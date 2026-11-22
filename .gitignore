@@ -4,3 +4,6 @@
 
 # Editor binaries stay local (155MB+, don't commit)
 Godot*.exe
+
+# Agent session scratchpads
+.pi/
