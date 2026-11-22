@@ -123,8 +123,11 @@ func _load_prop_types() -> void:
 	var file_name := dir.get_next()
 
 	while file_name != "":
-		if file_name.ends_with(".tres") or file_name.ends_with(".res"):
-			var resource := load(props_path + file_name)
+		# Exported builds remap resources to "*.tres.remap"/"*.res.remap"
+		# inside the PCK; load() resolves the trimmed path in both modes.
+		var trimmed := file_name.trim_suffix(".remap")
+		if trimmed.ends_with(".tres") or trimmed.ends_with(".res"):
+			var resource := load(props_path + trimmed)
 			if resource is PropData:
 				_prop_types.append(resource)
 		file_name = dir.get_next()

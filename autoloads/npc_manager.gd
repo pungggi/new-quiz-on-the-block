@@ -263,8 +263,9 @@ func _load_npc_types() -> void:
 	dir.list_dir_begin()
 	var file_name := dir.get_next()
 	while file_name != "":
-		if file_name.ends_with(".tres"):
-			var path := "res://data/npcs/" + file_name
+		# Exported builds remap resources to "*.tres.remap" inside the PCK
+		if file_name.ends_with(".tres") or file_name.ends_with(".tres.remap"):
+			var path := "res://data/npcs/" + file_name.trim_suffix(".remap")
 			var npc_data: NPCData = load(path)
 			if npc_data:
 				_npc_types[npc_data.id] = npc_data

@@ -39,8 +39,8 @@ func _load_questions() -> void:
 	var file_name := dir.get_next()
 	
 	while file_name != "":
-		if file_name.ends_with(".tres") or file_name.ends_with(".res"):
-			var resource := load(questions_path + file_name)
+		if file_name.ends_with(".tres") or file_name.ends_with(".res") or file_name.ends_with(".tres.remap") or file_name.ends_with(".res.remap"):
+			var resource := load(questions_path + file_name.trim_suffix(".remap"))
 			if resource is QuizQuestion:
 				_questions.append(resource)
 		file_name = dir.get_next()

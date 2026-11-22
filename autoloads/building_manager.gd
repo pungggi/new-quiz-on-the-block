@@ -100,8 +100,10 @@ func _load_building_types() -> void:
 	var file_name := dir.get_next()
 	
 	while file_name != "":
-		if file_name.ends_with(".tres") or file_name.ends_with(".res"):
-			var resource := load(buildings_path + file_name)
+		# Exported builds remap resources to "*.tres.remap" inside the PCK;
+		# load() resolves the trimmed path transparently in both modes.
+		if file_name.ends_with(".tres") or file_name.ends_with(".tres.remap"):
+			var resource := load(buildings_path + file_name.trim_suffix(".remap"))
 			if resource is BuildingData:
 				_building_types.append(resource)
 		file_name = dir.get_next()

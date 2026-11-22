@@ -7,9 +7,9 @@ const CHUNK_HEIGHT: int = 32
 
 #region World Constants
 ## Single source of truth for world size: chunk radius around origin chunk (0,0).
-## Radius 4 = 9x9 chunks (144x144 blocks). Grow the world by raising this number;
+## Radius 8 = 17x17 chunks (272x272 blocks). Grow the world by raising this number;
 ## streaming keeps only CHUNK_STREAM_RADIUS chunks alive, so runtime cost stays flat.
-const WORLD_CHUNK_RADIUS: int = 4
+const WORLD_CHUNK_RADIUS: int = 8
 
 ## Streaming: live chunk radius around the follow target (camera rig).
 ## Chunks beyond this radius + CHUNK_UNLOAD_MARGIN are freed (data stays).
