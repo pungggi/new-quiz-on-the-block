@@ -44,6 +44,11 @@ func _ready() -> void:
 	if build_cursor:
 		build_cursor.building_placed.connect(_on_building_placed)
 
+	# Ambient sea life over the ocean (gulls + jumping fish)
+	var sea_wildlife := SeaWildlife.new()
+	sea_wildlife.name = "SeaWildlife"
+	add_child(sea_wildlife)
+
 	# Start the game (profile is already loaded from main menu)
 	_start_game()
 
