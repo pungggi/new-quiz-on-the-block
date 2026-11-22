@@ -8,7 +8,8 @@ extends Node3D
 
 enum State { CIRCLE, DIVE, CLIMB }
 
-const WATER_Y: float = 1.02
+## Water line (must match WorldManager.WATER_SURFACE_MAX_Y)
+const WATER_Y: float = 1.35
 const DIVE_TIME: float = 1.15
 const CLIMB_TIME: float = 1.7
 const CARRY_TIME: float = 3.5

@@ -19,12 +19,10 @@ var _is_walking: bool = false
 var _was_walking: bool = false
 var _walk_tween: Tween
 var _coyote_timer: float = 0.0  ## Remaining coyote time
-var _mesh_base_y: float = 0.0
 var _swimming: bool = false
 
-## Swimming: slower movement, blocky body sinks below the water surface
+## Swimming: slower paddling in deep water
 const SWIM_SPEED_FACTOR: float = 0.5
-const SWIM_SINK_OFFSET: float = 0.55
 
 ## Build result from BlockyCharacterBuilder (contains materials)
 var _build_result: BlockyCharacterBuilder.BuildResult
@@ -53,7 +51,6 @@ func _ready() -> void:
 
 	# Setup collision: terrain, buildings and props block the player
 	collision_mask = Config.TERRAIN_COLLISION_LAYER | Config.BUILDING_COLLISION_LAYER | Config.PROP_COLLISION_LAYER
-	_mesh_base_y = mesh_instance.position.y
 
 	# Create the blocky character mesh
 	_create_blocky_person()
@@ -150,9 +147,10 @@ func _physics_process(delta: float) -> void:
 	position.x = clampf(position.x, Config.WORLD_MIN_X, Config.WORLD_MAX_X)
 	position.z = clampf(position.z, Config.WORLD_MIN_Z, Config.WORLD_MAX_Z)
 
-	# Prevent falling below ground level
-	if position.y < Config.GROUND_Y:
-		position.y = Config.GROUND_Y
+	# Hard safety floor. Sea beds slope below the water line: gravity and
+	# floor collision carry the player down there while wading in.
+	if position.y < 0.05:
+		position.y = 0.05
 		velocity.y = 0.0
 
 	# Update walk animation based on movement
@@ -167,12 +165,10 @@ func _physics_process(delta: float) -> void:
 	_update_nearest_building()
 
 
-## Enter/leave swim mode: slower and the blocky body sinks below the surface
+## Enter/leave swim mode: deep water slows the paddling. The body sinking
+## below the surface comes naturally from following the lowered bed.
 func _set_swimming(active: bool) -> void:
 	_swimming = active
-	var target_y: float = _mesh_base_y - (SWIM_SINK_OFFSET if active else 0.0)
-	var tween := create_tween()
-	tween.tween_property(mesh_instance, "position:y", target_y, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 
 
 func _create_blocky_person() -> void:

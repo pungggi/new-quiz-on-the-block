@@ -21,9 +21,14 @@ const BEACH_WIDTH: int = 8 # of COAST_WIDTH, no water on the beach itself
 const MOUNTAIN_WIDTH: int = 20
 const MOUNTAIN_HEIGHT: int = 6
 ## River: meanders roughly east-west through the whole world
-const RIVER_HALF_WIDTH: int = 1 # 3 blocks wide water
-const RIVER_BANK_WIDTH: int = 2 # +1 block sand banks on each side
+const RIVER_HALF_WIDTH: int = 2 # 5 blocks wide water
+const RIVER_BANK_WIDTH: int = 3 # +1 block sand banks on each side
 const RIVER_MEANDER: float = 24.0
+
+## Water surface height (top of the water, feet stay on the bed below)
+const WATER_SURFACE_MAX_Y: float = 1.35
+## How much the bed drops per water-depth block (sea slopes down)
+const BED_DROP_PER_DEPTH: float = 0.06
 
 var _noise: FastNoiseLite
 var _river_noise: FastNoiseLite
@@ -87,6 +92,18 @@ func water_depth(world_x: int, world_z: int) -> int:
 		return maxi(0, RIVER_BANK_WIDTH - int(floor(river_dx)))
 	var d_east: int = Config.WORLD_MAX_BLOCK - world_x
 	return maxi(0, (COAST_WIDTH - BEACH_WIDTH) - d_east)
+
+
+## Walkable surface height of a column: terrain height on land, the
+## sloping bed in water (sea floor drops away from the beach, the river
+## bed sits slightly lower than its banks). Characters follow this so
+## wading actually stands IN the water.
+func surface_y(world_x: int, world_z: int) -> float:
+	var col: Dictionary = terrain_column(world_x, world_z)
+	if not col["water"]:
+		return float(col["h"])
+	var bed: float = 1.0 - clampf(float(water_depth(world_x, world_z)), 0.0, 15.0) * BED_DROP_PER_DEPTH
+	return maxf(bed, 0.1)
 
 
 func _generate_flat_terrain() -> void:

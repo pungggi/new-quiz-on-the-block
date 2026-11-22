@@ -9,8 +9,9 @@ static var _detail_material: StandardMaterial3D
 var chunk_x: int = 0
 var chunk_z: int = 0
 
-## Water surface sits a hair above the sand floor (and below grass blades)
-const WATER_SURFACE_Y: float = 1.02
+## Water fills the column up to WorldManager.WATER_SURFACE_MAX_Y (flat,
+## calm water line; the bed slopes beneath it)
+## (river shallower than the open sea)
 
 ## Collision body reference for rebuilding
 var _collision_body: StaticBody3D = null
@@ -131,41 +132,44 @@ func _build_mesh() -> void:
 
 			var top_voxel: int = data[x + z * size + (col_h - 1) * size * size]
 
-			# Top face (vertex color per voxel type)
+			# Top face sits at the surface height (water beds slope down)
+			var surf: float = WorldManager.surface_y(base_x, base_z)
 			_add_quad(st,
-				Vector3(base_x, col_h, base_z),
-				Vector3(base_x + 1, col_h, base_z),
-				Vector3(base_x + 1, col_h, base_z + 1),
-				Vector3(base_x, col_h, base_z + 1),
+				Vector3(base_x, surf, base_z),
+				Vector3(base_x + 1, surf, base_z),
+				Vector3(base_x + 1, surf, base_z + 1),
+				Vector3(base_x, surf, base_z + 1),
 				Vector3.UP, _voxel_color(top_voxel))
 
 			# Side faces where the neighboring column is lower (mountains,
-			# world edge cliffs). terrain_column is deterministic and works
-			# across chunk borders without loading neighbor chunks.
-			_add_column_sides(st, base_x, base_z, col_h)
+			# cliffs, underwater bed steps). surface_y is deterministic and
+			# works across chunk borders without loading neighbor chunks.
+			_add_column_sides(st, base_x, base_z, surf)
 
 			# Grass blades only on grass
 			if top_voxel == Config.VoxelType.GRASS:
-				seed(hash(Vector3(base_x, col_h, base_z)))
+				seed(hash(Vector3(base_x, surf, base_z)))
 				var count := randi() % 4
 				for i in range(count):
 					var detail_pos := Vector3(
-						base_x + 0.5 + randf_range(-0.4, 0.4),
-						col_h + 0.125,
-						base_z + 0.5 + randf_range(-0.4, 0.4)
+					base_x + 0.5 + randf_range(-0.4, 0.4),
+					surf + 0.125,
+					base_z + 0.5 + randf_range(-0.4, 0.4)
 					)
 					var t := Transform3D(Basis().rotated(Vector3.UP, randf_range(0, TAU)), detail_pos)
 					detail_transforms.append(t)
 
-			# Water surface quad just above the sand floor
+			# Water fills the column up to the flat water line
 			if has_water:
+				var water_y: float = WorldManager.WATER_SURFACE_MAX_Y
 				_add_quad(water_st,
-					Vector3(base_x, WATER_SURFACE_Y, base_z),
-					Vector3(base_x + 1, WATER_SURFACE_Y, base_z),
-					Vector3(base_x + 1, WATER_SURFACE_Y, base_z + 1),
-					Vector3(base_x, WATER_SURFACE_Y, base_z + 1),
+					Vector3(base_x, water_y, base_z),
+					Vector3(base_x + 1, water_y, base_z),
+					Vector3(base_x + 1, water_y, base_z + 1),
+					Vector3(base_x, water_y, base_z + 1),
 					Vector3.UP, Color.WHITE)
 				water_faces += 1
+				_add_water_sides(water_st, base_x, base_z, water_y)
 
 	mesh_instance.mesh = st.commit()
 	_build_details(detail_transforms)
@@ -177,18 +181,18 @@ func _voxel_color(voxel: int) -> Color:
 
 
 ## Add the four side walls of a column that are higher than their neighbor
-func _add_column_sides(st: SurfaceTool, base_x: int, base_z: int, col_h: int) -> void:
+func _add_column_sides(st: SurfaceTool, base_x: int, base_z: int, surf: float) -> void:
 	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 	for d: Vector2i in dirs:
 		var nx: int = base_x + d.x
 		var nz: int = base_z + d.y
-		var nh: int = _neighbor_height(nx, nz)
-		if nh >= col_h:
+		var ns: float = _neighbor_surface(nx, nz)
+		if ns >= surf - 0.02:
 			continue
 		# Cliff walls read as stone, shallow steps as dirt
-		var wall_color: Color = _voxel_color(Config.VoxelType.STONE) if col_h - nh > 2 else _voxel_color(Config.VoxelType.DIRT)
-		var y0: float = float(nh)
-		var y1: float = float(col_h)
+		var wall_color: Color = _voxel_color(Config.VoxelType.STONE) if surf - ns > 2.0 else _voxel_color(Config.VoxelType.DIRT)
+		var y0: float = ns
+		var y1: float = surf
 		if d.x == 1:
 			_add_quad(st, Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(base_x + 1, y1, base_z), Vector3(1, 0, 0), wall_color)
 		elif d.x == -1:
@@ -199,15 +203,39 @@ func _add_column_sides(st: SurfaceTool, base_x: int, base_z: int, col_h: int) ->
 			_add_quad(st, Vector3(base_x, y0, base_z), Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y1, base_z), Vector3(base_x, y1, base_z), Vector3(0, 0, -1), wall_color)
 
 
-## Neighbor column height; outside the world the ground drops to 0 so the
+## Water edge walls: wherever water borders land (or the world rim), add
+## a translucent side so the water line never floats above dry ground.
+func _add_water_sides(water_st: SurfaceTool, base_x: int, base_z: int, water_y: float) -> void:
+	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for d: Vector2i in dirs:
+		var nx: int = base_x + d.x
+		var nz: int = base_z + d.y
+		var outside: bool = nx < Config.WORLD_MIN_BLOCK or nx >= Config.WORLD_MAX_BLOCK or nz < Config.WORLD_MIN_BLOCK or nz >= Config.WORLD_MAX_BLOCK
+		if not outside and WorldManager.terrain_column(nx, nz)["water"]:
+			continue
+		var ns: float = _neighbor_surface(nx, nz)
+		if ns >= water_y - 0.02:
+			continue
+		var y0: float = ns
+		var y1: float = water_y
+		if d.x == 1:
+			_add_quad(water_st, Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(base_x + 1, y1, base_z), Vector3(1, 0, 0), Color.WHITE)
+		elif d.x == -1:
+			_add_quad(water_st, Vector3(base_x, y0, base_z + 1), Vector3(base_x, y0, base_z), Vector3(base_x, y1, base_z), Vector3(base_x, y1, base_z + 1), Vector3(-1, 0, 0), Color.WHITE)
+		elif d.y == 1:
+			_add_quad(water_st, Vector3(base_x + 1, y0, base_z + 1), Vector3(base_x, y0, base_z + 1), Vector3(base_x, y1, base_z + 1), Vector3(base_x + 1, y1, base_z + 1), Vector3(0, 0, 1), Color.WHITE)
+		else:
+			_add_quad(water_st, Vector3(base_x, y0, base_z), Vector3(base_x + 1, y0, base_z), Vector3(base_x + 1, y1, base_z), Vector3(base_x, y1, base_z), Vector3(0, 0, -1), Color.WHITE)
+
+
+## Neighbor column surface; outside the world the ground drops to 0 so the
 ## world edge renders as a visible cliff face.
-func _neighbor_height(world_x: int, world_z: int) -> int:
+func _neighbor_surface(world_x: int, world_z: int) -> float:
 	if world_x < Config.WORLD_MIN_BLOCK or world_x >= Config.WORLD_MAX_BLOCK:
-		return 0
+		return 0.0
 	if world_z < Config.WORLD_MIN_BLOCK or world_z >= Config.WORLD_MAX_BLOCK:
-		return 0
-	var col: Dictionary = WorldManager.terrain_column(world_x, world_z)
-	return col["h"]
+		return 0.0
+	return WorldManager.surface_y(world_x, world_z)
 
 
 ## One quad (two triangles) with a flat color. Normals are set, winding is

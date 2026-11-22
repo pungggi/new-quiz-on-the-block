@@ -46,9 +46,8 @@ var _stuck_timer: float = 0.0
 var _last_position: Vector3 = Vector3.ZERO
 var _swimming: bool = false
 
-## Swimming: slower movement, blocky body sinks below the water surface
+## Swimming: slower paddling in deep water
 const SWIM_SPEED_FACTOR: float = 0.45
-const SWIM_SINK_OFFSET: float = 0.55
 
 ## Idle animation
 var _idle_tween: Tween
@@ -125,8 +124,11 @@ func _physics_process(delta: float) -> void:
 
 		move_and_slide()
 
-		# Keep on ground
-		position.y = Config.GROUND_Y
+		# Follow the terrain surface: water beds slope below the water
+		# line, so wading characters stand IN the water and swimmers
+		# naturally disappear under the surface.
+		var ground_y: float = WorldManager.surface_y(int(floor(global_position.x)), int(floor(global_position.z)))
+		position.y = lerpf(position.y, ground_y, delta * 8.0)
 
 		# Stuck detector: a head-on hit on a tree has no slide direction,
 		# so give up on this target and pick a fresh one. The threshold is
@@ -165,12 +167,10 @@ func _physics_process(delta: float) -> void:
 	_last_position = global_position
 
 
-## Enter/leave swim mode: the whole blocky body sinks below the surface
+## Enter/leave swim mode: deep water slows the paddling. The body sinking
+## below the surface comes naturally from following the lowered bed.
 func _set_swimming(active: bool) -> void:
 	_swimming = active
-	var target_y: float = 0.2 - (SWIM_SINK_OFFSET if active else 0.0)
-	var tween := create_tween()
-	tween.tween_property(mesh_instance, "position:y", target_y, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 
 
 func _pick_new_target() -> void:

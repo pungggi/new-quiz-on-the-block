@@ -10,7 +10,8 @@ extends Node3D
 
 const GULL_COUNT: int = 4
 const FISH_COUNT: int = 6
-const WATER_Y: float = 1.02
+## Water line (must match WorldManager.WATER_SURFACE_MAX_Y)
+const WATER_Y: float = 1.35
 
 ## Ocean strip (east side of the world). terrain_column() still validates
 ## every spot so the river mouth and the beach are never hit by accident.

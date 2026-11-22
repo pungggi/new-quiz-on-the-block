@@ -6,7 +6,8 @@ extends Node3D
 ## Purely visual - picks its own spot over open water via SeaWildlife.
 
 
-const WATER_Y: float = 1.02
+## Water line (must match WorldManager.WATER_SURFACE_MAX_Y)
+const WATER_Y: float = 1.35
 const JUMP_TIME: float = 0.85
 const JUMP_PEAK: float = 1.0
 
