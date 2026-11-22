@@ -174,7 +174,9 @@ func decorate_world() -> void:
 	_spawn_props_for_loaded_chunks()
 
 
-## Generate the prop records for one chunk (no nodes are created)
+## Generate the prop records for one chunk (no nodes are created).
+## Props only grow on interior grass - never in the sea, on the beach,
+## in the river or on the mountain rim.
 func _decorate_chunk(chunk_key: Vector2i, nature_props: Array[PropData]) -> void:
 	var count: int = randi_range(PROPS_PER_CHUNK_MIN, PROPS_PER_CHUNK_MAX)
 	var origin_x: int = chunk_key.x * Config.CHUNK_SIZE
@@ -186,7 +188,7 @@ func _decorate_chunk(chunk_key: Vector2i, nature_props: Array[PropData]) -> void
 			Config.GROUND_Y,
 			float(origin_z + randi_range(0, Config.CHUNK_SIZE - 1)) + 0.5
 		)
-		if not _is_position_free(pos):
+		if not _is_buildable_land(pos):
 			continue
 		var prop_data: PropData = nature_props[randi() % nature_props.size()]
 		var entry := {
@@ -199,10 +201,21 @@ func _decorate_chunk(chunk_key: Vector2i, nature_props: Array[PropData]) -> void
 		_add_record(entry)
 
 
+## True if the column under pos is walkable interior grass (same rule as
+## building placement and NPC spawns).
+func _is_buildable_land(pos: Vector3) -> bool:
+	var col: Dictionary = WorldManager.terrain_column(int(floor(pos.x)), int(floor(pos.z)))
+	return col["top"] == Config.VoxelType.GRASS and not col["water"]
+
+
 ## Place a prop at a world position (records it and spawns the node)
 func place_prop(pos: Vector3, prop_data: PropData, deduct_cost: bool = true) -> StaticBody3D:
 	if not _props_root:
 		push_error("PropManager: No props root. Call initialize() first.")
+		return null
+
+	# No props in the sea, on the beach, in the river or on cliffs
+	if not _is_buildable_land(pos):
 		return null
 
 	if _placed_props.size() >= _max_props:
@@ -605,6 +618,11 @@ func deserialize_props(saved_data: Array) -> void:
 		}
 		if get_prop_data(entry["name"]) == null:
 			push_warning("PropManager: Unknown prop '%s' in save data, skipping." % entry["name"])
+			continue
+		# Terrain may have changed since the save (e.g. a river now flows
+		# here): drop props that no longer stand on land.
+		var saved_pos := Vector3(entry["x"], entry["y"], entry["z"])
+		if not _is_buildable_land(saved_pos):
 			continue
 		_add_record(entry)
 
