@@ -69,6 +69,14 @@ func close() -> void:
 	_is_closing = false
 
 
+## ESC closes the quiz. Runs before main.gd's _input (deeper nodes first)
+## and consumes the event, so the pause menu does NOT open on top.
+func _input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed("ui_cancel"):
+		accept_event()
+		close()
+
+
 func _animate_panel_open() -> void:
 	panel.scale = Vector2(0.8, 0.8)
 	panel.modulate.a = 0.0

@@ -28,7 +28,6 @@ func _ready() -> void:
 	cancel_button.pressed.connect(_on_cancel_pressed)
 	reset_button.pressed.connect(_on_reset_pressed)
 	name_input.text_changed.connect(_on_input_changed)
-
 	error_label.visible = false
 
 	# Use SelectionButtons helper for consistent button creation
@@ -125,6 +124,14 @@ func _on_save_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.UNLOCK)
 
 	_close()
+
+
+## ESC closes the dialog. Consumes the event so an underlying menu
+## (e.g. pause menu) does not react to it.
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		accept_event()
+		_close()
 
 
 func _on_cancel_pressed() -> void:
