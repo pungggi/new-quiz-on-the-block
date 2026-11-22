@@ -42,6 +42,8 @@ var _is_walking: bool = false
 var _was_walking: bool = false
 var _walk_tween: Tween
 var _walk_range: float = 8.0
+var _stuck_timer: float = 0.0
+var _last_position: Vector3 = Vector3.ZERO
 
 ## Idle animation
 var _idle_tween: Tween
@@ -60,6 +62,10 @@ var _prompt_tween: Tween
 
 func _ready() -> void:
 	add_to_group("npcs")
+
+	# Terrain, buildings AND props block NPCs - they slide around trees and
+	# cliffs instead of walking through them. Layer stays NPC (4) for raycasts.
+	collision_mask = Config.TERRAIN_COLLISION_LAYER | Config.BUILDING_COLLISION_LAYER | Config.PROP_COLLISION_LAYER
 
 	# Setup material with NPC color
 	_setup_material()
@@ -80,6 +86,7 @@ func _ready() -> void:
 
 	# Initialize walking
 	_target_position = global_position
+	_last_position = global_position
 	_pick_new_target()
 	
 	# Check if it's night and spawn fire if needed
@@ -110,6 +117,16 @@ func _physics_process(delta: float) -> void:
 
 		# Keep on ground
 		position.y = Config.GROUND_Y
+
+		# Stuck detector: a head-on hit on a tree has no slide direction,
+		# so give up on this target and pick a fresh one.
+		if global_position.distance_to(_last_position) < 0.02:
+			_stuck_timer += delta
+			if _stuck_timer > 0.8:
+				_stuck_timer = 0.0
+			_pick_new_target()
+		else:
+			_stuck_timer = 0.0
 	else:
 		_is_walking = false
 		velocity = Vector3.ZERO
@@ -132,6 +149,7 @@ func _physics_process(delta: float) -> void:
 	elif not _is_walking and _was_walking:
 		_stop_walk_animation()
 	_was_walking = _is_walking
+	_last_position = global_position
 
 
 func _pick_new_target() -> void:
@@ -146,31 +164,47 @@ func _pick_new_target() -> void:
 
 
 func _pick_random_target() -> void:
-	var angle := randf() * TAU
-	var distance := randf_range(2.0, _walk_range)
-
-	_target_position = Vector3(
-		global_position.x + cos(angle) * distance,
-		Config.GROUND_Y,
-		global_position.z + sin(angle) * distance
-	)
-	_clamp_target_to_world()
+	# Try a few candidates: NPCs only walk on interior grass - never onto
+	# the beach, into the sea, the river or up the cliffs.
+	_target_position = global_position # stand still if nothing walkable is found
+	for i in range(8):
+		var angle := randf() * TAU
+		var distance := randf_range(2.0, _walk_range)
+		var candidate := Vector3(
+			global_position.x + cos(angle) * distance,
+			Config.GROUND_Y,
+			global_position.z + sin(angle) * distance
+		)
+		candidate.x = clampf(candidate.x, Config.WORLD_MIN_X + 0.5, Config.WORLD_MAX_X - 0.5)
+		candidate.z = clampf(candidate.z, Config.WORLD_MIN_Z + 0.5, Config.WORLD_MAX_Z - 0.5)
+		if _is_walkable(candidate.x, candidate.z):
+			_target_position = candidate
+			break
 	_walk_timer = randf_range(2.0, 5.0)
 
 
 func _pick_building_target(building_positions: Array[Vector3]) -> void:
 	# Pick a random building and walk near it
 	var building_pos: Vector3 = building_positions[randi() % building_positions.size()]
-	var offset_angle := randf() * TAU
-	var offset_dist := randf_range(1.5, 4.0)
-
-	_target_position = Vector3(
-		building_pos.x + cos(offset_angle) * offset_dist,
-		Config.GROUND_Y,
-		building_pos.z + sin(offset_angle) * offset_dist
-	)
-	_clamp_target_to_world()
+	_target_position = building_pos # fallback: the building itself stands on grass
+	for i in range(6):
+		var offset_angle := randf() * TAU
+		var offset_dist := randf_range(1.5, 4.0)
+		var candidate := Vector3(
+			building_pos.x + cos(offset_angle) * offset_dist,
+			Config.GROUND_Y,
+			building_pos.z + sin(offset_angle) * offset_dist
+		)
+		if _is_walkable(candidate.x, candidate.z):
+			_target_position = candidate
+			break
 	_walk_timer = randf_range(3.0, 7.0) # Stay longer near buildings
+
+
+## True if a world position stands on walkable interior grass
+func _is_walkable(x: float, z: float) -> bool:
+	var col: Dictionary = WorldManager.terrain_column(int(floor(x)), int(floor(z)))
+	return col["top"] == Config.VoxelType.GRASS and not col["water"]
 
 
 func _clamp_target_to_world() -> void:
