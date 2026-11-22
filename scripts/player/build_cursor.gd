@@ -425,6 +425,11 @@ func _is_placement_valid(grid_x: int, grid_y: int, grid_z: int) -> bool:
 	if grid_z < Config.WORLD_MIN_BLOCK or grid_z >= Config.WORLD_MAX_BLOCK:
 		return false
 
+	# Buildings only on interior grass (no beach, sea, cliffs, river)
+	var col: Dictionary = WorldManager.terrain_column(grid_x, grid_z)
+	if col["top"] != Config.VoxelType.GRASS or col["water"]:
+		return false
+
 	# Check if position already has a building (must check X, Y, AND Z)
 	if _buildings_root:
 		for child in _buildings_root.get_children():

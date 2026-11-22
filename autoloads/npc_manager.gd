@@ -141,11 +141,12 @@ func _spawn_random_npc() -> void:
 		return
 
 
-## Spawn positions must be on streamed-in terrain near the camera
+## Spawn positions must be on streamed-in, walkable interior grass
 func _is_position_spawnable(pos: Vector3) -> bool:
 	if _chunk_manager and not _chunk_manager.is_position_loaded(pos):
 		return false
-	return true
+	var col: Dictionary = WorldManager.terrain_column(int(floor(pos.x)), int(floor(pos.z)))
+	return col["top"] == Config.VoxelType.GRASS and not col["water"]
 
 
 ## Get a smart spawn position — prefers near buildings

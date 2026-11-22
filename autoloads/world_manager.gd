@@ -12,9 +12,67 @@ extends Node
 
 var chunk_data: Dictionary = {} # Key: Vector2i(chunk_x, chunk_z), Value: PackedByteArray
 
+## Terrain shaping (fixed seed -> deterministic world, identical on every load)
+const TERRAIN_SEED: int = 20261122
+## East coast: beach strip then ocean, this many blocks wide from the east edge
+const COAST_WIDTH: int = 28
+const BEACH_WIDTH: int = 8 # of COAST_WIDTH, no water on the beach itself
+## West mountain rim: rises up to this height over this many blocks
+const MOUNTAIN_WIDTH: int = 20
+const MOUNTAIN_HEIGHT: int = 6
+## River: meanders roughly east-west through the whole world
+const RIVER_HALF_WIDTH: int = 1 # 3 blocks wide water
+const RIVER_BANK_WIDTH: int = 2 # +1 block sand banks on each side
+const RIVER_MEANDER: float = 24.0
+
+var _noise: FastNoiseLite
+var _river_noise: FastNoiseLite
+
 
 func _ready() -> void:
+	_noise = FastNoiseLite.new()
+	_noise.seed = TERRAIN_SEED
+	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	_noise.frequency = 0.06
+	_noise.fractal_octaves = 2
+	_river_noise = FastNoiseLite.new()
+	_river_noise.seed = TERRAIN_SEED + 1
+	_river_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	_river_noise.frequency = 0.02
 	_generate_flat_terrain()
+
+
+## River center x position for a world z row (meandering line, west to east)
+func river_center_x(world_z: int) -> float:
+	var mid_x: float = (Config.WORLD_MIN_BLOCK + Config.WORLD_MAX_BLOCK) * 0.5
+	return mid_x + sin(world_z * 0.045 + 1.3) * RIVER_MEANDER + _river_noise.get_noise_1d(world_z) * 6.0
+
+
+## Column profile for a world position: how many solid voxels from y=0 up,
+## which voxel type tops the column, and whether water covers the column.
+func terrain_column(world_x: int, world_z: int) -> Dictionary:
+	# River cuts through everything as a canyon (flat bank level, water on top)
+	var river_dx: float = absf(float(world_x) - river_center_x(world_z))
+	if river_dx <= float(RIVER_BANK_WIDTH):
+		return {"h": 1, "top": Config.VoxelType.SAND, "water": river_dx <= float(RIVER_HALF_WIDTH)}
+
+	# East: beach then ocean (SAND floor, water plane above it)
+	var d_east: int = Config.WORLD_MAX_BLOCK - world_x
+	if d_east <= COAST_WIDTH:
+		var ocean: bool = d_east <= COAST_WIDTH - BEACH_WIDTH
+		return {"h": 1, "top": Config.VoxelType.SAND, "water": ocean}
+
+	# West: mountain rim rising steeply towards the world edge
+	var d_west: int = world_x - Config.WORLD_MIN_BLOCK
+	if d_west <= MOUNTAIN_WIDTH:
+		var t: float = 1.0 - float(d_west) / float(MOUNTAIN_WIDTH) # 0 at foot, 1 at edge
+		var rough: float = _noise.get_noise_2d(float(world_x) * 0.15, float(world_z) * 0.15) * 0.5 + 0.5
+		var h: int = 1 + int(round(t * MOUNTAIN_HEIGHT * (0.6 + 0.4 * rough)))
+		var top: int = Config.VoxelType.STONE if h > 1 else Config.VoxelType.GRASS
+		return {"h": h, "top": top, "water": false}
+
+	# Interior flatland (gameplay area)
+	return {"h": 1, "top": Config.VoxelType.GRASS, "water": false}
 
 
 func _generate_flat_terrain() -> void:
@@ -25,7 +83,7 @@ func _generate_flat_terrain() -> void:
 			create_chunk_data(x, z)
 
 
-## Create chunk data with flat grass terrain
+## Create chunk data: flat interior, east ocean, west mountains, one river
 func create_chunk_data(chunk_x: int, chunk_z: int) -> void:
 	var key := Vector2i(chunk_x, chunk_z)
 	if chunk_data.has(key):
@@ -33,15 +91,18 @@ func create_chunk_data(chunk_x: int, chunk_z: int) -> void:
 
 	var data := PackedByteArray()
 	data.resize(Config.CHUNK_SIZE * Config.CHUNK_SIZE * Config.CHUNK_HEIGHT)
+	data.fill(Config.VoxelType.AIR)
 
 	for x in range(Config.CHUNK_SIZE):
 		for z in range(Config.CHUNK_SIZE):
-			for y in range(Config.CHUNK_HEIGHT):
-				var index := _get_index(x, y, z)
-				if y == 0:
-					data[index] = Config.VoxelType.GRASS
-				else:
-					data[index] = Config.VoxelType.AIR
+			var world_x: int = chunk_x * Config.CHUNK_SIZE + x
+			var world_z: int = chunk_z * Config.CHUNK_SIZE + z
+			var col: Dictionary = terrain_column(world_x, world_z)
+			var h: int = col["h"]
+			for y in range(h):
+				data[_get_index(x, y, z)] = Config.VoxelType.DIRT if y < h - 1 else col["top"]
+			if col["water"]:
+				data[_get_index(x, h, z)] = Config.VoxelType.WATER
 
 	chunk_data[key] = data
 
