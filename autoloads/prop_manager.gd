@@ -73,6 +73,20 @@ func _flush_pending_props() -> void:
 	deserialize_props(pending)
 
 
+## Shared, immutable prop material (vertex-color props all use the same
+## settings; one instance serves every placed prop instead of one per prop).
+var _shared_prop_material: StandardMaterial3D = null
+
+
+func _get_prop_material() -> StandardMaterial3D:
+	if _shared_prop_material == null:
+		var mat := StandardMaterial3D.new()
+		mat.vertex_color_use_as_albedo = true
+		mat.cull_mode = BaseMaterial3D.CULL_BACK
+		_shared_prop_material = mat
+	return _shared_prop_material
+
+
 ## Load all prop definitions from res://data/props/
 func _load_prop_types() -> void:
 	var props_path := "res://data/props/"
@@ -170,12 +184,7 @@ func place_prop(pos: Vector3, prop_data: PropData, deduct_cost: bool = true) -> 
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = "MeshInstance3D"
 	mesh_instance.mesh = PropMeshGen.generate(prop_data)
-
-	# Create material with vertex colors
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.cull_mode = BaseMaterial3D.CULL_BACK
-	mesh_instance.material_override = mat
+	mesh_instance.material_override = _get_prop_material()
 
 	prop.add_child(mesh_instance)
 
