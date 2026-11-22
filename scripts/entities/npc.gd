@@ -44,6 +44,11 @@ var _walk_tween: Tween
 var _walk_range: float = 8.0
 var _stuck_timer: float = 0.0
 var _last_position: Vector3 = Vector3.ZERO
+var _swimming: bool = false
+
+## Swimming: slower movement, blocky body sinks below the water surface
+const SWIM_SPEED_FACTOR: float = 0.45
+const SWIM_SINK_OFFSET: float = 0.55
 
 ## Idle animation
 var _idle_tween: Tween
@@ -107,7 +112,12 @@ func _physics_process(delta: float) -> void:
 	if direction.length() > 0.5:
 		_is_walking = true
 		direction = direction.normalized()
-		velocity = direction * _walk_speed
+		# Wade through shallow water, swim once it gets deep
+		var deep: bool = WorldManager.water_depth(int(floor(global_position.x)), int(floor(global_position.z))) >= Config.SWIM_DEPTH
+		if deep != _swimming:
+			_set_swimming(deep)
+
+		velocity = direction * _walk_speed * (SWIM_SPEED_FACTOR if _swimming else 1.0)
 
 		# Rotate to face direction
 		var target_angle := atan2(direction.x, direction.z)
@@ -119,8 +129,11 @@ func _physics_process(delta: float) -> void:
 		position.y = Config.GROUND_Y
 
 		# Stuck detector: a head-on hit on a tree has no slide direction,
-		# so give up on this target and pick a fresh one.
-		if global_position.distance_to(_last_position) < 0.02:
+		# so give up on this target and pick a fresh one. The threshold is
+		# relative to the expected per-frame movement so slow swimmers are
+		# never misread as stuck.
+		var expected_move: float = _walk_speed * (SWIM_SPEED_FACTOR if _swimming else 1.0) * delta
+		if global_position.distance_to(_last_position) < expected_move * 0.25:
 			_stuck_timer += delta
 			if _stuck_timer > 0.8:
 				_stuck_timer = 0.0
@@ -150,6 +163,14 @@ func _physics_process(delta: float) -> void:
 		_stop_walk_animation()
 	_was_walking = _is_walking
 	_last_position = global_position
+
+
+## Enter/leave swim mode: the whole blocky body sinks below the surface
+func _set_swimming(active: bool) -> void:
+	_swimming = active
+	var target_y: float = 0.2 - (SWIM_SINK_OFFSET if active else 0.0)
+	var tween := create_tween()
+	tween.tween_property(mesh_instance, "position:y", target_y, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 
 
 func _pick_new_target() -> void:

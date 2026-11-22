@@ -19,6 +19,12 @@ var _is_walking: bool = false
 var _was_walking: bool = false
 var _walk_tween: Tween
 var _coyote_timer: float = 0.0  ## Remaining coyote time
+var _mesh_base_y: float = 0.0
+var _swimming: bool = false
+
+## Swimming: slower movement, blocky body sinks below the water surface
+const SWIM_SPEED_FACTOR: float = 0.5
+const SWIM_SINK_OFFSET: float = 0.55
 
 ## Build result from BlockyCharacterBuilder (contains materials)
 var _build_result: BlockyCharacterBuilder.BuildResult
@@ -47,6 +53,7 @@ func _ready() -> void:
 
 	# Setup collision: terrain, buildings and props block the player
 	collision_mask = Config.TERRAIN_COLLISION_LAYER | Config.BUILDING_COLLISION_LAYER | Config.PROP_COLLISION_LAYER
+	_mesh_base_y = mesh_instance.position.y
 
 	# Create the blocky character mesh
 	_create_blocky_person()
@@ -121,8 +128,13 @@ func _physics_process(delta: float) -> void:
 
 			# Calculate movement direction relative to camera
 			var direction := (forward * input_dir.y + right * input_dir.x).normalized()
-			velocity.x = direction.x * WALK_SPEED
-			velocity.z = direction.z * WALK_SPEED
+			# Wade through shallow water, swim once it gets deep
+			var deep: bool = WorldManager.water_depth(int(floor(global_position.x)), int(floor(global_position.z))) >= Config.SWIM_DEPTH
+			if deep != _swimming:
+				_set_swimming(deep)
+			var speed: float = WALK_SPEED * (SWIM_SPEED_FACTOR if _swimming else 1.0)
+			velocity.x = direction.x * speed
+			velocity.z = direction.z * speed
 
 			# Rotate player to face movement direction
 			var target_angle := atan2(direction.x, direction.z)
@@ -153,6 +165,14 @@ func _physics_process(delta: float) -> void:
 	# Update nearest NPC and building
 	_update_nearest_npc()
 	_update_nearest_building()
+
+
+## Enter/leave swim mode: slower and the blocky body sinks below the surface
+func _set_swimming(active: bool) -> void:
+	_swimming = active
+	var target_y: float = _mesh_base_y - (SWIM_SINK_OFFSET if active else 0.0)
+	var tween := create_tween()
+	tween.tween_property(mesh_instance, "position:y", target_y, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 
 
 func _create_blocky_person() -> void:

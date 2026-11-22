@@ -75,6 +75,20 @@ func terrain_column(world_x: int, world_z: int) -> Dictionary:
 	return {"h": 1, "top": Config.VoxelType.GRASS, "water": false}
 
 
+## How far into the water a position is: 0 on land and at the waterline,
+## 1-2 in the narrow river (always wading), up to COAST_WIDTH-BEACH_WIDTH
+## far out in the sea. Characters wade first and start swimming once this
+## passes Config.SWIM_DEPTH.
+func water_depth(world_x: int, world_z: int) -> int:
+	if not terrain_column(world_x, world_z)["water"]:
+		return 0
+	var river_dx: float = absf(float(world_x) - river_center_x(world_z))
+	if river_dx <= float(RIVER_BANK_WIDTH):
+		return maxi(0, RIVER_BANK_WIDTH - int(floor(river_dx)))
+	var d_east: int = Config.WORLD_MAX_BLOCK - world_x
+	return maxi(0, (COAST_WIDTH - BEACH_WIDTH) - d_east)
+
+
 func _generate_flat_terrain() -> void:
 	# Only the spawn area: chunks are created lazily by ChunkManager.load_chunk()
 	# while streaming, which keeps startup fast for large WORLD_CHUNK_RADIUS values.

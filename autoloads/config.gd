@@ -19,6 +19,9 @@ const CHUNK_UNLOAD_MARGIN: int = 1
 ## Height at which entities stand on ground (top of terrain collision box)
 const GROUND_Y: float = 1.0
 
+## Blocks into the water after which characters swim instead of wading
+const SWIM_DEPTH: int = 5
+
 ## Derived world boundaries (block-center floats, entities clamp to these).
 ## Chunk r covers blocks [r*CHUNK_SIZE, r*CHUNK_SIZE + CHUNK_SIZE - 1].
 const WORLD_MIN_X: float = float(-WORLD_CHUNK_RADIUS * CHUNK_SIZE) + 0.5
