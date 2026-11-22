@@ -69,17 +69,28 @@ const SKY_COLORS := {
 
 func _ready() -> void:
 	current_hour = start_hour
-	
-	# Find sun, moon and environment in parent scene
-	_sun = get_parent().get_node_or_null("DirectionalLight3D")
-	_moon = get_parent().get_node_or_null("MoonLight3D")
-	var world_env: WorldEnvironment = get_parent().get_node_or_null("WorldEnvironment")
+
+	# Sibling references via scene-unique names (%Name). The host scene
+	# must mark the nodes "Access as Unique Name". This replaces the old
+	# get_parent() reach-through, which broke "Signal Up, Call Down".
+	_sun = _find_unique("DirectionalLight3D") as DirectionalLight3D
+	_moon = _find_unique("MoonLight3D") as DirectionalLight3D
+	var world_env := _find_unique("WorldEnvironment") as WorldEnvironment
 	if world_env:
 		_environment = world_env.environment
 		if _environment and _environment.sky:
 			_sky_material = _environment.sky.sky_material as ProceduralSkyMaterial
-	
+
 	_update_visuals()
+
+
+## Resolve a scene-unique sibling, warning instead of crashing when absent
+## (e.g. the standalone day_night_cycle.tscn shell has no lights).
+func _find_unique(node_name: String) -> Node:
+	var node := get_node_or_null("%" + node_name)
+	if node == null:
+		push_warning("DayNightCycle: '%s' not found - mark it unique in the host scene" % node_name)
+	return node
 
 
 func _process(delta: float) -> void:
