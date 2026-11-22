@@ -18,8 +18,10 @@ func _ready() -> void:
 
 
 func _generate_flat_terrain() -> void:
-	for x in range(-Config.WORLD_CHUNK_RADIUS, Config.WORLD_CHUNK_RADIUS + 1):
-		for z in range(-Config.WORLD_CHUNK_RADIUS, Config.WORLD_CHUNK_RADIUS + 1):
+	# Only the spawn area: chunks are created lazily by ChunkManager.load_chunk()
+	# while streaming, which keeps startup fast for large WORLD_CHUNK_RADIUS values.
+	for x in range(-1, 2):
+		for z in range(-1, 2):
 			create_chunk_data(x, z)
 
 

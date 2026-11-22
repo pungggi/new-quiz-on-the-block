@@ -134,7 +134,12 @@ func decorate_world() -> void:
 	if nature_props.is_empty():
 		return
 
-	var prop_count: int = randi_range(15, 25)
+	# Scale prop count with world area so larger worlds don't feel barren
+	# (base density tuned for the original 48x48 world at WORLD_CHUNK_RADIUS 1)
+	var world_width: float = Config.WORLD_MAX_X - Config.WORLD_MIN_X
+	var area_factor: float = world_width * world_width / (48.0 * 48.0)
+	set_max_props(int(100.0 * area_factor))
+	var prop_count: int = int(float(randi_range(15, 25)) * area_factor)
 
 	for i in range(prop_count):
 		if _placed_props.size() >= _max_props:

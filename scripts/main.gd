@@ -4,6 +4,7 @@ const TUTORIAL_SCENE := preload("res://scenes/ui/tutorial_overlay.tscn")
 const PAUSE_MENU_SCENE := preload("res://scenes/ui/pause_menu.tscn")
 
 @onready var chunk_root: Node3D = $ChunkRoot
+@onready var camera_rig: Node3D = $CameraRig
 @onready var hud: HUD = $UI/HUD
 @onready var quiz_window: QuizWindow = $UI/QuizWindow
 @onready var build_cursor: Node3D = $BuildCursor
@@ -18,6 +19,8 @@ var _pause_menu: Control = null
 func _ready() -> void:
 	# Initialize ChunkManager and load initial chunks
 	ChunkManager.initialize(chunk_root)
+	if camera_rig:
+		ChunkManager.set_follow_target(camera_rig)
 	ChunkManager.load_initial_chunks()
 
 	hud.quiz_requested.connect(_on_hud_quiz_requested)
