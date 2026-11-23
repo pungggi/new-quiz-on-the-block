@@ -73,6 +73,17 @@ func _ready() -> void:
 		weather.initialize(camera_rig)
 	weather.weather_changed.connect(_on_weather_changed)
 
+	# A little boat drifting on the ocean current + stars at night
+	var boat := DriftBoat.new()
+	boat.name = "DriftBoat"
+	if camera_rig:
+		boat.initialize(camera_rig)
+	add_child(boat)
+
+	var stars := Stars.new()
+	stars.name = "Stars"
+	add_child(stars)
+
 	# Beachcombing: shells on the beach + the exchange stand
 	ShellManager.initialize(self)
 	var stand: Node3D = load("res://scripts/world/shell_stand.gd").new()
