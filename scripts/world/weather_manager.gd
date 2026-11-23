@@ -19,12 +19,12 @@ const RAIN_AREA: float = 30.0 ## half-extent of the rain box around the camera
 const RAIN_FALL_HEIGHT: float = 16.0 ## emission height above the manager
 const RAIN_FADE: float = 5.0 ## seconds for rain_amount to ramp 0 <-> 1
 const RAIN_DIM: float = 0.55 ## sun/ambient factor at full rain
-const FIRST_RAIN_MIN: float = 75.0 ## first shower arrives after 75-180 s
-const FIRST_RAIN_MAX: float = 180.0
-const DRY_GAP_MIN: float = 150.0 ## gaps between later showers
-const DRY_GAP_MAX: float = 420.0
-const RAIN_DURATION_MIN: float = 35.0
-const RAIN_DURATION_MAX: float = 80.0
+const FIRST_RAIN_MIN: float = 180.0 ## first shower arrives after 3-6 minutes
+const FIRST_RAIN_MAX: float = 360.0
+const DRY_GAP_MIN: float = 480.0 ## gaps between later showers: 8-20 minutes
+const DRY_GAP_MAX: float = 1200.0
+const RAIN_DURATION_MIN: float = 30.0 ## showers last 30-60 s
+const RAIN_DURATION_MAX: float = 60.0
 
 ## 0 = bone dry, 1 = full shower (drives particles + light dim)
 var rain_amount: float = 0.0
