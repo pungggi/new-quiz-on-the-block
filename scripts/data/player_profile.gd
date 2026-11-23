@@ -108,6 +108,10 @@ const GRADE_POINT_MULTIPLIER: Dictionary = {
 ## One-time purchase: the rideable bicycle on the spawn lawn
 @export var bike_unlocked: bool = false
 
+## Bike park: cleared stations by stable id ("hop", "slalom",
+## "balance", "jump", "finish") - each pays its reward only once
+@export var bike_stations_done: Array = []
+
 ## Per-category stats
 @export var category_correct: Dictionary = {}
 @export var category_wrong: Dictionary = {}
@@ -213,6 +217,7 @@ func to_dict() -> Dictionary:
 		"shells": shells,
 		"coins": coins,
 		"bike_unlocked": bike_unlocked,
+		"bike_stations_done": bike_stations_done,
 		"category_correct": category_correct,
 		"category_wrong": category_wrong,
 		"unlocked_achievements": unlocked_achievements,
@@ -237,6 +242,7 @@ func from_dict(data: Dictionary) -> void:
 	shells = data.get("shells", 0)
 	coins = data.get("coins", 0)
 	bike_unlocked = data.get("bike_unlocked", false)
+	bike_stations_done = data.get("bike_stations_done", [])
 	category_correct = data.get("category_correct", {})
 	category_wrong = data.get("category_wrong", {})
 	unlocked_achievements = data.get("unlocked_achievements", [])

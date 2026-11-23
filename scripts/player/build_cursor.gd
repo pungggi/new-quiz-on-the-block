@@ -436,6 +436,8 @@ func _is_placement_valid(grid_x: int, grid_y: int, grid_z: int) -> bool:
 		return false
 	if BushMaze.is_in_maze(grid_x, grid_z):
 		return false
+	if BikePark.is_in_park(grid_x, grid_z):
+		return false
 
 	# Check if position already has a building (must check X, Y, AND Z)
 	if _buildings_root:

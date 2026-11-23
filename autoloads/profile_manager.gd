@@ -264,6 +264,26 @@ func set_bike_unlocked(value: bool) -> void:
 		save_profile()
 
 
+## Bike park stations: each id pays its reward once per profile
+func is_bike_station_done(id: String) -> bool:
+	if current_profile:
+		return id in current_profile.bike_stations_done
+	return false
+
+
+func set_bike_station_done(id: String, value: bool) -> void:
+	if current_profile == null:
+		return
+	var list: Array = current_profile.bike_stations_done
+	var has: bool = id in list
+	if value and not has:
+		list.append(id)
+	elif not value and has:
+		list.erase(id)
+	profile_updated.emit(current_profile)
+	save_profile()
+
+
 ## Get allowed difficulty levels for current profile
 func get_allowed_difficulties() -> Array:
 	if current_profile:

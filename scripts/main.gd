@@ -93,6 +93,12 @@ func _ready() -> void:
 	bike.rotation.y = 0.6
 	add_child(bike)
 
+	# Bicycle skill course south-west of the lawn (one-time point
+	# rewards per cleared station)
+	var park := BikePark.new()
+	park.name = "BikePark"
+	add_child(park)
+
 	# Beachcombing: shells on the beach + the exchange stand
 	ShellManager.initialize(self)
 	var stand: Node3D = load("res://scripts/world/shell_stand.gd").new()

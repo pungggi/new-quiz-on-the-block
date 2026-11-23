@@ -207,8 +207,10 @@ func _is_buildable_land(pos: Vector3) -> bool:
 	var col: Dictionary = WorldManager.terrain_column(int(floor(pos.x)), int(floor(pos.z)))
 	if col["top"] != Config.VoxelType.GRASS or col["water"]:
 		return false
-	# Keep nature props out of the hedge labyrinth footprint
-	return not BushMaze.is_in_maze(int(floor(pos.x)), int(floor(pos.z)))
+	# Keep nature props out of the hedge labyrinth and the bike park
+	var x: int = int(floor(pos.x))
+	var z: int = int(floor(pos.z))
+	return not BushMaze.is_in_maze(x, z) and not BikePark.is_in_park(x, z)
 
 
 ## Place a prop at a world position (records it and spawns the node)
