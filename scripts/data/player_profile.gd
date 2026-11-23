@@ -105,6 +105,9 @@ const GRADE_POINT_MULTIPLIER: Dictionary = {
 @export var shells: int = 0
 @export var coins: int = 0
 
+## One-time purchase: the rideable bicycle on the spawn lawn
+@export var bike_unlocked: bool = false
+
 ## Per-category stats
 @export var category_correct: Dictionary = {}
 @export var category_wrong: Dictionary = {}
@@ -207,6 +210,9 @@ func to_dict() -> Dictionary:
 		"total_wrong_answers": total_wrong_answers,
 		"total_quizzes_completed": total_quizzes_completed,
 		"buildings_placed": buildings_placed,
+		"shells": shells,
+		"coins": coins,
+		"bike_unlocked": bike_unlocked,
 		"category_correct": category_correct,
 		"category_wrong": category_wrong,
 		"unlocked_achievements": unlocked_achievements,
@@ -228,6 +234,9 @@ func from_dict(data: Dictionary) -> void:
 	total_wrong_answers = data.get("total_wrong_answers", 0)
 	total_quizzes_completed = data.get("total_quizzes_completed", 0)
 	buildings_placed = data.get("buildings_placed", 0)
+	shells = data.get("shells", 0)
+	coins = data.get("coins", 0)
+	bike_unlocked = data.get("bike_unlocked", false)
 	category_correct = data.get("category_correct", {})
 	category_wrong = data.get("category_wrong", {})
 	unlocked_achievements = data.get("unlocked_achievements", [])

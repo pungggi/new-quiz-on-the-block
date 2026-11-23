@@ -21,6 +21,26 @@ var _walk_tween: Tween
 var _coyote_timer: float = 0.0  ## Remaining coyote time
 var _swimming: bool = false
 
+## Riding a vehicle (bicycle): movement is disabled, the vehicle
+## reparents this node and drives it around; collisions are off while
+## riding so nothing fights the vehicle's own physics
+var riding: bool = false
+var _saved_collision_layer: int = 1
+var _saved_collision_mask: int = 0
+
+
+func set_riding(active: bool) -> void:
+	riding = active
+	if active:
+		velocity = Vector3.ZERO
+		_saved_collision_layer = collision_layer
+		_saved_collision_mask = collision_mask
+		collision_layer = 0
+		collision_mask = 0
+	else:
+		collision_layer = _saved_collision_layer
+		collision_mask = _saved_collision_mask
+
 ## Swimming: slower paddling in deep water
 const SWIM_SPEED_FACTOR: float = 0.5
 
@@ -73,6 +93,8 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not GameMode.is_walk_mode():
 		return
+	if riding:
+		return # the vehicle (bicycle) handles all input while mounted
 
 	if event.is_action_pressed("interact"):
 		var npc_manager: Node = get_node_or_null("/root/NPCManager")
@@ -87,6 +109,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	# Only move in WALK mode
 	if not GameMode.is_walk_mode():
+		return
+	# While riding a vehicle the vehicle owns all motion
+	if riding:
 		return
 
 	# --- Gravity ---

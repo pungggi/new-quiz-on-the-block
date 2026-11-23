@@ -84,6 +84,12 @@ func _ready() -> void:
 	stars.name = "Stars"
 	add_child(stars)
 
+	# A rideable bicycle parked on the spawn lawn
+	var bike := Bicycle.new()
+	bike.name = "Bicycle"
+	bike.position = Vector3(6.0, 2.0, 10.0)
+	add_child(bike)
+
 	# Beachcombing: shells on the beach + the exchange stand
 	ShellManager.initialize(self)
 	var stand: Node3D = load("res://scripts/world/shell_stand.gd").new()

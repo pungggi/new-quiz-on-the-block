@@ -250,6 +250,20 @@ func add_coins(amount: int) -> void:
 		save_profile()
 
 
+## One-time bicycle purchase on the spawn lawn
+func is_bike_unlocked() -> bool:
+	if current_profile:
+		return current_profile.bike_unlocked
+	return false
+
+
+func set_bike_unlocked(value: bool) -> void:
+	if current_profile:
+		current_profile.bike_unlocked = value
+		profile_updated.emit(current_profile)
+		save_profile()
+
+
 ## Get allowed difficulty levels for current profile
 func get_allowed_difficulties() -> Array:
 	if current_profile:
