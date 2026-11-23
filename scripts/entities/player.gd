@@ -25,7 +25,7 @@ var _swimming: bool = false
 ## reparents this node and drives it around; collisions are off while
 ## riding so nothing fights the vehicle's own physics
 var riding: bool = false
-var _saved_collision_layer: int = 1
+var _saved_collision_layer: int = Config.PLAYER_COLLISION_LAYER
 var _saved_collision_mask: int = 0
 
 
@@ -68,6 +68,11 @@ func _ready() -> void:
 
 	# Register with GameMode
 	GameMode.player = self
+
+	# Own body layer so pickups can listen for the player alone (see
+	# Config.PLAYER_COLLISION_LAYER); nothing collides WITH the player,
+	# so no other mask needs to know about it
+	collision_layer = Config.PLAYER_COLLISION_LAYER
 
 	# Setup collision: terrain, buildings, props and the bridge deck
 	# block the player

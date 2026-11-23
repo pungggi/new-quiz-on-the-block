@@ -30,7 +30,11 @@ func _ready() -> void:
 	scale = Vector3.ONE * BASE_SCALE
 
 	collision_layer = 0
-	collision_mask = 1 # catch bodies, filter for Player in the handler
+	# Listen for the player's body alone: the player lives on its own
+	# layer (Config.PLAYER_COLLISION_LAYER); before this the mask was 1
+	# (terrain), which the player never occupies -> walking over a shell
+	# did nothing at all
+	collision_mask = Config.PLAYER_COLLISION_LAYER
 	var shape := CollisionShape3D.new()
 	var sphere := SphereShape3D.new()
 	sphere.radius = PICKUP_RADIUS

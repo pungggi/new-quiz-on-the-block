@@ -39,6 +39,9 @@ const TERRAIN_COLLISION_LAYER: int = 1
 const BUILDING_COLLISION_LAYER: int = 2
 const NPC_COLLISION_LAYER: int = 4
 const PROP_COLLISION_LAYER: int = 8
+## The player's own body layer (bit 6). Pickups (shells) listen on
+## exactly this layer so nothing but the player can collect them.
+const PLAYER_COLLISION_LAYER: int = 32
 ## Bridge deck + ramps: only the PLAYER collides with these (NPCs glide
 ## over via WorldManager.walk_surface_y and would snag on the deck step)
 const BRIDGE_COLLISION_LAYER: int = 16
