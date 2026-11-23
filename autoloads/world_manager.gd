@@ -99,6 +99,10 @@ func terrain_column(world_x: int, world_z: int) -> Dictionary:
 ## far out in the sea. Characters wade first and start swimming once this
 ## passes Config.SWIM_DEPTH.
 func water_depth(world_x: int, world_z: int) -> int:
+	# The bridge deck and its ramps span the river: dry ground for
+	# anyone (and anything) crossing, never reported as deep water
+	if is_bridge_column(world_x, world_z):
+		return 0
 	if not terrain_column(world_x, world_z)["water"]:
 		return 0
 	var river_dx: float = absf(float(world_x) - river_center_x(world_z))
