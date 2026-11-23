@@ -189,7 +189,7 @@ func _physics_process(delta: float) -> void:
 			if _unlocked:
 				_prompt.text = "🚲 E: Aufsteigen"
 			else:
-				_prompt.text = "🚲 Kaufen: %d 💰 (E)" % PRICE
+				_prompt.text = "🚲 E: Kaufen · %d 💰" % PRICE
 			_prompt.visible = true
 		else:
 			_prompt.visible = false
