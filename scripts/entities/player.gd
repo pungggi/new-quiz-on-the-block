@@ -53,6 +53,11 @@ func _ready() -> void:
 	# block the player
 	collision_mask = Config.TERRAIN_COLLISION_LAYER | Config.BUILDING_COLLISION_LAYER | Config.PROP_COLLISION_LAYER | Config.BRIDGE_COLLISION_LAYER
 
+	# Rideable platforms: platforms on these layers CARRY the player
+	# along while moving (drift boat deck). Defaults to layer 1 only,
+	# which would let the deck block the player but never carry them
+	platform_floor_layers = Config.TERRAIN_COLLISION_LAYER | Config.BRIDGE_COLLISION_LAYER
+
 	# Create the blocky character mesh
 	_create_blocky_person()
 

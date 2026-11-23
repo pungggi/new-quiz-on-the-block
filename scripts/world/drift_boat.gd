@@ -5,7 +5,9 @@ extends Node3D
 ## bobs and rocks on the waves, sails slowly north/south along the
 ## coast and comes about (turns around) when it leaves the player's
 ## vicinity or reaches the world edge - like a toy boat carried by a
-## reversing tidal current. Purely ambient, no collision.
+## reversing tidal current. The boat is RIDEABLE: an invisible
+## AnimatableBody3D deck (player-only collision layer, same trick as
+## the bridge) lets you swim out, hop aboard and ride along.
 
 const DRIFT_SPEED: float = 0.8 ## blocks per second along the coast
 const TURN_DISTANCE: float = 55.0 ## come about this far from the player
@@ -17,6 +19,9 @@ var _t: float = 0.0
 var _dir: float = 1.0
 var _spawn_x: float = 0.0
 var _follow: Node3D = null
+var _deck: AnimatableBody3D = null
+
+const DECK_OFFSET: Vector3 = Vector3(0.0, 0.06, 0.0) ## deck center in boat space
 
 
 ## Call BEFORE add_child so _ready can spawn near the player
@@ -32,7 +37,7 @@ func _ready() -> void:
 	_build_boat()
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_t += delta
 
 	# Tidal drift along the coast
@@ -61,6 +66,18 @@ func _process(delta: float) -> void:
 	# Face the travel direction (slow swing while coming about)
 	var heading: float = 0.0 if _dir > 0.0 else PI
 	rotation.y = lerp_angle(rotation.y, heading, delta * 1.5)
+
+	# Drive the deck SIBLING directly: an AnimatableBody3D is only
+	# detected as a moving platform when its OWN transform changes each
+	# physics tick - a parent-moved child reports zero platform velocity
+	# and characters standing on it are left behind
+	if _deck and is_instance_valid(_deck):
+		_deck.global_transform = global_transform.translated_local(DECK_OFFSET)
+
+
+func _exit_tree() -> void:
+	if is_instance_valid(_deck):
+		_deck.queue_free()
 
 
 ## Blocky wooden dinghy with a mast, sail and little flag (faces +Z)
@@ -95,3 +112,21 @@ func _build_boat() -> void:
 	mi.mesh = st.commit()
 	mi.material_override = VertexColorMaterial.make()
 	add_child(mi)
+
+	# Rideable deck (sibling, driven every physics tick - see above): the
+	# player-only bridge layer keeps NPCs from colliding with it
+	_deck = AnimatableBody3D.new()
+	_deck.name = "BoatDeck"
+	_deck.sync_to_physics = true
+	_deck.collision_layer = Config.BRIDGE_COLLISION_LAYER
+	_deck.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(0.8, 0.24, 1.7)
+	shape.shape = box
+	_deck.add_child(shape)
+	# Parent can be a Node3D (the game world) or the bare root window
+	# (tests); the deck's global transform is driven manually every
+	# physics tick anyway, so the parent's own transform never matters
+	get_parent().add_child(_deck)
+	_deck.global_transform = global_transform.translated_local(DECK_OFFSET)
