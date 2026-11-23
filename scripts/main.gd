@@ -65,6 +65,14 @@ func _ready() -> void:
 	if camera_rig:
 		land_wildlife.initialize(camera_rig)
 
+	# Occasional rain showers (particles + light dim + HUD toast)
+	var weather := WeatherManager.new()
+	weather.name = "WeatherManager"
+	add_child(weather)
+	if camera_rig:
+		weather.initialize(camera_rig)
+	weather.weather_changed.connect(_on_weather_changed)
+
 	# Beachcombing: shells on the beach + the exchange stand
 	ShellManager.initialize(self)
 	var stand: Node3D = load("res://scripts/world/shell_stand.gd").new()
@@ -82,6 +90,13 @@ func _input(event: InputEvent) -> void:
 
 func _on_hud_quiz_requested() -> void:
 	quiz_window.open()
+
+
+func _on_weather_changed(raining: bool) -> void:
+	if raining:
+		hud.show_toast("🌧️ Es regnet!", Color(0.65, 0.78, 1.0))
+	else:
+		hud.show_toast("☀️ Die Sonne scheint wieder!", Color(1.0, 0.88, 0.5))
 
 
 func _on_building_placed(grid_pos: Vector3i) -> void:

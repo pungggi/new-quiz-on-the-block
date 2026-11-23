@@ -19,6 +19,11 @@ enum DayPhase {DAWN, DAY, DUSK, NIGHT}
 ## Multiplies the phase sun energies, so e.g. Neptune stays dim all day.
 var sun_intensity: float = 1.0
 
+## Weather dim factor (1.0 = clear sky). The WeatherManager lowers this
+## while it rains; it multiplies sun + ambient like sun_intensity does
+## and grays the sky out a little.
+var weather_dim: float = 1.0
+
 ## References (set in _ready)
 var _sun: DirectionalLight3D
 var _moon: DirectionalLight3D
@@ -178,12 +183,19 @@ func _update_sky_colors() -> void:
 	
 	if _environment:
 		_environment.ambient_light_color = current_colors["ambient"].lerp(next_colors["ambient"], blend)
-		_environment.ambient_light_energy = lerpf(current_colors["ambient_energy"], next_colors["ambient_energy"], blend)
+		_environment.ambient_light_energy = lerpf(current_colors["ambient_energy"], next_colors["ambient_energy"], blend) * weather_dim
 	
 	if _sun:
 		_sun.light_color = current_colors["sun_color"].lerp(next_colors["sun_color"], blend)
-		# Planet intensity scales the sun (see PlanetCatalog)
-		_sun.light_energy = lerpf(current_colors["sun_energy"], next_colors["sun_energy"], blend) * sun_intensity
+		# Planet intensity scales the sun (see PlanetCatalog), rain dims it
+		# (see WeatherManager)
+		_sun.light_energy = lerpf(current_colors["sun_energy"], next_colors["sun_energy"], blend) * sun_intensity * weather_dim
+
+	# Rain grays the sky out while weather_dim drops below 1.0
+	if weather_dim < 1.0 and _sky_material:
+		var gray: float = (1.0 - weather_dim) * 0.6
+		_sky_material.sky_top_color = _sky_material.sky_top_color.lerp(Color(0.35, 0.38, 0.45), gray)
+		_sky_material.sky_horizon_color = _sky_material.sky_horizon_color.lerp(Color(0.45, 0.48, 0.55), gray)
 
 
 func _get_phase_for_hour(hour: float) -> DayPhase:
