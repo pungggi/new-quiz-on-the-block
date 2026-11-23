@@ -230,10 +230,13 @@ func _get_phase_blend(hour: float, phase: DayPhase) -> float:
 		DayPhase.DUSK:
 			return (hour - 18.0) / 2.0 # 18-20
 		DayPhase.NIGHT:
-			if hour >= 20.0:
-				return (hour - 20.0) / 9.0 # 20-5 (next day)
-			else:
-				return (hour + 4.0) / 9.0 # 0-5 = 4-9
+			# Deep night stays DARK (the old formula lerped toward dawn all
+			# night long, so midnight glowed orange and kept brightening).
+			# Realistic: only the pre-dawn window 03:30-05:00 glows toward
+			# sunrise; the DAWN phase then takes over seamlessly at blend 1.0.
+			if hour >= 3.5 and hour < 5.0:
+				return (hour - 3.5) / 1.5 # 03:30-05:00 pre-dawn glow
+			return 0.0 # 20:00-03:30 pure night
 	return 0.0
 
 
