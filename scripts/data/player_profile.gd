@@ -101,6 +101,10 @@ const GRADE_POINT_MULTIPLIER: Dictionary = {
 @export var total_quizzes_completed: int = 0
 @export var buildings_placed: int = 0
 
+## Beachcombing economy: collected shells and traded coins
+@export var shells: int = 0
+@export var coins: int = 0
+
 ## Per-category stats
 @export var category_correct: Dictionary = {}
 @export var category_wrong: Dictionary = {}

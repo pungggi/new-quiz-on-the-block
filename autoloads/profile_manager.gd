@@ -9,6 +9,8 @@ signal profile_loaded(profile: PlayerProfile)
 signal profile_updated(profile: PlayerProfile)
 signal profile_switched(profile: PlayerProfile)
 signal points_changed(new_total: int)
+signal shells_changed(count: int)
+signal coins_changed(amount: int)
 
 const PROFILES_SAVE_PATH := "user://profiles.json"
 const MAX_PROFILES := 5
@@ -216,6 +218,36 @@ func spend_points(amount: int) -> bool:
 	profile_updated.emit(current_profile)
 	save_profile()
 	return true
+
+
+## Beachcombing economy: shells collected on the beach, coins from
+## trading them at the shell stand (persisted with the profile)
+func get_shells() -> int:
+	if current_profile:
+		return current_profile.shells
+	return 0
+
+
+func get_coins() -> int:
+	if current_profile:
+		return current_profile.coins
+	return 0
+
+
+func add_shells(amount: int) -> void:
+	if current_profile:
+		current_profile.shells = maxi(0, current_profile.shells + amount)
+		shells_changed.emit(current_profile.shells)
+		profile_updated.emit(current_profile)
+		save_profile()
+
+
+func add_coins(amount: int) -> void:
+	if current_profile:
+		current_profile.coins = maxi(0, current_profile.coins + amount)
+		coins_changed.emit(current_profile.coins)
+		profile_updated.emit(current_profile)
+		save_profile()
 
 
 ## Get allowed difficulty levels for current profile

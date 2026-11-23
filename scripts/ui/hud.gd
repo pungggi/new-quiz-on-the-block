@@ -37,6 +37,7 @@ var _quiz_manager: Node = null
 var _npc_manager: Node = null
 var _day_night: Node = null
 var _planet_picker: PlanetPicker = null
+var _shell_label: Label = null
 
 # Toast manager (created dynamically or use existing container)
 var _toast_manager: ToastManager = null
@@ -62,6 +63,9 @@ func _ready() -> void:
 	if time_label:
 		time_label.mouse_filter = Control.MOUSE_FILTER_STOP
 		time_label.gui_input.connect(_on_time_label_gui_input)
+
+	# Shell/coin counter under the points display
+	_setup_shell_display()
 
 	# Start showing hints after a short delay
 	await get_tree().create_timer(UIThemeConstants.TOAST_DURATION).timeout
@@ -326,6 +330,36 @@ func _toggle_planet_picker() -> void:
 func _on_planet_selected(planet: Dictionary) -> void:
 	var suns: int = maxi(1, int(round(float(planet["sun_intensity"]) / 0.4)))
 	show_toast("🪐 %s: Tag = %d Minuten, Sonne %s" % [planet["name"], int(planet["day_minutes"]), "☀️".repeat(suns)])
+
+#endregion
+
+
+#region Shell Counter
+
+func _setup_shell_display() -> void:
+	if not (points_label and points_label.get_parent()):
+		return
+	_shell_label = Label.new()
+	_shell_label.name = "ShellLabel"
+	_shell_label.text = "🐚 0   💰 0"
+	points_label.get_parent().add_child(_shell_label)
+	points_label.get_parent().move_child(_shell_label, points_label.get_index() + 1)
+	ShellManager.shells_changed.connect(_on_shells_changed)
+	ShellManager.coins_changed.connect(_on_coins_changed)
+	_update_shell_display()
+
+
+func _update_shell_display() -> void:
+	if _shell_label:
+		_shell_label.text = "🐚 %d   💰 %d" % [ShellManager.get_shells(), ShellManager.get_coins()]
+
+
+func _on_shells_changed(_count: int) -> void:
+	_update_shell_display()
+
+
+func _on_coins_changed(_amount: int) -> void:
+	_update_shell_display()
 
 #endregion
 
