@@ -61,6 +61,25 @@ static func is_in_park(world_x: int, world_z: int) -> bool:
 	return lx >= 0 and lx < SIZE.x and lz >= 0 and lz < SIZE.y
 
 
+## Riding surface (the three dirt lanes): the chunk mesher draws
+## these cells as bare dirt with no grass blades, so the track reads
+## as a track. The infield between the lanes stays grass.
+static func is_track(world_x: int, world_z: int) -> bool:
+	if not is_in_park(world_x, world_z):
+		return false
+	var lx: int = world_x - ORIGIN.x
+	var lz: int = world_z - ORIGIN.y
+	if lz >= SIZE.y - LANE_W: ## north lane
+		return true
+	if lx < LANE_W: ## west lane
+		return true
+	if lz < LANE_W: ## south lane
+		return true
+	if lx >= SIZE.x - LANE_W: ## east lane
+		return true
+	return false
+
+
 # ------------------------------------------------------------- lane geometry
 # The loop runs counter-clockwise on three lanes:
 #   north lane  z = ORIGIN.y + 24 .. +32  (east -> west)
@@ -83,17 +102,12 @@ static func west_lane_x() -> float:
 func _build_ground() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var dirt: Color = Color(0.62, 0.5, 0.36)
-	var dirt_dark: Color = Color(0.55, 0.44, 0.31)
 	var x0: int = ORIGIN.x
 	var z0: int = ORIGIN.y
 	var x1: int = ORIGIN.x + SIZE.x - 1
 	var z1: int = ORIGIN.y + SIZE.y - 1
-	# Three lanes forming a loop (the big infield stays grass)
-	_track(st, x0, z1 - LANE_W + 1, x1, z1, dirt) # north
-	_track(st, x0, z0, x0 + LANE_W - 1, z1, dirt) # west
-	_track(st, x0, z0, x1, z0 + LANE_W - 1, dirt) # south
-	_track(st, x1 - LANE_W + 1, z0, x1, z1, dirt) # east
+	# The lanes themselves are drawn by the chunk mesher as bare dirt
+	# (BikePark.is_track); only the border lives here
 	# Border pinwheels every 4 blocks
 	var flag_cols: Array[Color] = [Color(0.9, 0.3, 0.25), Color(1.0, 0.8, 0.25), Color(0.3, 0.6, 0.95), Color(0.35, 0.8, 0.45)]
 	var fi: int = 0
@@ -105,6 +119,29 @@ func _build_ground() -> void:
 		for x: int in [x0, x1]:
 			_flag(st, Vector3(float(x) + 0.5, 1.0, float(z) + 0.5), flag_cols[fi % flag_cols.size()])
 			fi += 1
+	# A few flowers OUTSIDE the track, just beyond the border (the infield
+	# keeps its grass and blades)
+	var flower_cols: Array[Color] = [Color(1.0, 0.45, 0.5), Color(1.0, 0.85, 0.3), Color(0.95, 0.95, 1.0), Color(0.85, 0.5, 0.95)]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261124
+	for i: int in range(28):
+		var side: int = rng.randi_range(0, 3)
+		var fx: float
+		var fz: float
+		match side:
+			0: # north, outside
+				fx = float(rng.randi_range(x0 - 1, x1 + 1)) + 0.5
+				fz = float(z1 + 2) + rng.randf_range(0.2, 0.8)
+			1: # south, outside
+				fx = float(rng.randi_range(x0 - 1, x1 + 1)) + 0.5
+				fz = float(z0 - 2) + rng.randf_range(0.2, 0.8)
+			2: # west, outside
+				fx = float(x0 - 2) + rng.randf_range(0.2, 0.8)
+				fz = float(rng.randi_range(z0 - 1, z1 + 1)) + 0.5
+			_:
+				fx = float(x1 + 2) + rng.randf_range(0.2, 0.8)
+				fz = float(rng.randi_range(z0 - 1, z1 + 1)) + 0.5
+		_flower(st, Vector3(fx, 1.0, fz), flower_cols[i % flower_cols.size()])
 	var mi := MeshInstance3D.new()
 	mi.name = "ParkMesh"
 	mi.mesh = st.commit()
@@ -112,9 +149,11 @@ func _build_ground() -> void:
 	add_child(mi)
 
 
-func _track(st: SurfaceTool, x0: int, z0: int, x1: int, z1: int, color: Color) -> void:
-	var y: float = Config.GROUND_Y + 0.02
-	SurfaceBoxes.add_box(st, Vector3(float(x0), y, float(z0)), Vector3(float(x1 + 1), y + 0.02, float(z1 + 1)), color, color.lightened(0.05))
+## Little blocky flower: stem + blossom, no collision
+func _flower(st: SurfaceTool, pos: Vector3, color: Color) -> void:
+	SurfaceBoxes.add_box(st, pos + Vector3(-0.03, 0.0, -0.03), pos + Vector3(0.03, 0.35, 0.03), Color(0.3, 0.6, 0.3))
+	SurfaceBoxes.add_box(st, pos + Vector3(-0.1, 0.35, -0.1), pos + Vector3(0.1, 0.47, 0.1), color)
+	SurfaceBoxes.add_box(st, pos + Vector3(-0.04, 0.47, -0.04), pos + Vector3(0.04, 0.52, 0.04), Color(1.0, 0.9, 0.3))
 
 
 func _flag(st: SurfaceTool, pos: Vector3, color: Color) -> void:

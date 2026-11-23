@@ -132,6 +132,13 @@ func _build_mesh() -> void:
 
 			var top_voxel: int = data[x + z * size + (col_h - 1) * size * size]
 
+			# Bike park lanes are bare dirt: same grass voxel underneath, but
+			# drawn in a dirt tone with no grass blades (see BikePark.is_track)
+			var on_track: bool = BikePark.is_track(base_x, base_z)
+			var top_color: Color = _voxel_color(top_voxel)
+			if on_track and top_voxel == Config.VoxelType.GRASS:
+				top_color = _track_color(base_x, base_z)
+
 			# Top face sits at the surface height (water beds slope down)
 			var surf: float = WorldManager.surface_y(base_x, base_z)
 			_add_quad(st,
@@ -139,15 +146,15 @@ func _build_mesh() -> void:
 				Vector3(base_x + 1, surf, base_z),
 				Vector3(base_x + 1, surf, base_z + 1),
 				Vector3(base_x, surf, base_z + 1),
-				Vector3.UP, _voxel_color(top_voxel))
+				Vector3.UP, top_color)
 
 			# Side faces where the neighboring column is lower (mountains,
 			# cliffs, underwater bed steps). surface_y is deterministic and
 			# works across chunk borders without loading neighbor chunks.
 			_add_column_sides(st, base_x, base_z, surf)
 
-			# Grass blades only on grass
-			if top_voxel == Config.VoxelType.GRASS:
+			# Grass blades only on grass - never on the bike track
+			if top_voxel == Config.VoxelType.GRASS and not on_track:
 				seed(hash(Vector3(base_x, surf, base_z)))
 				var count := randi() % 4
 				for i in range(count):
@@ -178,6 +185,15 @@ func _build_mesh() -> void:
 
 func _voxel_color(voxel: int) -> Color:
 	return VOXEL_COLORS.get(voxel, Color.WHITE)
+
+
+## Packed dirt for the bike park lanes, with a subtle per-cell jitter
+## so the track doesn't read as one flat slab (deterministic)
+func _track_color(world_x: int, world_z: int) -> Color:
+	var base := Color(0.62, 0.5, 0.36)
+	var h: int = hash(Vector2i(world_x, world_z))
+	var f: float = float(h % 1000) / 1000.0
+	return base.darkened(f * 0.12)
 
 
 ## Add the four side walls of a column that are higher than their neighbor
