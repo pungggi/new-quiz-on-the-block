@@ -17,8 +17,8 @@ const ACCEL: float = 7.0
 const BRAKE: float = 16.0
 const DRAG: float = 5.0 ## coasting slowdown
 const REVERSE_MAX: float = 2.0
-const TURN_SLOW: float = 2.1 ## rad/s at standstill
-const TURN_FAST: float = 1.2 ## rad/s at top speed
+const TURN_SLOW: float = 2.8 ## rad/s at standstill
+const TURN_FAST: float = 2.4 ## rad/s at top speed (turning radius ~3.75 blocks at speed 9)
 const LEAN_MAX: float = 0.16 ## visual lean into the curve
 const HOP_VELOCITY: float = 6.5 ## clears the 0.75 hedges comfortably
 const GRAVITY: float = 20.0
@@ -37,6 +37,9 @@ var _speed: float = 0.0
 var _steer: float = 0.0
 var _jump_held: bool = false
 var _air_time: float = 0.0
+var _ramp_slope: float = 0.0 ## slope of the last ramp we were on (rise/run), kept briefly past the lip
+var _ramp_fresh: float = 0.0 ## seconds the remembered slope stays valid
+var _launched: bool = false ## ramp launch consumed for this airtime
 var _hint_cooldown: float = 0.0
 var _t: float = 0.0
 var _rider: Node3D = null
@@ -108,6 +111,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= GRAVITY * delta
 		_air_time += delta
 	else:
+		# On the ground: the floor normal was captured right after the
+		# previous move_and_slide (see below) - reading it here returns a
+		# stale straight-up normal because Godot resets the floor state
+		# before the next physics tick.
 		velocity.y = 0.0
 
 	# --- Controls (only while mounted) ---
@@ -167,6 +174,36 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+	# Capture the floor normal NOW: Godot resets the floor state before
+	# the next physics tick, so is_on_floor()/get_floor_normal() at the
+	# top of _physics_process no longer reflect the ramp we're on.
+	var fwd: Vector3 = Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+	if is_on_floor():
+		var n: Vector3 = get_floor_normal()
+		var slope: float = 0.0 if n.y >= 0.999 else (sqrt(1.0 - n.y * n.y) / n.y)
+		# Only an UPSLOPE ahead launches (the normal tilts back toward us)
+		var s: float = slope if (slope > 0.02 and n.dot(fwd) < -0.05) else 0.0
+		if s > 0.0:
+			# Remember the slope briefly: the last grounded frame at the lip
+			# can report a flat normal (snap onto the ramp box's top edge)
+			_ramp_slope = s
+			_ramp_fresh = 0.12
+
+	# Just left the floor while on an upslope: launch with the ramp's
+	# vertical component (kicker!). A hop (Space) already set velocity.y
+	# higher, so only top up if the ramp would give more. The slope is
+	# remembered from the last grounded frame, so a one-frame snap at
+	# the lip doesn't lose the launch.
+	if not is_on_floor() and _ramp_slope > 0.0 and not _launched:
+		var launch: float = absf(_speed) * _ramp_slope
+		velocity.y = maxf(velocity.y, launch)
+		_launched = true
+	_ramp_fresh -= delta
+	if _ramp_fresh <= 0.0 and not is_on_floor():
+		_ramp_slope = 0.0
+	if is_on_floor():
+		_launched = false
+
 	# Landing puff after a real hop
 	if was_on_floor == false and is_on_floor() and _air_time > 0.3:
 		Effects.spawn_floating_text(global_position + Vector3.UP * 0.5, "💨", Color(0.9, 0.9, 0.9))
@@ -215,6 +252,16 @@ func get_speed() -> float:
 	return _speed
 
 
+## Stop dead: zero speed, velocity and steering smoothing (used when
+## the bike is parked by scripts/tests or placed somewhere)
+func reset_motion() -> void:
+	_speed = 0.0
+	_steer = 0.0
+	velocity = Vector3.ZERO
+	_ramp_slope = 0.0
+	_ramp_fresh = 0.0
+
+
 func get_rider() -> Node3D:
 	return _rider
 
@@ -254,6 +301,7 @@ func mount(rider: Node3D) -> void:
 		return
 	_rider = rider
 	_speed = 0.0
+	_steer = 0.0
 	# Park any leftover motion so the bike doesn't drift while mounting
 	velocity = Vector3.ZERO
 	if _rider.has_method("set_riding"):
