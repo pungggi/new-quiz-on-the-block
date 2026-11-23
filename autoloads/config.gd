@@ -39,6 +39,9 @@ const TERRAIN_COLLISION_LAYER: int = 1
 const BUILDING_COLLISION_LAYER: int = 2
 const NPC_COLLISION_LAYER: int = 4
 const PROP_COLLISION_LAYER: int = 8
+## Bridge deck + ramps: only the PLAYER collides with these (NPCs glide
+## over via WorldManager.walk_surface_y and would snag on the deck step)
+const BRIDGE_COLLISION_LAYER: int = 16
 #endregion
 
 #region Voxel Types

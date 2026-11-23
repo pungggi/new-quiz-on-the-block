@@ -430,6 +430,13 @@ func _is_placement_valid(grid_x: int, grid_y: int, grid_z: int) -> bool:
 	if col["top"] != Config.VoxelType.GRASS or col["water"]:
 		return false
 
+	# Keep structures clear: nothing on the bridge or inside the hedge
+	# labyrinth footprint
+	if WorldManager.is_bridge_column(grid_x, grid_z):
+		return false
+	if BushMaze.is_in_maze(grid_x, grid_z):
+		return false
+
 	# Check if position already has a building (must check X, Y, AND Z)
 	if _buildings_root:
 		for child in _buildings_root.get_children():

@@ -122,10 +122,10 @@ func _physics_process(delta: float) -> void:
 
 		move_and_slide()
 
-		# Follow the terrain surface: water beds slope below the water
-		# line, so wading characters stand IN the water and swimmers
-		# naturally disappear under the surface.
-		var ground_y: float = WorldManager.surface_y_at(global_position)
+		# Follow the walkable surface: water beds slope below the water
+		# line (wading stands IN the water), the bridge deck carries
+		# characters dry over the river.
+		var ground_y: float = WorldManager.walk_surface_y_at(global_position)
 		position.y = lerpf(position.y, ground_y, delta * 8.0)
 
 		# Stuck detector: a head-on hit on a tree has no slide direction,

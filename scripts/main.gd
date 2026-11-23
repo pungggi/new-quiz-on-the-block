@@ -49,6 +49,15 @@ func _ready() -> void:
 	sea_wildlife.name = "SeaWildlife"
 	add_child(sea_wildlife)
 
+	# Wooden bridge across the river + hedge labyrinth west of spawn
+	var bridge: Node3D = load("res://scripts/world/bridge.gd").new()
+	bridge.name = "Bridge"
+	add_child(bridge)
+
+	var maze: Node3D = BushMaze.new()
+	maze.name = "BushMaze"
+	add_child(maze)
+
 	# Start the game (profile is already loaded from main menu)
 	_start_game()
 

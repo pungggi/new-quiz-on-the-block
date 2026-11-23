@@ -80,10 +80,12 @@ func _update_spawning(delta: float) -> void:
 	if not _spawning_enabled:
 		return
 
-	# Clean up invalid NPC references
+	# Clean up invalid NPC references. is_queued_for_deletion +
+	# is_inside_tree guard against nodes freed elsewhere this frame:
+	# their global_position reads would error every frame otherwise.
 	var valid_npcs: Array[NPC] = []
 	for npc: NPC in _active_npcs:
-		if is_instance_valid(npc):
+		if is_instance_valid(npc) and not npc.is_queued_for_deletion() and npc.is_inside_tree():
 			valid_npcs.append(npc)
 	_active_npcs = valid_npcs
 

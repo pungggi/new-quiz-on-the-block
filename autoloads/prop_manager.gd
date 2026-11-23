@@ -205,7 +205,10 @@ func _decorate_chunk(chunk_key: Vector2i, nature_props: Array[PropData]) -> void
 ## building placement and NPC spawns).
 func _is_buildable_land(pos: Vector3) -> bool:
 	var col: Dictionary = WorldManager.terrain_column(int(floor(pos.x)), int(floor(pos.z)))
-	return col["top"] == Config.VoxelType.GRASS and not col["water"]
+	if col["top"] != Config.VoxelType.GRASS or col["water"]:
+		return false
+	# Keep nature props out of the hedge labyrinth footprint
+	return not BushMaze.is_in_maze(int(floor(pos.x)), int(floor(pos.z)))
 
 
 ## Place a prop at a world position (records it and spawns the node)

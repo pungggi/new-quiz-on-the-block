@@ -49,8 +49,9 @@ func _ready() -> void:
 	# Register with GameMode
 	GameMode.player = self
 
-	# Setup collision: terrain, buildings and props block the player
-	collision_mask = Config.TERRAIN_COLLISION_LAYER | Config.BUILDING_COLLISION_LAYER | Config.PROP_COLLISION_LAYER
+	# Setup collision: terrain, buildings, props and the bridge deck
+	# block the player
+	collision_mask = Config.TERRAIN_COLLISION_LAYER | Config.BUILDING_COLLISION_LAYER | Config.PROP_COLLISION_LAYER | Config.BRIDGE_COLLISION_LAYER
 
 	# Create the blocky character mesh
 	_create_blocky_person()

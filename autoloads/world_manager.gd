@@ -30,6 +30,19 @@ const WATER_SURFACE_MAX_Y: float = 1.35
 ## How much the bed drops per water-depth block (sea slopes down)
 const BED_DROP_PER_DEPTH: float = 0.06
 
+## Wooden bridge across the river near spawn. The mesh/colliders live in
+## scripts/world/bridge.gd; these constants drive BOTH the walkable
+## surface (walk_surface_y) and that mesh so they never drift apart.
+## The deck spans the water plus the inner sand banks, the ramps descend
+## to the grass over BRIDGE_RAMP_LEN columns.
+const BRIDGE_Z: int = -22
+const BRIDGE_DECK_Y: float = 1.5
+const BRIDGE_HALF_LEN: int = 4
+const BRIDGE_HALF_W: int = 1
+const BRIDGE_RAMP_LEN: int = 3
+## River center column at BRIDGE_Z (set once in _ready, single source)
+var bridge_cx: int = 0
+
 var _noise: FastNoiseLite
 var _river_noise: FastNoiseLite
 
@@ -45,6 +58,7 @@ func _ready() -> void:
 	_river_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	_river_noise.frequency = 0.02
 	_generate_flat_terrain()
+	bridge_cx = int(round(river_center_x(BRIDGE_Z)))
 
 
 ## River center x position for a world z row (meandering line, west to east)
@@ -106,6 +120,28 @@ func surface_y(world_x: int, world_z: int) -> float:
 	return maxf(bed, 0.1)
 
 
+## Bridge footprint query (deck + ramps). Buildings and props stay off
+## these columns.
+func is_bridge_column(world_x: int, world_z: int) -> bool:
+	if absi(world_z - BRIDGE_Z) > BRIDGE_HALF_W:
+		return false
+	return absi(world_x - bridge_cx) <= BRIDGE_HALF_LEN + BRIDGE_RAMP_LEN
+
+
+## Walkable height INCLUDING structures: bridge deck level, ramps lerp
+## down to the grass. surface_y() stays natural so the chunk mesher
+## keeps drawing the river bed UNDER the bridge - only characters
+## follow this one.
+func walk_surface_y(world_x: int, world_z: int) -> float:
+	if not is_bridge_column(world_x, world_z):
+		return surface_y(world_x, world_z)
+	var dx: int = absi(world_x - bridge_cx)
+	if dx <= BRIDGE_HALF_LEN:
+		return BRIDGE_DECK_Y
+	var t: float = float(dx - BRIDGE_HALF_LEN) / float(BRIDGE_RAMP_LEN)
+	return lerpf(BRIDGE_DECK_Y, 1.0, t)
+
+
 ## Position-based helpers so the rounding from world position to column
 ## index lives in exactly one place (used by NPC and Player).
 func is_deep_water_at(pos: Vector3) -> bool:
@@ -114,6 +150,10 @@ func is_deep_water_at(pos: Vector3) -> bool:
 
 func surface_y_at(pos: Vector3) -> float:
 	return surface_y(int(floor(pos.x)), int(floor(pos.z)))
+
+
+func walk_surface_y_at(pos: Vector3) -> float:
+	return walk_surface_y(int(floor(pos.x)), int(floor(pos.z)))
 
 
 func _generate_flat_terrain() -> void:
