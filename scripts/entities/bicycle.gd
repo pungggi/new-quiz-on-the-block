@@ -47,6 +47,7 @@ var _steer_pivot: Node3D = null
 var _front_wheel: Node3D = null
 var _rear_wheel: Node3D = null
 var _prompt: Label3D = null
+var _sign: Label3D = null
 
 
 func _ready() -> void:
@@ -177,7 +178,9 @@ func _physics_process(delta: float) -> void:
 		var ratio: float = clampf(absf(_speed) / MAX_SPEED, 0.0, 1.0)
 		_tilt.rotation.z = -_steer * LEAN_MAX * ratio
 
-	# --- Prompt ---
+	# --- Sign + prompt ---
+	if _sign:
+		_sign.visible = _rider == null
 	if _prompt:
 		if _rider:
 			_prompt.text = "🚲 E: Absteigen"
@@ -358,6 +361,18 @@ func _build_wheel(wheel_name: String) -> Node3D:
 
 
 func _build_prompt() -> void:
+	# Always-visible shop sign so the bike is easy to spot from afar
+	_sign = Label3D.new()
+	_sign.name = "Sign"
+	_sign.text = "🚲"
+	_sign.position = Vector3(0.0, 1.75, 0.0)
+	_sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_sign.font_size = 96
+	_sign.outline_size = 14
+	_sign.modulate = Color(1.0, 1.0, 1.0)
+	_sign.no_depth_test = true
+	add_child(_sign)
+
 	_prompt = Label3D.new()
 	_prompt.name = "Prompt"
 	_prompt.text = "🚲 E: Aufsteigen"

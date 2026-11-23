@@ -84,10 +84,13 @@ func _ready() -> void:
 	stars.name = "Stars"
 	add_child(stars)
 
-	# A rideable bicycle parked on the spawn lawn
+	# A rideable bicycle parked right in front of the player on the spawn
+	# lawn (camera looks north/+Z over the player's shoulder, so the
+	# bike sits squarely in the opening shot)
 	var bike := Bicycle.new()
 	bike.name = "Bicycle"
-	bike.position = Vector3(6.0, 2.0, 10.0)
+	bike.position = Vector3(2.0, 2.0, 11.0)
+	bike.rotation.y = 0.6
 	add_child(bike)
 
 	# Beachcombing: shells on the beach + the exchange stand
