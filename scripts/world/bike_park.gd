@@ -24,12 +24,15 @@ const FINISH_REWARD: int = 25 ## course completion bonus
 
 const HEDGE_BAR_H: float = 0.45 ## hop bar height (hop apex is ~1.1)
 const CONE_H: float = 0.7
-const BEAM_W: float = 0.6
-const BEAM_Y: float = 1.25 ## beam top above ground
+const BEAM_W: float = 0.8
+const BEAM_Y: float = 0.9 ## beam top above ground (bike hop apex ~1.1)
 const PIT_DEPTH: float = 0.5
-const RAMP_H: float = 1.2 ## kicker height
-const RAMP_LEN: float = 2.4
+const RAMP_H: float = 1.0 ## kicker height
+const RAMP_LEN: float = 3.0
 const RAMP_W: float = 2.4
+const BALANCE_RAMP_LEN: float = 2.6 ## gentle ride up onto the beam
+const JUMP_GAP: float = 2.6 ## gap between kicker lip and landing ramp
+const RAMP_OVERLAP: float = 0.03 ## ramps end a hair ABOVE the beam top so the bike's box collider never catches a flush edge
 
 const STATION_NAMES: Array[String] = ["Hop", "Slalom", "Balance", "Sprung", "Ziel"]
 ## Station ids as stored in the profile (stable strings, never rename)
@@ -112,7 +115,7 @@ func _flag(st: SurfaceTool, pos: Vector3, color: Color) -> void:
 
 # ------------------------------------------------------------- station bits
 
-func _add_static_box(size: Vector3, center: Vector3, color: Color, top_color: Color = Color(0, 0, 0, 0)) -> void:
+func _add_static_box(size: Vector3, center: Vector3, color: Color, top_color: Color = Color(0, 0, 0, 0), with_collision: bool = true) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	if top_color.a > 0.0:
@@ -124,6 +127,8 @@ func _add_static_box(size: Vector3, center: Vector3, color: Color, top_color: Co
 	mi.material_override = VertexColorMaterial.make()
 	add_child(mi)
 
+	if not with_collision:
+		return
 	var body := StaticBody3D.new()
 	body.collision_layer = Config.PROP_COLLISION_LAYER
 	body.collision_mask = 0
@@ -157,18 +162,29 @@ func _add_ramp(base_center: Vector3, length: float, height: float, width: float,
 	mi.material_override = VertexColorMaterial.make()
 	add_child(mi)
 
-	# Collider: a box tilted the same way, riding on the prop layer
+	# Collider: a box tilted the same way, riding on the prop layer.
+	# Set the LOCAL transform before adding to the tree (global_position
+	# on a node outside the tree is an error and silently lands at the
+	# origin); the park itself sits unrotated at the origin, so local
+	# == global here. The box is thin and sits so its FRONT face is
+	# buried below ground - a box collider that pokes out of the ground
+	# presents a vertical lip the bike's box can't slide up.
 	var body := StaticBody3D.new()
 	body.collision_layer = Config.PROP_COLLISION_LAYER
 	body.collision_mask = 0
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(width, thickness * 2.0, slope_len)
+	# Thin slab; shifted so the slab's top surface passes exactly through
+	# base (ground) and top (ground + height), with the whole underside
+	# hidden below the slope
+	box.size = Vector3(width, thickness, slope_len)
 	shape.shape = box
 	body.add_child(shape)
-	body.global_position = mid - Vector3.UP * (thickness * 0.5)
+	# Euler order is YXZ: yaw first (align with `facing`), then pitch
+	# around the local X so the slab climbs along its own +Z
 	var yaw: float = atan2(dir.x, dir.z)
-	body.rotation = Vector3(-angle, yaw, 0.0)
+	var surface_mid: Vector3 = base_center + Vector3.UP * (height * 0.5) + dir * (length * 0.5)
+	body.transform = Transform3D(Basis.from_euler(Vector3(-angle, yaw, 0.0)), surface_mid - Vector3.UP * (thickness * 0.5))
 	add_child(body)
 
 
@@ -270,15 +286,16 @@ func _refresh_marks() -> void:
 		done.visible = ProfileManager.is_bike_station_done(id)
 
 
-## 2 HOP: a low bar across the track that must be hopped over
+## 2 HOP: a low bar across the west connector that must be hopped
+## over on the way back up to the finish arch (travel direction north)
 func _build_hop() -> void:
-	var cx: float = float(ORIGIN.x + 7)
-	var cz: float = float(ORIGIN.y + 4) + 0.5
+	var cx: float = float(ORIGIN.x + 1) + 1.0 # center of the west connector
+	var cz: float = float(ORIGIN.y + 6.5)
 	var green: Color = Color(0.3, 0.65, 0.32)
-	# Hedge bar spanning the track width (z -0.5 .. +2.5 => 3 blocks)
-	_add_static_box(Vector3(0.6, HEDGE_BAR_H, 3.0), Vector3(cx, Config.GROUND_Y + HEDGE_BAR_H * 0.5, cz), green, green.lightened(0.15))
+	# Hedge bar spanning the connector width (fits inside x 0..3)
+	_add_static_box(Vector3(2.8, HEDGE_BAR_H, 0.6), Vector3(cx, Config.GROUND_Y + HEDGE_BAR_H * 0.5, cz), green, green.lightened(0.15))
 	# Trigger sits right behind the bar (cleared when you pass it)
-	_add_trigger("hop", Vector3(cx + 1.4, Config.GROUND_Y + 0.6, cz), Vector3(0.6, 1.2, 3.0), "2 🐰 Hop!")
+	_add_trigger("hop", Vector3(cx, Config.GROUND_Y + 0.6, cz + 1.4), Vector3(3.0, 1.2, 0.6), "2 Hop!")
 
 
 ## 3 SLALOM: five cones in a zigzag along the east turn
@@ -315,71 +332,102 @@ func _cone(pos: Vector3, color: Color, stripe: Color) -> void:
 ## 4 BALANCE: a narrow beam over a shallow pit
 func _build_balance() -> void:
 	var wood: Color = Color(0.55, 0.39, 0.23)
-	var x0: float = float(ORIGIN.x + 3)
+	var x0: float = float(ORIGIN.x + 4)
 	var x1: float = float(ORIGIN.x + 8)
 	var z: float = float(ORIGIN.y + 10) + 0.5
 	var length: float = x1 - x0
+	# Beam TOP sits at GROUND_Y + BEAM_Y; the slab is 0.2 thick
 	var mid: Vector3 = Vector3((x0 + x1) * 0.5, Config.GROUND_Y + BEAM_Y - 0.1, z)
-	# Beam (rideable, prop layer)
 	_add_static_box(Vector3(length, 0.2, BEAM_W), mid, wood, wood.lightened(0.12))
-	# Ramps up to the beam on both ends
-	_add_ramp(Vector3(x0 - 1.6, Config.GROUND_Y, z), 1.6, BEAM_Y, BEAM_W, wood, Vector3(1, 0, 0))
-	_add_ramp(Vector3(x1 + 1.6, Config.GROUND_Y, z), 1.6, BEAM_Y, BEAM_W, wood, Vector3(-1, 0, 0))
+	# Ramps up to the beam on both ends: each ramp's TOP touches the
+	# beam end, its base is one ramp-length further out on the ground.
+	# _add_ramp puts the top at base + facing * length, so the EAST ramp
+	# (base right of the beam) climbs west and the WEST ramp climbs east.
+	_add_ramp(Vector3(x1 + BALANCE_RAMP_LEN, Config.GROUND_Y, z), BALANCE_RAMP_LEN, BEAM_Y + RAMP_OVERLAP, BEAM_W, wood, Vector3(-1, 0, 0))
+	_add_ramp(Vector3(x0 - BALANCE_RAMP_LEN, Config.GROUND_Y, z), BALANCE_RAMP_LEN, BEAM_Y + RAMP_OVERLAP, BEAM_W, wood, Vector3(1, 0, 0))
 	# Shallow pit marking (visual only): darker soil under the beam
-	_add_static_box(Vector3(length, 0.04, 2.4), Vector3((x0 + x1) * 0.5, Config.GROUND_Y + 0.02, z), Color(0.35, 0.27, 0.18))
-	# Trigger after the beam (west end exit)
-	_add_trigger("balance", Vector3(x0 - 2.4, Config.GROUND_Y + 0.8, z), Vector3(0.6, 1.6, 2.0), "4 🪵 Balance!")
+	_add_static_box(Vector3(length + BALANCE_RAMP_LEN * 2.0, 0.04, 2.4), Vector3((x0 + x1) * 0.5, Config.GROUND_Y + 0.01, z), Color(0.35, 0.27, 0.18), Color(0, 0, 0, 0), false)
+	# Trigger after the beam (west end exit, on the ground)
+	_add_trigger("balance", Vector3(x0 - BALANCE_RAMP_LEN - 1.2, Config.GROUND_Y + 0.8, z), Vector3(0.6, 1.6, 2.0), "4 🪵 Balance!")
+
+
+## Helper for tests: kicker base x (east end), lip x, landing top x.
+## z = jump_row_z().
+static func jump_geometry() -> Vector3:
+	var base_x: float = float(ORIGIN.x + 15) + 0.5
+	return Vector3(base_x, base_x - RAMP_LEN, base_x - RAMP_LEN - JUMP_GAP)
+
+
+## Helper for tests: the row the kicker sits on
+static func jump_row_z() -> float:
+	return float(ORIGIN.y + 4) + 0.5
+
+
+## Helper for tests: world position of the balance beam top center
+static func balance_beam_top_center() -> Vector3:
+	var x0: float = float(ORIGIN.x + 4)
+	var x1: float = float(ORIGIN.x + 8)
+	return Vector3((x0 + x1) * 0.5, Config.GROUND_Y + BEAM_Y, float(ORIGIN.y + 10) + 0.5)
 
 
 ## 5 JUMP: kicker ramp, gap, landing ramp along the west connector
 func _build_jump() -> void:
 	var wood: Color = Color(0.72, 0.52, 0.32)
 	var red: Color = Color(0.85, 0.3, 0.25)
-	# Kicker facing west along the lower straight (travel direction there
-	# is west), gap of ~2 blocks, then a landing ramp facing east
-	var z: float = float(ORIGIN.y + 10) + 0.5
-	var kx: float = float(ORIGIN.x + 1) + 0.5
-	_add_ramp(Vector3(kx + RAMP_LEN, Config.GROUND_Y, z), RAMP_LEN, RAMP_H, RAMP_W, wood, Vector3(-1, 0, 0))
-	_add_static_box(Vector3(0.3, 0.3, RAMP_W), Vector3(kx + RAMP_LEN + 0.15, Config.GROUND_Y + RAMP_H + 0.15, z), red) # lip marker
-	# Gap marker: red-white stripes on the ground
+	# Travel direction here is WEST along the UPPER straight (z +4),
+	# east of the hop bar (hop sits at ORIGIN.x + 7). Kicker climbs
+	# westwards from its base to the lip, then a gap, then a landing
+	# ramp whose TOP is at the far side of the gap and descends west.
+	var z: float = float(ORIGIN.y + 4) + 0.5
+	var base_x: float = float(ORIGIN.x + 15) + 0.5
+	var lip_x: float = base_x - RAMP_LEN
+	var land_x: float = lip_x - JUMP_GAP
+	_add_ramp(Vector3(base_x, Config.GROUND_Y, z), RAMP_LEN, RAMP_H, RAMP_W, wood, Vector3(-1, 0, 0))
+	# Red lip marker at the TOP (take-off) end - visual only, a collider
+	# here would be a wall right behind the ramp crest
+	_add_static_box(Vector3(0.3, 0.3, RAMP_W), Vector3(lip_x + 0.15, Config.GROUND_Y + RAMP_H + 0.15, z), red, Color(0, 0, 0, 0), false)
+	# Landing ramp: top at land_x, descending west to the ground
+	_add_ramp(Vector3(land_x - RAMP_LEN, Config.GROUND_Y, z), RAMP_LEN, RAMP_H, RAMP_W, wood, Vector3(1, 0, 0))
+	# Gap marker: red-white stripes on the ground (visual only)
 	for i: int in range(3):
-		_add_static_box(Vector3(0.6, 0.03, RAMP_W), Vector3(kx - 0.4 - float(i) * 0.7, Config.GROUND_Y + 0.02, z), red if i % 2 == 0 else Color.WHITE)
+		_add_static_box(Vector3(0.6, 0.03, RAMP_W), Vector3(lip_x - 0.4 - float(i) * 0.7, Config.GROUND_Y + 0.02, z), red if i % 2 == 0 else Color.WHITE, Color(0, 0, 0, 0), false)
 	# Trigger in the gap (cleared when airborne over it)
-	_add_trigger("jump", Vector3(kx - 1.2, Config.GROUND_Y + 1.0, z), Vector3(1.4, 2.0, RAMP_W), "5 🚀 Sprung!")
+	_add_trigger("jump", Vector3((lip_x + land_x) * 0.5, Config.GROUND_Y + 1.0, z), Vector3(JUMP_GAP, 2.0, RAMP_W), "5 🚀 Sprung!")
 
 
 ## 6 FINISH: checkered arch at the west end of the course
 func _build_finish() -> void:
-	var z: float = float(ORIGIN.y + 7.5)
-	var x: float = float(ORIGIN.x + 1) + 0.5
+	var z: float = float(ORIGIN.y + 8.5) + 0.5
+	var x: float = float(ORIGIN.x + 1) + 1.0 # center of the 3-wide west connector
 	var black: Color = Color(0.12, 0.12, 0.14)
 	var white: Color = Color(0.95, 0.95, 0.95)
-	# Two pillars
-	for dz: float in [-1.6, 1.6]:
-		_add_static_box(Vector3(0.5, 2.6, 0.5), Vector3(x, Config.GROUND_Y + 1.3, z + dz), white)
+	# Course runs north here: pillars stand left and right (in X), the
+	# checkered bar spans across the connector width (x 0..3)
+	for dx: float in [-1.3, 1.3]:
+		_add_static_box(Vector3(0.4, 2.6, 0.4), Vector3(x + dx, Config.GROUND_Y + 1.3, z), white)
 	# Checkered top bar
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var y0: float = Config.GROUND_Y + 2.6
 	var n: int = 8
-	var seg: float = 3.7 / float(n)
+	var seg: float = 3.0 / float(n)
 	for i: int in range(n):
 		var c: Color = black if (i % 2 == 0) else white
-		var za: float = z - 1.85 + float(i) * seg
-		SurfaceBoxes.add_box(st, Vector3(x - 0.25, y0, za), Vector3(x + 0.25, y0 + 0.5, za + seg), c)
+		var xa: float = x - 1.5 + float(i) * seg
+		SurfaceBoxes.add_box(st, Vector3(xa, y0, z - 0.25), Vector3(xa + seg, y0 + 0.5, z + 0.25), c)
 	var mi := MeshInstance3D.new()
 	mi.mesh = st.commit()
 	mi.material_override = VertexColorMaterial.make()
 	add_child(mi)
 	# Trigger under the arch
-	_add_trigger("finish", Vector3(x, Config.GROUND_Y + 1.0, z), Vector3(1.0, 2.0, 2.6), "6 🏁 Ziel")
+	_add_trigger("finish", Vector3(x, Config.GROUND_Y + 1.0, z), Vector3(3.0, 2.0, 0.8), "6 🏁 Ziel")
 
 
 ## Start gate sign (visual only, no reward): checkered post pair
 ## at the course entrance on the main straight
 func _build_start_marker() -> void:
 	var z: float = float(ORIGIN.y + 4) + 0.5
-	var x: float = float(ORIGIN.x) + 0.5
+	var x: float = float(ORIGIN.x + 1) + 1.0
 	var black: Color = Color(0.12, 0.12, 0.14)
 	var white: Color = Color(0.95, 0.95, 0.95)
 	for dz: float in [-1.6, 1.6]:

@@ -49,6 +49,15 @@ var _rear_wheel: Node3D = null
 var _prompt: Label3D = null
 var _sign: Label3D = null
 
+## Lights for the dark: headlight (spot) + tail light (omni) with
+## glowing lamp meshes, switched by the day/night cycle
+var _headlight: SpotLight3D = null
+var _tail_light: OmniLight3D = null
+var _headlamp_mesh: MeshInstance3D = null
+var _taillamp_mesh: MeshInstance3D = null
+var _day_night: DayNightCycle = null
+var _lights_on: bool = false
+
 
 func _ready() -> void:
 	# Same collision family as the player: terrain, buildings, props,
@@ -57,14 +66,18 @@ func _ready() -> void:
 	collision_mask = Config.TERRAIN_COLLISION_LAYER | Config.BUILDING_COLLISION_LAYER | Config.PROP_COLLISION_LAYER | Config.BRIDGE_COLLISION_LAYER
 	platform_floor_layers = Config.TERRAIN_COLLISION_LAYER | Config.BRIDGE_COLLISION_LAYER
 
+	# Capsule like the player's: round enough to slide UP the foot of a
+	# ramp (a box collider catches on the vertical lip and stops dead)
 	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(0.55, 1.05, 1.15)
-	shape.shape = box
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = 0.32
+	capsule.height = 1.05
+	shape.shape = capsule
 	shape.position = Vector3(0.0, 0.57, 0.0)
 	add_child(shape)
 
 	_build_bike()
+	_build_lights()
 	_build_prompt()
 	_unlocked = ProfileManager.is_bike_unlocked()
 
@@ -177,6 +190,9 @@ func _physics_process(delta: float) -> void:
 	if _tilt:
 		var ratio: float = clampf(absf(_speed) / MAX_SPEED, 0.0, 1.0)
 		_tilt.rotation.z = -_steer * LEAN_MAX * ratio
+
+	# --- Lights follow the day/night cycle (checked cheaply each frame) ---
+	_update_lights()
 
 	# --- Sign + prompt ---
 	if _sign:
@@ -383,3 +399,99 @@ func _build_prompt() -> void:
 	_prompt.modulate = Color(1.0, 1.0, 0.8)
 	_prompt.visible = false
 	add_child(_prompt)
+
+## Headlight + tail light with glowing lamp meshes. Lights are created
+## once and only toggled by the day/night cycle (see _update_lights).
+func _build_lights() -> void:
+	# --- Headlamp on the handlebar: a bright little lamp housing that
+	# throws a warm cone of light onto the path ahead
+	var lamp_body: Color = Color(0.2, 0.2, 0.22)
+	var lens: Color = Color(1.0, 0.97, 0.8)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Housing under the bar, slightly forward
+	SurfaceBoxes.add_box(st, Vector3(-0.09, 0.06, 0.03), Vector3(0.09, 0.16, 0.14), lamp_body)
+	# Lens facing forward (+Z)
+	SurfaceBoxes.add_box(st, Vector3(-0.07, 0.08, 0.14), Vector3(0.07, 0.14, 0.16), lens)
+	var mi := MeshInstance3D.new()
+	mi.name = "Headlamp"
+	mi.mesh = st.commit()
+	mi.material_override = VertexColorMaterial.make()
+	_steer_pivot.add_child(mi)
+	_headlamp_mesh = mi
+
+	_headlight = SpotLight3D.new()
+	_headlight.name = "Headlight"
+	# Spotlights emit along their local -Z. Build the basis so that -Z
+	# points along the bike's forward (+Z) with a slight downward tilt.
+	var aim: Vector3 = Vector3(0.0, -tan(deg_to_rad(12.0)), 1.0).normalized()
+	_headlight.basis = Basis.looking_at(aim, Vector3.UP)
+	_headlight.position = Vector3(0.0, 0.12, 0.18)
+	_headlight.spot_range = 14.0
+	_headlight.spot_angle = 38.0
+	_headlight.spot_angle_attenuation = 1.2
+	_headlight.light_energy = 2.6
+	_headlight.light_color = Color(1.0, 0.95, 0.78)
+	_headlight.shadow_enabled = true
+	_headlight.visible = false
+	_steer_pivot.add_child(_headlight)
+
+	# --- Tail light at the back of the frame: a red lens + small glow
+	var st2 := SurfaceTool.new()
+	st2.begin(Mesh.PRIMITIVE_TRIANGLES)
+	SurfaceBoxes.add_box(st2, Vector3(-0.06, 0.52, -0.33), Vector3(0.06, 0.62, -0.27), Color(0.55, 0.1, 0.1))
+	SurfaceBoxes.add_box(st2, Vector3(-0.05, 0.53, -0.34), Vector3(0.05, 0.61, -0.33), Color(1.0, 0.2, 0.15))
+	var mi2 := MeshInstance3D.new()
+	mi2.name = "Taillamp"
+	mi2.mesh = st2.commit()
+	mi2.material_override = VertexColorMaterial.make()
+	_tilt.add_child(mi2)
+	_taillamp_mesh = mi2
+
+	_tail_light = OmniLight3D.new()
+	_tail_light.name = "TailLight"
+	_tail_light.position = Vector3(0.0, 0.57, -0.4)
+	_tail_light.omni_range = 2.2
+	_tail_light.light_energy = 1.1
+	_tail_light.light_color = Color(1.0, 0.18, 0.12)
+	_tail_light.visible = false
+	_tilt.add_child(_tail_light)
+
+
+## Lights come on at dusk and go off at dawn - but only while someone
+## is riding (a parked bike doesn't drain its battery).
+func _update_lights() -> void:
+	if _day_night == null:
+		# Normal game: the cycle is a child of the current scene. In
+		# headless tests the scene is instanced by hand (current_scene is
+		# null), so fall back to the bike's own parent chain.
+		if get_tree().current_scene:
+			_day_night = get_tree().current_scene.get_node_or_null("DayNightCycle") as DayNightCycle
+		if _day_night == null:
+			var p: Node = get_parent()
+			while p and _day_night == null:
+				_day_night = p.get_node_or_null("DayNightCycle") as DayNightCycle
+				p = p.get_parent()
+	if _day_night == null:
+		return
+	var dark: bool = _day_night.current_phase == DayNightCycle.DayPhase.DUSK or _day_night.current_phase == DayNightCycle.DayPhase.NIGHT
+	var want: bool = dark and _rider != null
+	if want == _lights_on:
+		return
+	_lights_on = want
+	if _headlight:
+		_headlight.visible = want
+	if _tail_light:
+		_tail_light.visible = want
+	if _headlamp_mesh:
+		var m: StandardMaterial3D = _headlamp_mesh.material_override as StandardMaterial3D
+		if m:
+			m.emission_enabled = want
+			m.emission = Color(1.0, 0.95, 0.75)
+			m.emission_energy_multiplier = 1.6 if want else 0.0
+	if _taillamp_mesh:
+		var m2: StandardMaterial3D = _taillamp_mesh.material_override as StandardMaterial3D
+		if m2:
+			m2.emission_enabled = want
+			m2.emission = Color(1.0, 0.2, 0.12)
+			m2.emission_energy_multiplier = 1.4 if want else 0.0
