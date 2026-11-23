@@ -24,7 +24,7 @@ const HOP_VELOCITY: float = 6.5 ## clears the 0.75 hedges comfortably
 const GRAVITY: float = 20.0
 const WHEEL_RADIUS: float = 0.28
 
-const PRICE: int = 50 ## one-time purchase price in beach coins
+const PRICE: int = 50 ## one-time purchase price in education points (same currency as buildings)
 const MOUNT_RANGE: float = 2.8
 const BLOCK_WATER_DEPTH: int = 3 ## refuse to ride into water this deep
 const HINT_COOLDOWN: float = 2.0
@@ -189,7 +189,7 @@ func _physics_process(delta: float) -> void:
 			if _unlocked:
 				_prompt.text = "🚲 E: Aufsteigen"
 			else:
-				_prompt.text = "🚲 E: Kaufen · %d 💰" % PRICE
+				_prompt.text = "🚲 E: Kaufen · %d 📚" % PRICE
 			_prompt.visible = true
 		else:
 			_prompt.visible = false
@@ -214,13 +214,13 @@ func is_unlocked() -> bool:
 	return _unlocked
 
 
-## One-time purchase: pays with profile coins, unlocks permanently
-## and hops right on. Not enough coins gets a friendly hint instead.
+## One-time purchase: pays with education points (the quiz currency,
+## same as buildings), unlocks permanently and hops right on. Not
+## enough points gets a friendly hint naming the missing amount.
 func try_buy() -> void:
 	if _unlocked:
 		return
-	if ProfileManager.get_coins() >= PRICE:
-		ProfileManager.add_coins(-PRICE)
+	if ProfileManager.spend_points(PRICE):
 		ProfileManager.set_bike_unlocked(true)
 		_unlocked = true
 		AudioManager.play_sfx(AudioManager.SFX.UNLOCK)
@@ -229,8 +229,8 @@ func try_buy() -> void:
 		mount(GameMode.player)
 	elif _hint_cooldown <= 0.0:
 		_hint_cooldown = HINT_COOLDOWN
-		var missing: int = PRICE - ProfileManager.get_coins()
-		Effects.spawn_floating_text(global_position + Vector3.UP * 1.2, "🚲 Kostet %d 💰 - dir fehlen %d!" % [PRICE, missing], Color(1.0, 0.6, 0.55))
+		var missing: int = PRICE - ProfileManager.get_points()
+		Effects.spawn_floating_text(global_position + Vector3.UP * 1.2, "🚲 Kostet %d 📚 - dir fehlen %d!" % [PRICE, missing], Color(1.0, 0.6, 0.55))
 
 
 func mount(rider: Node3D) -> void:
