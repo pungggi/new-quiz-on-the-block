@@ -9,8 +9,8 @@ extends Node3D
 
 ## Footprint min corner (block coordinates)
 const ORIGIN: Vector2i = Vector2i(-46, -38)
-const CELLS_X: int = 6
-const CELLS_Z: int = 5
+const CELLS_X: int = 9
+const CELLS_Z: int = 7
 const GRID_W: int = CELLS_X * 2 + 1
 const GRID_H: int = CELLS_Z * 2 + 1
 ## Must stay below the player's jump apex (~0.9)
