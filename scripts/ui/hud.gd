@@ -36,6 +36,7 @@ var _game_mode: Node = null
 var _quiz_manager: Node = null
 var _npc_manager: Node = null
 var _day_night: Node = null
+var _planet_picker: PlanetPicker = null
 
 # Toast manager (created dynamically or use existing container)
 var _toast_manager: ToastManager = null
@@ -56,6 +57,11 @@ func _ready() -> void:
 	_setup_toast_manager()
 	_connect_buttons()
 	_connect_managers()
+
+	# Clicking the clock opens the planet picker
+	if time_label:
+		time_label.mouse_filter = Control.MOUSE_FILTER_STOP
+		time_label.gui_input.connect(_on_time_label_gui_input)
 
 	# Start showing hints after a short delay
 	await get_tree().create_timer(UIThemeConstants.TOAST_DURATION).timeout
@@ -293,6 +299,33 @@ func _update_time_display() -> void:
 			emoji = "🌙"
 
 	time_label.text = "%s %s" % [emoji, time_str]
+
+#endregion
+
+
+#region Planet Picker
+
+func _on_time_label_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_toggle_planet_picker()
+
+
+func _toggle_planet_picker() -> void:
+	if _planet_picker == null:
+		_planet_picker = PlanetPicker.new()
+		add_child(_planet_picker)
+		_planet_picker.set_anchors_preset(Control.PRESET_CENTER)
+		_planet_picker.planet_selected.connect(_on_planet_selected)
+	if _planet_picker.visible:
+		_planet_picker.hide()
+		return
+	if _day_night:
+		_planet_picker.open(_day_night as DayNightCycle)
+
+
+func _on_planet_selected(planet: Dictionary) -> void:
+	var suns: int = maxi(1, int(round(float(planet["sun_intensity"]) / 0.4)))
+	show_toast("🪐 %s: Tag = %d Minuten, Sonne %s" % [planet["name"], int(planet["day_minutes"]), "☀️".repeat(suns)])
 
 #endregion
 

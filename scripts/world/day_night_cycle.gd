@@ -15,6 +15,10 @@ enum DayPhase {DAWN, DAY, DUSK, NIGHT}
 @export var day_duration_minutes: float = 10.0 ## Real minutes for a full day
 @export var start_hour: float = 8.0 ## Starting hour (0-24)
 
+## Sun intensity of the active planet (1.0 = Earth, see PlanetCatalog).
+## Multiplies the phase sun energies, so e.g. Neptune stays dim all day.
+var sun_intensity: float = 1.0
+
 ## References (set in _ready)
 var _sun: DirectionalLight3D
 var _moon: DirectionalLight3D
@@ -178,7 +182,8 @@ func _update_sky_colors() -> void:
 	
 	if _sun:
 		_sun.light_color = current_colors["sun_color"].lerp(next_colors["sun_color"], blend)
-		_sun.light_energy = lerpf(current_colors["sun_energy"], next_colors["sun_energy"], blend)
+		# Planet intensity scales the sun (see PlanetCatalog)
+		_sun.light_energy = lerpf(current_colors["sun_energy"], next_colors["sun_energy"], blend) * sun_intensity
 
 
 func _get_phase_for_hour(hour: float) -> DayPhase:
@@ -246,3 +251,11 @@ func set_time(hour: float) -> void:
 	current_phase = _get_phase_for_hour(current_hour)
 	day_phase_changed.emit(current_phase)
 	time_changed.emit(current_hour)
+
+
+## Switch to a PlanetCatalog world: its day length and sun intensity
+## drive the cycle from now on (the time of day continues where it is).
+func apply_planet(planet: Dictionary) -> void:
+	day_duration_minutes = float(planet["day_minutes"])
+	sun_intensity = float(planet["sun_intensity"])
+	_update_visuals()
