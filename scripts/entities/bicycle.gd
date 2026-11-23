@@ -24,7 +24,7 @@ const HOP_VELOCITY: float = 6.5 ## clears the 0.75 hedges comfortably
 const GRAVITY: float = 20.0
 const WHEEL_RADIUS: float = 0.28
 
-const PRICE: int = 20 ## one-time purchase price in beach coins
+const PRICE: int = 50 ## one-time purchase price in beach coins
 const MOUNT_RANGE: float = 2.8
 const BLOCK_WATER_DEPTH: int = 3 ## refuse to ride into water this deep
 const HINT_COOLDOWN: float = 2.0
