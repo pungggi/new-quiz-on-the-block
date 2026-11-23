@@ -58,6 +58,13 @@ func _ready() -> void:
 	maze.name = "BushMaze"
 	add_child(maze)
 
+	# Ambient land + river wildlife (deer, rabbits, foxes, insects...)
+	var land_wildlife := LandWildlife.new()
+	land_wildlife.name = "LandWildlife"
+	add_child(land_wildlife)
+	if camera_rig:
+		land_wildlife.initialize(camera_rig)
+
 	# Beachcombing: shells on the beach + the exchange stand
 	ShellManager.initialize(self)
 	var stand: Node3D = load("res://scripts/world/shell_stand.gd").new()
