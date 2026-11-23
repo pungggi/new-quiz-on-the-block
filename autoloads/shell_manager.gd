@@ -10,7 +10,7 @@ extends Node
 signal shells_changed(count: int)
 signal coins_changed(amount: int)
 
-const SHELLS_ON_BEACH: int = 14 ## live pickups at any time
+const SHELLS_ON_BEACH: int = 24 ## live pickups at any time
 const RESPAWN_DELAY: float = 18.0 ## until a new shell washes ashore
 const COINS_PER_SHELL: int = 2
 ## Beach scatter window along the coast (world z blocks)
@@ -23,6 +23,13 @@ func initialize(root: Node3D) -> void:
 	if _root:
 		return
 	_root = root
+	# One guaranteed shell right next to the stand so first-time
+	# beachcombers discover the pickup mechanic immediately (the
+	# Tauschbude lives at ~119.5 / -16)
+	var first := ShellPickup.new()
+	first.position = Vector3(117.5, 1.0, -14.5)
+	first.collected.connect(_on_shell_collected)
+	_root.add_child(first)
 	for i: int in range(SHELLS_ON_BEACH):
 		_spawn_shell()
 

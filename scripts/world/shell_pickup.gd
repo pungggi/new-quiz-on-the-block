@@ -8,6 +8,8 @@ extends Area3D
 signal collected(position: Vector3)
 
 const PICKUP_RADIUS: float = 0.9
+const BASE_SCALE: float = 1.35 ## chunky enough to spot from afar
+const PULSE: float = 0.1 ## gentle size glint so the eye catches it
 const COLORS: Array[Color] = [
 	Color(1.0, 0.72, 0.78), # pink
 	Color(0.96, 0.88, 0.72), # sand
@@ -22,6 +24,7 @@ var _rng := RandomNumberGenerator.new()
 func _ready() -> void:
 	_rng.randomize()
 	_base_y = position.y
+	scale = Vector3.ONE * BASE_SCALE
 
 	collision_layer = 0
 	collision_mask = 1 # catch bodies, filter for Player in the handler
@@ -58,4 +61,5 @@ func _on_body_entered(body: Node3D) -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	rotation.y += delta * 1.4
-	position.y = _base_y + sin(_t * 2.4) * 0.06
+	position.y = _base_y + sin(_t * 2.4) * 0.08
+	scale = Vector3.ONE * (BASE_SCALE + sin(_t * 3.0) * PULSE)
