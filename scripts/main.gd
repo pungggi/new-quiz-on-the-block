@@ -64,47 +64,8 @@ func _ready() -> void:
 	stand.name = "ShellStand"
 	add_child(stand)
 
-	# TEMP DEMO (uncommitted, remove after showcase): water behavior
-	_demo_water_behavior()
-
 	# Start the game (profile is already loaded from main menu)
 	_start_game()
-
-
-## TEMP DEMO (uncommitted, remove after showcase): 4 NPCs wade across
-## the river near spawn; 2 more wade from the beach into the sea and swim.
-func _demo_water_behavior() -> void:
-	await get_tree().create_timer(8.0).timeout
-	_demo_river_waders()
-	# Sea swimmers wait until the coast chunks are streamed in (pan the
-	# camera east) so the streaming does not instantly despawn them.
-	while not ChunkManager.is_position_loaded(Vector3(130.0, 1.0, -8.0)):
-		await get_tree().create_timer(2.0).timeout
-	_demo_sea_swimmers()
-
-
-func _demo_river_waders() -> void:
-	var npc_scene: PackedScene = load("res://scenes/entities/npc.tscn")
-	var rz: int = -29
-	var rc: float = WorldManager.river_center_x(rz)
-	for i in range(4):
-		var wader := npc_scene.instantiate() as NPC
-		if wader == null:
-			return
-		add_child(wader)
-		wader.global_position = Vector3(rc - 4.5 - float(i), 1.0, float(rz) + float(i) * 1.5 - 2.5)
-		wader._target_position = Vector3(rc + 5.5, 1.0, float(rz) + float(i) * 1.5 - 2.5)
-
-
-func _demo_sea_swimmers() -> void:
-	var npc_scene: PackedScene = load("res://scenes/entities/npc.tscn")
-	for i in range(2):
-		var swimmer := npc_scene.instantiate() as NPC
-		if swimmer == null:
-			return
-		add_child(swimmer)
-		swimmer.global_position = Vector3(118.5 + float(i) * 2.0, 1.0, -8.0 + float(i) * 3.0)
-		swimmer._target_position = Vector3(132.0 + float(i) * 2.0, 1.0, -8.0 + float(i) * 3.0)
 
 
 func _input(event: InputEvent) -> void:
