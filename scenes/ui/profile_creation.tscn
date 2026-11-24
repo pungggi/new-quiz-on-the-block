@@ -1,17 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://profile_creation_001"]
+[gd_scene load_steps=2 format=3 uid="uid://profile_creation_001"]
 
 [ext_resource type="Script" path="res://scripts/ui/profile_creation.gd" id="1_script"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.12, 0.14, 0.2, 0.98)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
-content_margin_left = 40.0
-content_margin_top = 32.0
-content_margin_right = 40.0
-content_margin_bottom = 32.0
 
 [node name="ProfileCreation" type="Control"]
 layout_mode = 3
@@ -21,100 +10,146 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
+preferred_size = Vector2(850, 0)
+closable = false
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Backdrop" type="ColorRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.05, 0.05, 0.1, 0.95)
+color = Color(0.07, 0.09, 0.16, 0.72)
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="SafeArea" type="MarginContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -320.0
-offset_top = -360.0
-offset_right = 320.0
-offset_bottom = 360.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
 
-[node name="VBox" type="VBoxContainer" parent="Panel"]
+[node name="Center" type="CenterContainer" parent="SafeArea"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 20
 
-[node name="TitleLabel" type="Label" parent="Panel/VBox"]
+[node name="Panel" type="PanelContainer" parent="SafeArea/Center"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "🎮 Willkommen bei New Quiz on the Block!"
+
+[node name="VBox" type="VBoxContainer" parent="SafeArea/Center/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="SafeArea/Center/Panel/VBox"]
+layout_mode = 2
+theme_type_variation = &"MenuTitle"
+text = "🎮 Neues Profil"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="Panel/VBox"]
+[node name="Subtitle" type="Label" parent="SafeArea/Center/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_font_sizes/font_size = 16
-text = "Erstelle dein Spielerprofil"
+theme_type_variation = &"MenuSubtitle"
+text = "Willkommen bei 🏘️ New Quiz on the Block!"
 horizontal_alignment = 1
 
-[node name="NameLabel" type="Label" parent="Panel/VBox"]
+[node name="Content" type="ScrollContainer" parent="SafeArea/Center/Panel/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Dein Name:"
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
 
-[node name="NameInput" type="LineEdit" parent="Panel/VBox"]
-custom_minimum_size = Vector2(0, 45)
+[node name="Inset" type="MarginContainer" parent="SafeArea/Center/Panel/VBox/Content"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-placeholder_text = "Gib deinen Namen ein..."
-max_length = 20
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
 
-[node name="AvatarLabel" type="Label" parent="Panel/VBox"]
+[node name="Form" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Wähle deinen Avatar:"
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
 
-[node name="AvatarContainer" type="HBoxContainer" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="GradeLabel" type="Label" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Deine Klassenstufe:"
-
-[node name="GradeContainer" type="GridContainer" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 6
-
-[node name="CategoryLabel" type="Label" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Quiz-Kategorien:"
-
-[node name="CategoryContainer" type="VBoxContainer" parent="Panel/VBox"]
+[node name="NameSection" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="ErrorLabel" type="Label" parent="Panel/VBox"]
+[node name="NameLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/NameSection"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
-theme_override_font_sizes/font_size = 14
-text = "Fehler"
+theme_type_variation = &"SectionLabel"
+text = "Dein Name"
+
+[node name="NameInput" type="LineEdit" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/NameSection"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Gib deinen Namen ein..."
+max_length = 20
+caret_blink = true
+
+[node name="AvatarSection" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="AvatarLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/AvatarSection"]
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "Wähle deinen Avatar"
+
+[node name="AvatarContainer" type="HFlowContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/AvatarSection"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="GradeSection" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="GradeLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/GradeSection"]
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "Deine Klassenstufe"
+
+[node name="GradeContainer" type="HFlowContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/GradeSection"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CategorySection" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="CategoryLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/CategorySection"]
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "Quiz-Kategorien"
+
+[node name="CategoryContainer" type="HFlowContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/CategorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ErrorLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"ErrorLabel"
+text = ""
 horizontal_alignment = 1
 
-[node name="StartButton" type="Button" parent="Panel/VBox"]
-custom_minimum_size = Vector2(0, 50)
+[node name="Footer" type="HBoxContainer" parent="SafeArea/Center/Panel/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_constants/separation = 12
+
+[node name="StartButton" type="Button" parent="SafeArea/Center/Panel/VBox/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"PrimaryButton"
 disabled = true
 text = "🚀 Spiel starten!"
-

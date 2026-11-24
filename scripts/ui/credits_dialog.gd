@@ -1,28 +1,16 @@
-extends Control
 class_name CreditsDialog
+extends MenuDialog
 
-## Credits Dialog
-## Shows game credits and information
+## Credits Dialog - shows game credits and information.
+## Layout and ESC come from MenuDialog.
 
-signal closed
-
-@onready var close_button: Button = $Panel/VBox/CloseButton
+@onready var close_button: Button = %CloseButton
 
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
 
 
-## ESC closes the dialog. Consumes the event so an underlying menu
-## (e.g. pause menu) does not react to it.
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		accept_event()
-		_on_close_pressed()
-
-
 func _on_close_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	closed.emit()
-	queue_free()
-
+	_close()

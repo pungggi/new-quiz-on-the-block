@@ -22,28 +22,14 @@ func show_toast(message: String, color: Color = Color.WHITE, duration: float = D
 func _create_toast_panel(message: String, color: Color) -> PanelContainer:
 	var panel := PanelContainer.new()
 	
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.15, 0.9)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	style.border_width_left = 3
-	style.border_color = color
-	panel.add_theme_stylebox_override("panel", style)
+	# Dark card with a coloured bar: readable over any part of the world
+	panel.add_theme_stylebox_override("panel", UITheme.toast_stylebox(color))
 	
 	var label := Label.new()
 	label.text = message
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", 18)
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.add_theme_font_size_override("font_size", UITheme.px(18))
 	
 	panel.add_child(label)
 	return panel

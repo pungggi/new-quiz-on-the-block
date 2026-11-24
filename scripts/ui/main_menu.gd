@@ -1,8 +1,9 @@
-extends Control
 class_name MainMenu
+extends MenuDialog
 
-## Main Menu Screen
-## Entry point for the game with play, settings, and quit options
+## Main Menu - the entry screen with play, profiles, character, settings,
+## credits and quit. Same card skeleton as every dialog (MenuDialog), just
+## without a dimmed background: sky and a strip of voxel ground instead.
 
 const GAME_SCENE := "res://scenes/main.tscn"
 const PROFILE_SELECTION_SCENE := preload("res://scenes/ui/profile_selection.tscn")
@@ -28,17 +29,18 @@ func _ready() -> void:
 	settings_button.pressed.connect(_on_settings_pressed)
 	credits_button.pressed.connect(_on_credits_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
-	
+
 	version_label.text = "v0.6.0"
-	
+
 	# Load profiles
 	ProfileManager.load_all_profiles()
 	_update_profile_info()
-	
+	UITheme.refresh()
+
 	# Connect to profile changes
 	ProfileManager.profile_switched.connect(_on_profile_changed)
 	ProfileManager.profile_created.connect(_on_profile_changed)
-	
+
 	# Start music
 	AudioManager.start_ambient_music()
 
@@ -65,7 +67,7 @@ func _on_play_pressed() -> void:
 
 	if ProfileManager.needs_profile_creation():
 		# No profile exists - create one first
-		var dialog: Control = PROFILE_CREATION_SCENE.instantiate()
+		var dialog: MenuDialog = PROFILE_CREATION_SCENE.instantiate()
 		dialog.profile_completed.connect(_on_new_profile_created)
 		add_child(dialog)
 	else:
@@ -86,12 +88,13 @@ func _on_profiles_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
 
 	if ProfileManager.needs_profile_creation():
-		var dialog: Control = PROFILE_CREATION_SCENE.instantiate()
-		dialog.profile_completed.connect(_on_profile_changed)
-		add_child(dialog)
+		var creation: MenuDialog = PROFILE_CREATION_SCENE.instantiate()
+		creation.profile_completed.connect(_on_profile_changed)
+		add_child(creation)
 	else:
-		var dialog: Control = PROFILE_SELECTION_SCENE.instantiate()
-		add_child(dialog)
+		var selection: MenuDialog = PROFILE_SELECTION_SCENE.instantiate()
+		selection.profile_selected.connect(_on_profile_changed)
+		add_child(selection)
 
 
 func _on_character_pressed() -> void:
@@ -99,25 +102,23 @@ func _on_character_pressed() -> void:
 
 	if ProfileManager.needs_profile_creation():
 		# Need a profile first
-		var dialog: Control = PROFILE_CREATION_SCENE.instantiate()
-		dialog.profile_completed.connect(_on_profile_changed)
-		add_child(dialog)
+		var creation: MenuDialog = PROFILE_CREATION_SCENE.instantiate()
+		creation.profile_completed.connect(_on_profile_changed)
+		add_child(creation)
 	else:
-		var editor: Control = CHARACTER_EDITOR_SCENE.instantiate()
+		var editor: CharacterEditor = CHARACTER_EDITOR_SCENE.instantiate()
 		add_child(editor)
 		editor.open()
 
 
 func _on_settings_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	var dialog: Control = SETTINGS_DIALOG_SCENE.instantiate()
-	add_child(dialog)
+	add_child(SETTINGS_DIALOG_SCENE.instantiate())
 
 
 func _on_credits_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	var dialog: Control = CREDITS_DIALOG_SCENE.instantiate()
-	add_child(dialog)
+	add_child(CREDITS_DIALOG_SCENE.instantiate())
 
 
 func _on_quit_pressed() -> void:

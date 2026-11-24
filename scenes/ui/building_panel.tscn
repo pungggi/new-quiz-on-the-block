@@ -8,7 +8,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -120.0
+offset_top = -360.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
@@ -16,17 +16,21 @@ script = ExtResource("1_panel")
 
 [node name="VBox" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 12
+anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = -120.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
 mouse_filter = 1
+theme_override_constants/separation = 6
 alignment = 2
 
 [node name="Header" type="HBoxContainer" parent="VBox"]
 layout_mode = 2
 mouse_filter = 1
+theme_override_constants/separation = 10
 alignment = 1
 
 [node name="ToggleButton" type="Button" parent="VBox/Header"]
@@ -34,35 +38,43 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "▼ Bauen"
 
-[node name="PointsLabel" type="Label" parent="VBox/Header"]
-unique_name_in_owner = true
+[node name="PointsChip" type="PanelContainer" parent="VBox/Header"]
 layout_mode = 2
 mouse_filter = 2
+theme_type_variation = &"HudPanel"
+
+[node name="PointsLabel" type="Label" parent="VBox/Header/PointsChip"]
+unique_name_in_owner = true
+layout_mode = 2
 text = "📚 50"
 
 [node name="Panel" type="PanelContainer" parent="VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 0
+theme_type_variation = &"CardPanel"
 
 [node name="VBoxPanel" type="VBoxContainer" parent="VBox/Panel"]
 layout_mode = 2
+theme_override_constants/separation = 6
 
-[node name="CategoryTabs" type="HBoxContainer" parent="VBox/Panel/VBoxPanel"]
+[node name="CategoryTabs" type="HFlowContainer" parent="VBox/Panel/VBoxPanel"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 alignment = 1
 
 [node name="Margin" type="MarginContainer" parent="VBox/Panel/VBoxPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 2
 
 [node name="BuildingContainer" type="HBoxContainer" parent="VBox/Panel/VBoxPanel/Margin"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 6
 alignment = 1
 
 [node name="TooltipPanel" type="PanelContainer" parent="."]
@@ -74,45 +86,41 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -120.0
-offset_top = -200.0
-offset_right = 120.0
-offset_bottom = -130.0
+offset_left = -190.0
+offset_top = -250.0
+offset_right = 190.0
+offset_bottom = -140.0
 grow_horizontal = 2
 grow_vertical = 0
+theme_type_variation = &"HudPanel"
 
-[node name="Margin" type="MarginContainer" parent="TooltipPanel"]
+[node name="VBox" type="VBoxContainer" parent="TooltipPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/separation = 2
 
-[node name="VBox" type="VBoxContainer" parent="TooltipPanel/Margin"]
-layout_mode = 2
-
-[node name="TooltipName" type="Label" parent="TooltipPanel/Margin/VBox"]
+[node name="TooltipName" type="Label" parent="TooltipPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_type_variation = &"CardTitle"
 text = "Gebäudename"
 horizontal_alignment = 1
 
-[node name="TooltipDesc" type="Label" parent="TooltipPanel/Margin/VBox"]
+[node name="TooltipDesc" type="Label" parent="TooltipPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Beschreibung"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="TooltipCost" type="Label" parent="TooltipPanel/Margin/VBox"]
+[node name="TooltipCost" type="Label" parent="TooltipPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Kosten: 10 📚"
 horizontal_alignment = 1
 
-[node name="TooltipUnlock" type="Label" parent="TooltipPanel/Margin/VBox"]
+[node name="TooltipUnlock" type="Label" parent="TooltipPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_type_variation = &"CaptionLabel"
 text = "🔒 0/5 Fragen"
 horizontal_alignment = 1
-

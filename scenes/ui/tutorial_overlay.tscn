@@ -1,17 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://tutorial_overlay_001"]
+[gd_scene load_steps=2 format=3 uid="uid://tutorial_overlay_001"]
 
 [ext_resource type="Script" path="res://scripts/ui/tutorial_overlay.gd" id="1_tutorial"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.1, 0.12, 0.18, 0.95)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-content_margin_left = 32.0
-content_margin_top = 24.0
-content_margin_right = 32.0
-content_margin_bottom = 24.0
 
 [node name="TutorialOverlay" type="Control"]
 layout_mode = 3
@@ -21,74 +10,93 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tutorial")
+preferred_size = Vector2(460, 0)
+closable = false
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Backdrop" type="ColorRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.7)
+color = Color(0.07, 0.09, 0.16, 0.72)
 
-[node name="Panel" type="PanelContainer" parent="."]
+[node name="SafeArea" type="MarginContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -150.0
-offset_right = 200.0
-offset_bottom = 150.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
 
-[node name="VBox" type="VBoxContainer" parent="Panel"]
+[node name="Center" type="CenterContainer" parent="SafeArea"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 16
 
-[node name="IconLabel" type="Label" parent="Panel/VBox"]
+[node name="Panel" type="PanelContainer" parent="SafeArea/Center"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 48
+
+[node name="VBox" type="VBoxContainer" parent="SafeArea/Center/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="SafeArea/Center/Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MenuTitle"
+text = "Willkommen!"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Content" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="IconLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content"]
+unique_name_in_owner = true
+layout_mode = 2
 text = "🎮"
 horizontal_alignment = 1
 
-[node name="TitleLabel" type="Label" parent="Panel/VBox"]
+[node name="TextLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Willkommen!"
-horizontal_alignment = 1
-autowrap_mode = 2
-
-[node name="TextLabel" type="Label" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
 text = "Beschreibungstext hier..."
 horizontal_alignment = 1
-autowrap_mode = 2
+autowrap_mode = 3
 
-[node name="ProgressLabel" type="Label" parent="Panel/VBox"]
+[node name="ProgressLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 12
+theme_type_variation = &"CaptionLabel"
 text = "1 / 4"
 horizontal_alignment = 1
 
-[node name="HBox" type="HBoxContainer" parent="Panel/VBox"]
+[node name="Footer" type="HBoxContainer" parent="SafeArea/Center/Panel/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 
-[node name="SkipButton" type="Button" parent="Panel/VBox/HBox"]
-custom_minimum_size = Vector2(100, 40)
+[node name="SkipButton" type="Button" parent="SafeArea/Center/Panel/VBox/Footer"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Überspringen"
 
-[node name="NextButton" type="Button" parent="Panel/VBox/HBox"]
-custom_minimum_size = Vector2(120, 40)
+[node name="Spacer" type="Control" parent="SafeArea/Center/Panel/VBox/Footer"]
 layout_mode = 2
-text = "Weiter →"
+size_flags_horizontal = 3
 
+[node name="NextButton" type="Button" parent="SafeArea/Center/Panel/VBox/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+text = "Weiter →"

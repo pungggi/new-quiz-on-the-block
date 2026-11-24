@@ -80,6 +80,19 @@ func _setup_toast_manager() -> void:
 		# Copy properties from existing container
 		_toast_manager.size_flags_horizontal = toast_container.size_flags_horizontal
 		_toast_manager.size_flags_vertical = toast_container.size_flags_vertical
+		# Keep it where the scene put the container (centred under the clock).
+		# Without this the toasts showed up in the top-left corner.
+		_toast_manager.anchor_left = toast_container.anchor_left
+		_toast_manager.anchor_top = toast_container.anchor_top
+		_toast_manager.anchor_right = toast_container.anchor_right
+		_toast_manager.anchor_bottom = toast_container.anchor_bottom
+		_toast_manager.offset_left = toast_container.offset_left
+		_toast_manager.offset_top = toast_container.offset_top
+		_toast_manager.offset_right = toast_container.offset_right
+		_toast_manager.offset_bottom = toast_container.offset_bottom
+		_toast_manager.grow_horizontal = toast_container.grow_horizontal
+		_toast_manager.grow_vertical = toast_container.grow_vertical
+		_toast_manager.add_theme_constant_override("separation", toast_container.get_theme_constant("separation"))
 		# Replace container
 		var parent := toast_container.get_parent()
 		var idx := toast_container.get_index()
@@ -318,11 +331,12 @@ func _toggle_planet_picker() -> void:
 	if _planet_picker == null:
 		_planet_picker = PlanetPicker.new()
 		add_child(_planet_picker)
-		_planet_picker.set_anchors_preset(Control.PRESET_CENTER)
+		_planet_picker.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 		_planet_picker.planet_selected.connect(_on_planet_selected)
 	if _planet_picker.visible:
 		_planet_picker.hide()
 		return
+	_lift_above_building_bar(_planet_picker)
 	if _day_night:
 		_planet_picker.open(_day_night as DayNightCycle)
 
@@ -376,21 +390,13 @@ func show_toast(message: String, color: Color = Color.WHITE) -> void:
 ## Fallback toast implementation
 func _show_toast_fallback(message: String, color: Color) -> void:
 	var panel := PanelContainer.new()
-	var style := UIThemeConstants.create_bordered_panel_style(
-		UIThemeConstants.PANEL_BG_COLOR,
-		color,
-		UIThemeConstants.BORDER_WIDTH_THICK
-	)
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", UITheme.toast_stylebox(color))
 
 	var toast := Label.new()
 	toast.text = message
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.add_theme_color_override("font_color", color)
-	toast.add_theme_font_size_override("font_size", UIThemeConstants.FONT_SIZE_LARGE)
-	toast.add_theme_color_override("font_shadow_color", UIThemeConstants.SHADOW_COLOR)
-	toast.add_theme_constant_override("shadow_offset_x", 1)
-	toast.add_theme_constant_override("shadow_offset_y", 1)
+	toast.add_theme_font_size_override("font_size", UITheme.px(18))
 
 	panel.add_child(toast)
 	toast_container.add_child(panel)
@@ -467,31 +473,29 @@ func _update_mode_display() -> void:
 	mode_label.text = "🚶 LAUFEN [Tab]" if is_walk else "🏗️ BAUEN [Tab]"
 	
 	if mode_panel:
-		var style := StyleBoxFlat.new()
-		style.corner_radius_top_left = 8
-		style.corner_radius_top_right = 8
-		style.corner_radius_bottom_left = 8
-		style.corner_radius_bottom_right = 8
-		style.content_margin_left = 16
-		style.content_margin_right = 16
-		style.content_margin_top = 8
-		style.content_margin_bottom = 8
-		style.border_width_left = 2
-		style.border_width_top = 2
-		style.border_width_right = 2
-		style.border_width_bottom = 2
-		
-		if is_walk:
-			style.bg_color = Color(0.15, 0.25, 0.45, 0.85)
-			style.border_color = Color(0.3, 0.5, 0.9, 0.8)
-		else:
-			style.bg_color = Color(0.45, 0.25, 0.15, 0.85)
-			style.border_color = Color(0.9, 0.5, 0.3, 0.8)
-			
-		mode_panel.add_theme_stylebox_override("panel", style)
-		
-		# Set bolder font for better readability
-		mode_label.add_theme_font_size_override("font_size", 14)
-		mode_label.add_theme_color_override("font_color", Color.WHITE)
+		# Light chip with a coloured border: blue = walking, red = building
+		var accent: Color = UITheme.BLUE if is_walk else UITheme.RED
+		mode_panel.add_theme_stylebox_override("panel", UITheme.hud_chip_style(accent))
+		mode_label.remove_theme_font_size_override("font_size")
+		mode_label.remove_theme_color_override("font_color")
 
 #endregion
+
+
+## A popup centred in the window would end up behind the building bar at
+## the bottom. Re-centre it, then move its centre up by half the difference
+## between the bar's height and the HUD strip at the top.
+func _lift_above_building_bar(popup: Control) -> void:
+	var lift: float = 0.0
+	# The building bar is a sibling under the same CanvasLayer
+	var bar: Control = get_parent().get_node_or_null("BuildingPanel/VBox") as Control
+	if bar:
+		lift = maxf(0.0, (bar.size.y - 64.0) * 0.5)
+	# Centre explicitly. The preset helper works off the popup's current
+	# size, which is stale while the popup is still hidden.
+	popup.set_anchors_preset(Control.PRESET_CENTER)
+	var size: Vector2 = popup.get_combined_minimum_size()
+	popup.offset_left = -size.x * 0.5
+	popup.offset_right = size.x * 0.5
+	popup.offset_top = -size.y * 0.5 - lift
+	popup.offset_bottom = size.y * 0.5 - lift

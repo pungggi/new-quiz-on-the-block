@@ -1,18 +1,18 @@
-extends Control
 class_name ProfileCreation
+extends MenuDialog
 
-## Profile Creation Screen
-## Shown on first launch to get player name and grade level
-## Uses SelectionButtons for reusable button creation
+## Profile Creation - shown on first launch to get name, avatar, grade and
+## quiz categories. Layout comes from MenuDialog; ESC is off because the
+## first profile has to be finished.
 
 signal profile_completed(profile: PlayerProfile)
 
-@onready var name_input: LineEdit = $Panel/VBox/NameInput
-@onready var avatar_container: HBoxContainer = $Panel/VBox/AvatarContainer
-@onready var grade_container: GridContainer = $Panel/VBox/GradeContainer
-@onready var category_container: VBoxContainer = $Panel/VBox/CategoryContainer
-@onready var start_button: Button = $Panel/VBox/StartButton
-@onready var error_label: Label = $Panel/VBox/ErrorLabel
+@onready var name_input: LineEdit = %NameInput
+@onready var avatar_container: HFlowContainer = %AvatarContainer
+@onready var grade_container: HFlowContainer = %GradeContainer
+@onready var category_container: HFlowContainer = %CategoryContainer
+@onready var start_button: Button = %StartButton
+@onready var error_label: Label = %ErrorLabel
 
 var _selected_grade: int = -1
 var _selected_avatar: String = "fox"
@@ -28,7 +28,6 @@ func _ready() -> void:
 	error_label.visible = false
 	start_button.disabled = true
 
-	# Use SelectionButtons helper for consistent button creation
 	_avatar_buttons = SelectionButtons.create_avatar_buttons(
 		avatar_container, _on_avatar_selected, _selected_avatar
 	)
@@ -39,9 +38,16 @@ func _ready() -> void:
 		category_container, _on_category_toggled
 	)
 
-	# Pause game while creating profile
-	get_tree().paused = true
-	process_mode = Node.PROCESS_MODE_ALWAYS
+	_focus_name_when_laid_out.call_deferred()
+
+
+## Focusing before the containers are sorted makes the ScrollContainer
+## "scroll the field into view" with unfinished sizes (it ended up scrolled).
+func _focus_name_when_laid_out() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if is_inside_tree():
+		name_input.grab_focus()
 
 
 func _on_avatar_selected(av_id: String) -> void:
@@ -70,9 +76,9 @@ func _get_selected_categories() -> Array:
 
 
 func _validate_input() -> void:
-	var name_valid := name_input.text.strip_edges().length() >= 2
-	var grade_valid := _selected_grade >= 0
-	var categories_valid := _get_selected_categories().size() > 0
+	var name_valid: bool = name_input.text.strip_edges().length() >= 2
+	var grade_valid: bool = _selected_grade >= 0
+	var categories_valid: bool = _get_selected_categories().size() > 0
 
 	start_button.disabled = not (name_valid and grade_valid and categories_valid)
 
@@ -90,8 +96,8 @@ func _validate_input() -> void:
 
 
 func _on_start_pressed() -> void:
-	var player_name := name_input.text.strip_edges()
-	var selected_cats := _get_selected_categories()
+	var player_name: String = name_input.text.strip_edges()
+	var selected_cats: Array = _get_selected_categories()
 
 	if player_name.length() < 2:
 		error_label.text = "Name muss mindestens 2 Zeichen haben"
@@ -110,10 +116,12 @@ func _on_start_pressed() -> void:
 
 	AudioManager.play_sfx(AudioManager.SFX.UNLOCK)
 
-	# Create profile with avatar and categories
-	var profile := ProfileManager.create_profile(player_name, _selected_grade, selected_cats, _selected_avatar)
+	var profile: PlayerProfile = ProfileManager.create_profile(
+		player_name, _selected_grade, selected_cats, _selected_avatar
+	)
 
-	# Unpause and close
-	get_tree().paused = false
+	# The chosen grade sets the reading level for everything from now on
+	UITheme.refresh()
+
 	profile_completed.emit(profile)
 	queue_free()

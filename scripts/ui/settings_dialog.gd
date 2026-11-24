@@ -1,20 +1,19 @@
-extends Control
 class_name SettingsDialog
+extends MenuDialog
 
-## Settings Dialog
-## Allows editing player profile: name, grade, categories
-## Uses SelectionButtons for reusable button creation
+## Settings Dialog - edits the current profile: name, avatar, grade and
+## quiz categories. Layout, pause handling and ESC (= cancel) come from
+## MenuDialog. Avatar, grade and category pickers are built by
+## SelectionButtons as toggle chips.
 
-signal closed
-
-@onready var name_input: LineEdit = $Panel/VBox/NameSection/NameInput
-@onready var avatar_container: HBoxContainer = $Panel/VBox/AvatarSection/AvatarContainer
-@onready var grade_container: GridContainer = $Panel/VBox/GradeSection/GradeContainer
-@onready var category_container: VBoxContainer = $Panel/VBox/CategorySection/CategoryContainer
-@onready var save_button: Button = $Panel/VBox/ButtonSection/SaveButton
-@onready var cancel_button: Button = $Panel/VBox/ButtonSection/CancelButton
-@onready var reset_button: Button = $Panel/VBox/ButtonSection/ResetButton
-@onready var error_label: Label = $Panel/VBox/ErrorLabel
+@onready var name_input: LineEdit = %NameInput
+@onready var avatar_container: HFlowContainer = %AvatarContainer
+@onready var grade_container: HFlowContainer = %GradeContainer
+@onready var category_container: HFlowContainer = %CategoryContainer
+@onready var save_button: Button = %SaveButton
+@onready var cancel_button: Button = %CancelButton
+@onready var reset_button: Button = %ResetButton
+@onready var error_label: Label = %ErrorLabel
 
 var _selected_grade: int = 0
 var _selected_avatar: String = "fox"
@@ -30,14 +29,11 @@ func _ready() -> void:
 	name_input.text_changed.connect(_on_input_changed)
 	error_label.visible = false
 
-	# Use SelectionButtons helper for consistent button creation
 	_avatar_buttons = SelectionButtons.create_avatar_buttons(
-		avatar_container, _on_avatar_selected, _selected_avatar,
-		Vector2(44, 44) # Slightly smaller for settings
+		avatar_container, _on_avatar_selected, _selected_avatar
 	)
 	_grade_buttons = SelectionButtons.create_grade_buttons(
-		grade_container, _on_grade_selected, _selected_grade,
-		SelectionButtons.GRADE_BUTTON_SIZE_SMALL
+		grade_container, _on_grade_selected, _selected_grade
 	)
 	_category_checkboxes = SelectionButtons.create_category_checkboxes(
 		category_container, _on_category_toggled_with_id
@@ -45,13 +41,9 @@ func _ready() -> void:
 
 	_load_current_profile()
 
-	# Pause game while in settings
-	get_tree().paused = true
-	process_mode = Node.PROCESS_MODE_ALWAYS
-
 
 func _load_current_profile() -> void:
-	var profile: Resource = ProfileManager.current_profile
+	var profile: PlayerProfile = ProfileManager.current_profile
 	if not profile:
 		return
 
@@ -62,11 +54,10 @@ func _load_current_profile() -> void:
 	SelectionButtons.update_avatar_selection(_avatar_buttons, _selected_avatar)
 	SelectionButtons.update_grade_selection(_grade_buttons, _selected_grade)
 
-	# Update category checkboxes
 	var enabled: Array = profile.get_enabled_categories()
 	for cat_id: String in _category_checkboxes:
-		var checkbox: CheckBox = _category_checkboxes[cat_id]
-		checkbox.button_pressed = cat_id in enabled
+		var chip: Button = _category_checkboxes[cat_id]
+		chip.button_pressed = cat_id in enabled
 
 
 func _on_avatar_selected(av_id: String) -> void:
@@ -95,11 +86,11 @@ func _get_selected_categories() -> Array:
 
 
 func _validate_input() -> void:
-	var name_valid := name_input.text.strip_edges().length() >= 2
-	var cats_valid := _get_selected_categories().size() > 0
-	
+	var name_valid: bool = name_input.text.strip_edges().length() >= 2
+	var cats_valid: bool = _get_selected_categories().size() > 0
+
 	save_button.disabled = not (name_valid and cats_valid)
-	
+
 	if not name_valid and name_input.text.length() > 0:
 		error_label.text = "Name muss mindestens 2 Zeichen haben"
 		error_label.visible = true
@@ -110,8 +101,13 @@ func _validate_input() -> void:
 		error_label.visible = false
 
 
+func _on_escape() -> bool:
+	_on_cancel_pressed()
+	return true
+
+
 func _on_save_pressed() -> void:
-	var profile: Resource = ProfileManager.current_profile
+	var profile: PlayerProfile = ProfileManager.current_profile
 	if not profile:
 		return
 
@@ -123,15 +119,10 @@ func _on_save_pressed() -> void:
 	ProfileManager.save_profile()
 	AudioManager.play_sfx(AudioManager.SFX.UNLOCK)
 
+	# The grade decides the reading level (font + size) of the whole UI
+	UITheme.refresh()
+
 	_close()
-
-
-## ESC closes the dialog. Consumes the event so an underlying menu
-## (e.g. pause menu) does not react to it.
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		accept_event()
-		_close()
 
 
 func _on_cancel_pressed() -> void:
@@ -140,11 +131,15 @@ func _on_cancel_pressed() -> void:
 
 
 func _on_reset_pressed() -> void:
-	# Show confirmation
+	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
+	# ConfirmationDialog is an embedded window; it inherits the theme
 	var confirm := ConfirmationDialog.new()
+	confirm.title = "Profil zurücksetzen"
 	confirm.dialog_text = "Profil wirklich zurücksetzen?\nAlle Fortschritte gehen verloren!"
+	confirm.ok_button_text = "Zurücksetzen"
+	confirm.cancel_button_text = "Abbrechen"
 	confirm.confirmed.connect(_do_reset.bind(confirm))
-	confirm.canceled.connect(func(): confirm.queue_free())
+	confirm.canceled.connect(func() -> void: confirm.queue_free())
 	add_child(confirm)
 	confirm.popup_centered()
 
@@ -154,9 +149,4 @@ func _do_reset(dialog: ConfirmationDialog) -> void:
 	ProfileManager.reset_current_profile()
 	AudioManager.play_sfx(AudioManager.SFX.QUIZ_WRONG)
 	_load_current_profile()
-
-
-func _close() -> void:
-	get_tree().paused = false
-	closed.emit()
-	queue_free()
+	UITheme.refresh()

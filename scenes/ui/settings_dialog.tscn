@@ -1,17 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://settings_dialog_001"]
+[gd_scene load_steps=2 format=3 uid="uid://settings_dialog_001"]
 
 [ext_resource type="Script" path="res://scripts/ui/settings_dialog.gd" id="1_script"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.12, 0.14, 0.2, 0.98)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-content_margin_left = 24.0
-content_margin_top = 20.0
-content_margin_right = 24.0
-content_margin_bottom = 20.0
 
 [node name="SettingsDialog" type="Control"]
 layout_mode = 3
@@ -21,118 +10,152 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
+preferred_size = Vector2(850, 0)
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Backdrop" type="ColorRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.05, 0.05, 0.1, 0.9)
-
-[node name="Panel" type="PanelContainer" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -320.0
-offset_right = 300.0
-offset_bottom = 320.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+color = Color(0.07, 0.09, 0.16, 0.72)
 
-[node name="VBox" type="VBoxContainer" parent="Panel"]
-layout_mode = 2
-theme_override_constants/separation = 16
+[node name="SafeArea" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
 
-[node name="TitleLabel" type="Label" parent="Panel/VBox"]
+[node name="Center" type="CenterContainer" parent="SafeArea"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+
+[node name="Panel" type="PanelContainer" parent="SafeArea/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="SafeArea/Center/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="SafeArea/Center/Panel/VBox"]
+layout_mode = 2
+theme_type_variation = &"MenuTitle"
 text = "⚙️ Einstellungen"
 horizontal_alignment = 1
 
-[node name="NameSection" type="VBoxContainer" parent="Panel/VBox"]
+[node name="Content" type="ScrollContainer" parent="SafeArea/Center/Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Inset" type="MarginContainer" parent="SafeArea/Center/Panel/VBox/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+
+[node name="Form" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="NameSection" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="NameLabel" type="Label" parent="Panel/VBox/NameSection"]
+[node name="NameLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/NameSection"]
 layout_mode = 2
-text = "Name:"
+theme_type_variation = &"SectionLabel"
+text = "Name"
 
-[node name="NameInput" type="LineEdit" parent="Panel/VBox/NameSection"]
-custom_minimum_size = Vector2(0, 40)
+[node name="NameInput" type="LineEdit" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/NameSection"]
+unique_name_in_owner = true
 layout_mode = 2
 placeholder_text = "Dein Name..."
 max_length = 20
+caret_blink = true
 
-[node name="AvatarSection" type="VBoxContainer" parent="Panel/VBox"]
+[node name="AvatarSection" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="AvatarLabel" type="Label" parent="Panel/VBox/AvatarSection"]
+[node name="AvatarLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/AvatarSection"]
 layout_mode = 2
-text = "Avatar:"
+theme_type_variation = &"SectionLabel"
+text = "Avatar"
 
-[node name="AvatarContainer" type="HBoxContainer" parent="Panel/VBox/AvatarSection"]
+[node name="AvatarContainer" type="HFlowContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/AvatarSection"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="GradeSection" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="GradeSection" type="VBoxContainer" parent="Panel/VBox"]
+[node name="GradeLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/GradeSection"]
+layout_mode = 2
+theme_type_variation = &"SectionLabel"
+text = "Klassenstufe"
+
+[node name="GradeContainer" type="HFlowContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/GradeSection"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CategorySection" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="GradeLabel" type="Label" parent="Panel/VBox/GradeSection"]
+[node name="CategoryLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/CategorySection"]
 layout_mode = 2
-text = "Klassenstufe:"
+theme_type_variation = &"SectionLabel"
+text = "Quiz-Kategorien"
 
-[node name="GradeContainer" type="GridContainer" parent="Panel/VBox/GradeSection"]
+[node name="CategoryContainer" type="HFlowContainer" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form/CategorySection"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/h_separation = 6
-theme_override_constants/v_separation = 6
-columns = 6
 
-[node name="CategorySection" type="VBoxContainer" parent="Panel/VBox"]
+[node name="ErrorLabel" type="Label" parent="SafeArea/Center/Panel/VBox/Content/Inset/Form"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="CategoryLabel" type="Label" parent="Panel/VBox/CategorySection"]
-layout_mode = 2
-text = "Quiz-Kategorien:"
-
-[node name="CategoryContainer" type="VBoxContainer" parent="Panel/VBox/CategorySection"]
-layout_mode = 2
-theme_override_constants/separation = 2
-
-[node name="ErrorLabel" type="Label" parent="Panel/VBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
-theme_override_font_sizes/font_size = 13
+theme_type_variation = &"ErrorLabel"
+text = ""
 horizontal_alignment = 1
 
-[node name="ButtonSection" type="HBoxContainer" parent="Panel/VBox"]
+[node name="Footer" type="HBoxContainer" parent="SafeArea/Center/Panel/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ResetButton" type="Button" parent="Panel/VBox/ButtonSection"]
-custom_minimum_size = Vector2(120, 40)
+[node name="ResetButton" type="Button" parent="SafeArea/Center/Panel/VBox/Footer"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.5, 0.5, 1)
+theme_type_variation = &"DangerButton"
 text = "🗑️ Zurücksetzen"
 
-[node name="Spacer" type="Control" parent="Panel/VBox/ButtonSection"]
+[node name="Spacer" type="Control" parent="SafeArea/Center/Panel/VBox/Footer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="CancelButton" type="Button" parent="Panel/VBox/ButtonSection"]
-custom_minimum_size = Vector2(100, 40)
+[node name="CancelButton" type="Button" parent="SafeArea/Center/Panel/VBox/Footer"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Abbrechen"
 
-[node name="SaveButton" type="Button" parent="Panel/VBox/ButtonSection"]
-custom_minimum_size = Vector2(100, 40)
+[node name="SaveButton" type="Button" parent="SafeArea/Center/Panel/VBox/Footer"]
+unique_name_in_owner = true
 layout_mode = 2
+theme_type_variation = &"PrimaryButton"
 text = "💾 Speichern"
-

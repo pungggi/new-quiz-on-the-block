@@ -25,28 +25,22 @@ func open(day_night: DayNightCycle) -> void:
 
 
 func _build() -> void:
-	custom_minimum_size = Vector2(660.0, 0.0)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.1, 0.13, 0.2, 0.97)
-	sb.set_corner_radius_all(18)
-	sb.content_margin_left = 24.0
-	sb.content_margin_right = 24.0
-	sb.content_margin_top = 18.0
-	sb.content_margin_bottom = 18.0
-	add_theme_stylebox_override("panel", sb)
+	# A compact theme card - no stylebox of its own
+	custom_minimum_size = Vector2(660.0 * UITheme.scale_factor(), 0.0)
+	theme_type_variation = &"CardPanel"
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", UITheme.px(12))
 	add_child(vbox)
 
 	var title := Label.new()
 	title.text = "🪐 Wähle deinen Planeten!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 26)
+	title.theme_type_variation = &"MenuSubtitle"
 	vbox.add_child(title)
 
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 22)
+	row.add_theme_constant_override("separation", UITheme.px(20))
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(row)
 	for p: Dictionary in PlanetCatalog.PLANETS:
@@ -65,7 +59,7 @@ func _make_card(p: Dictionary) -> VBoxContainer:
 	card.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	var ball := Button.new()
-	ball.custom_minimum_size = Vector2(BALL_SIZE, BALL_SIZE)
+	ball.custom_minimum_size = Vector2(BALL_SIZE, BALL_SIZE) * UITheme.scale_factor()
 	ball.tooltip_text = "%s: Tag = %d Minuten" % [p["name"], int(p["day_minutes"])]
 	ball.pressed.connect(_on_ball_pressed.bind(p))
 	_ball_buttons[p["key"]] = ball
@@ -74,12 +68,13 @@ func _make_card(p: Dictionary) -> VBoxContainer:
 	var name_label := Label.new()
 	name_label.text = p["name"]
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 19)
+	name_label.theme_type_variation = &"CardTitle"
 	card.add_child(name_label)
 
 	var day_label := Label.new()
 	day_label.text = "Tag: %d Min" % int(p["day_minutes"])
 	day_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	day_label.theme_type_variation = &"CaptionLabel"
 	card.add_child(day_label)
 
 	var suns: int = maxi(1, int(round(float(p["sun_intensity"]) / 0.4)))
@@ -99,7 +94,7 @@ func _on_ball_pressed(p: Dictionary) -> void:
 
 
 ## Round styleboxes with the planet color; the selected ball gets a
-## white ring
+## dark ring (a white one vanished on the cream card)
 func _refresh_balls() -> void:
 	for key: String in _ball_buttons:
 		var planet: Dictionary = PlanetCatalog.by_key(key)
@@ -109,7 +104,7 @@ func _refresh_balls() -> void:
 		sb.set_corner_radius_all(int(BALL_SIZE * 0.5))
 		if key == _selected_key:
 			sb.set_border_width_all(6)
-			sb.border_color = Color.WHITE
+			sb.border_color = UITheme.INK
 		else:
 			sb.set_border_width_all(4)
 			sb.border_color = (planet["color"] as Color).darkened(0.45)

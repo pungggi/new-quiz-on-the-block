@@ -1,5 +1,5 @@
-extends Control
 class_name QuizWindow
+extends MenuDialog
 
 signal answer_submitted(was_correct: bool)
 
@@ -11,7 +11,7 @@ signal answer_submitted(was_correct: bool)
 @onready var answer3_button: Button = %Answer3Button
 @onready var explanation_label: Label = %ExplanationLabel
 @onready var reward_label: Label = %RewardLabel
-@onready var panel: PanelContainer = $Panel
+@onready var panel: PanelContainer = %Panel
 
 var _current_question: Resource # QuizQuestion type
 var _answer_buttons: Array[Button] = []
@@ -52,8 +52,25 @@ func open_with_category(category: String) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_set_build_cursor_blocking(true)
 	_load_random_question()
+	_keep_above_building_bar()
 	AudioManager.play_sfx(AudioManager.SFX.PANEL_OPEN)
 	_animate_panel_open()
+
+
+## Centre the quiz in the free space of the screen: below the HUD chips at
+## the top and above the building bar at the bottom, instead of letting it
+## disappear behind either.
+func _keep_above_building_bar() -> void:
+	var safe: MarginContainer = get_node_or_null("%SafeArea")
+	if safe == null:
+		return
+	safe.add_theme_constant_override("margin_top", 64)
+	var margin: int = 24
+	var bar: Control = get_parent().get_node_or_null("BuildingPanel/VBox") as Control
+	if bar:
+		margin += int(ceil(bar.size.y))
+	safe.add_theme_constant_override("margin_bottom", margin)
+	_fit_panel()
 
 
 func close() -> void:
@@ -69,15 +86,16 @@ func close() -> void:
 	_is_closing = false
 
 
-## ESC closes the quiz. Runs before main.gd's _input (deeper nodes first)
-## and consumes the event, so the pause menu does NOT open on top.
-func _input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		accept_event()
-		close()
+## ESC closes the quiz. MenuDialog handles the key and consumes it, so
+## main.gd does not open the pause menu on top.
+func _on_escape() -> bool:
+	close()
+	return true
 
 
 func _animate_panel_open() -> void:
+	# scale around the centre of whatever size the panel currently has
+	panel.pivot_offset = panel.size / 2.0
 	panel.scale = Vector2(0.8, 0.8)
 	panel.modulate.a = 0.0
 	var tween := create_tween().set_parallel(true)
@@ -237,6 +255,7 @@ func _show_reward_label() -> void:
 
 
 func _animate_correct_button(btn: Button) -> void:
+	_mark_button(btn, &"PrimaryButton")
 	var tween := create_tween()
 	tween.tween_property(btn, "modulate", Color.GREEN, 0.2)
 	tween.tween_property(btn, "scale", Vector2(1.1, 1.1), 0.1)
@@ -244,19 +263,29 @@ func _animate_correct_button(btn: Button) -> void:
 
 
 func _animate_wrong_button(btn: Button) -> void:
-	btn.modulate = Color.RED
+	_mark_button(btn, &"DangerButton")
 	var original_pos := btn.position.x
 	var tween := create_tween()
 	tween.tween_property(btn, "position:x", original_pos - 10, 0.05)
 	tween.tween_property(btn, "position:x", original_pos + 10, 0.1)
 	tween.tween_property(btn, "position:x", original_pos - 5, 0.05)
 	tween.tween_property(btn, "position:x", original_pos, 0.05)
-	tween.tween_property(btn, "modulate", Color.WHITE, 0.3)
+
+
+## Show a result with the theme: the correct answer becomes a green primary
+## button, a wrong one a red danger button. They get disabled to block more
+## clicks, so the disabled state has to keep the full colour.
+func _mark_button(btn: Button, variation: StringName) -> void:
+	btn.theme_type_variation = variation
+	btn.add_theme_stylebox_override("disabled", btn.get_theme_stylebox("normal"))
+	btn.add_theme_color_override("font_disabled_color", btn.get_theme_color("font_color"))
 
 
 func _reset_button_colors() -> void:
 	for btn in _answer_buttons:
-		btn.modulate = Color.WHITE
+		btn.theme_type_variation = &""
+		btn.remove_theme_stylebox_override("disabled")
+		btn.remove_theme_color_override("font_disabled_color")
 		btn.disabled = false
 
 

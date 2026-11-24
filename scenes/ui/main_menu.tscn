@@ -1,8 +1,17 @@
-[gd_scene format=3 uid="uid://cfkhqojsqa3ts"]
+[gd_scene load_steps=4 format=3 uid="uid://cfkhqjojsqa3ts"]
 
-[ext_resource type="Script" uid="uid://cri377hjtrex8" path="res://scripts/ui/main_menu.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_script"]
 
-[node name="MainMenu" type="Control" unique_id=181274112]
+[sub_resource type="Gradient" id="Gradient_sky"]
+offsets = PackedFloat32Array(0, 0.7, 1)
+colors = PackedColorArray(0.34, 0.65, 0.94, 1, 0.66, 0.86, 0.98, 1, 0.86, 0.95, 1, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_sky"]
+gradient = SubResource("Gradient_sky")
+fill_from = Vector2(0, 0)
+fill_to = Vector2(0, 1)
+
+[node name="MainMenu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -10,111 +19,162 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
+preferred_size = Vector2(440, 0)
+closable = false
+pauses_game = false
+dim_background = false
 
-[node name="Background" type="ColorRect" parent="." unique_id=1259420205]
+[node name="Sky" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.15, 0.2, 0.25, 1)
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_sky")
+expand_mode = 1
 
-[node name="VBox" type="VBoxContainer" parent="." unique_id=1112028153]
+[node name="Grass" type="ColorRect" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -220.0
-offset_right = 200.0
-offset_bottom = 220.0
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -56.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0.36, 0.7, 0.3, 1)
+
+[node name="GrassEdge" type="ColorRect" parent="Grass"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 6.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.27, 0.56, 0.22, 1)
+
+[node name="Dirt" type="ColorRect" parent="Grass"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0.62, 0.5, 0.36, 1)
+
+[node name="SafeArea" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 16
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
 
-[node name="Title" type="Label" parent="VBox" unique_id=44976349]
+[node name="Center" type="CenterContainer" parent="SafeArea"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 42
+
+[node name="Panel" type="PanelContainer" parent="SafeArea/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="SafeArea/Center/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="SafeArea/Center/Panel/VBox"]
+layout_mode = 2
+theme_type_variation = &"MenuTitle"
 text = "🏘️ New Quiz on the Block"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="VBox" unique_id=2041418597]
+[node name="Subtitle" type="Label" parent="SafeArea/Center/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"MenuSubtitle"
 text = "Lerne und baue deine Stadt!"
 horizontal_alignment = 1
 
-[node name="Spacer1" type="Control" parent="VBox" unique_id=1970452611]
-custom_minimum_size = Vector2(0, 20)
+[node name="ProfileChip" type="PanelContainer" parent="SafeArea/Center/Panel/VBox"]
 layout_mode = 2
+size_flags_horizontal = 4
+theme_type_variation = &"CardPanel"
 
-[node name="ProfileInfoLabel" type="Label" parent="VBox" unique_id=936543062]
+[node name="ProfileInfoLabel" type="Label" parent="SafeArea/Center/Panel/VBox/ProfileChip"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_type_variation = &"SectionLabel"
 text = "🦊 Spieler | 1. Klasse | 100 🎓"
 horizontal_alignment = 1
 
-[node name="Spacer2" type="Control" parent="VBox" unique_id=2039400905]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-
-[node name="PlayButton" type="Button" parent="VBox" unique_id=1913873778]
+[node name="Content" type="VBoxContainer" parent="SafeArea/Center/Panel/VBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "▶️  Spielen"
+theme_override_constants/separation = 10
 
-[node name="ProfilesButton" type="Button" parent="VBox" unique_id=467369156]
+[node name="PlayButton" type="Button" parent="SafeArea/Center/Panel/VBox/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "👤  Profile verwalten"
+theme_type_variation = &"PrimaryButton"
+text = "▶️ Spielen"
 
-[node name="CharacterButton" type="Button" parent="VBox" unique_id=865655894]
+[node name="Row1" type="HBoxContainer" parent="SafeArea/Center/Panel/VBox/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ProfilesButton" type="Button" parent="SafeArea/Center/Panel/VBox/Content/Row1"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "🎨  Charakter"
+size_flags_horizontal = 3
+text = "👤 Profile"
 
-[node name="SettingsButton" type="Button" parent="VBox" unique_id=1605974258]
+[node name="CharacterButton" type="Button" parent="SafeArea/Center/Panel/VBox/Content/Row1"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "⚙️  Einstellungen"
+size_flags_horizontal = 3
+text = "🎨 Charakter"
 
-[node name="CreditsButton" type="Button" parent="VBox" unique_id=1733459982]
+[node name="Row2" type="HBoxContainer" parent="SafeArea/Center/Panel/VBox/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SettingsButton" type="Button" parent="SafeArea/Center/Panel/VBox/Content/Row2"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "ℹ️  Credits"
+size_flags_horizontal = 3
+text = "⚙️ Einstellungen"
 
-[node name="QuitButton" type="Button" parent="VBox" unique_id=1369484102]
+[node name="CreditsButton" type="Button" parent="SafeArea/Center/Panel/VBox/Content/Row2"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "🚪  Beenden"
+size_flags_horizontal = 3
+text = "ℹ️ Credits"
 
-[node name="VersionLabel" type="Label" parent="." unique_id=1624893900]
+[node name="QuitButton" type="Button" parent="SafeArea/Center/Panel/VBox/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DangerButton"
+text = "🚪 Beenden"
+[node name="VersionLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = -32.0
-offset_right = 116.0
+offset_top = -30.0
+offset_right = 216.0
+offset_bottom = -8.0
 grow_vertical = 0
-theme_override_colors/font_color = Color(0.5, 0.5, 0.55, 1)
-theme_override_font_sizes/font_size = 14
+theme_type_variation = &"OutlineCaption"
 text = "v0.6.0"

@@ -13,7 +13,7 @@ signal panel_toggled(is_open: bool)
 @onready var toggle_button: Button = %ToggleButton
 @onready var points_label: Label = %PointsLabel
 @onready var building_container: HBoxContainer = %BuildingContainer
-@onready var category_tabs: HBoxContainer = %CategoryTabs
+@onready var category_tabs: HFlowContainer = %CategoryTabs
 @onready var panel: PanelContainer = %Panel
 @onready var tooltip_panel: PanelContainer = %TooltipPanel
 @onready var tooltip_name: Label = %TooltipName
@@ -93,8 +93,8 @@ func _create_category_tabs() -> void:
 		btn.text = info.name
 		btn.toggle_mode = true
 		btn.button_pressed = (cat == _current_category)
+		btn.theme_type_variation = &"ChipButton"
 		btn.pressed.connect(_on_category_selected.bind(cat))
-		btn.custom_minimum_size = Vector2(100, 30)
 		category_tabs.add_child(btn)
 		_category_buttons[cat] = btn
 
@@ -137,23 +137,7 @@ func _create_building_button(building: BuildingData) -> void:
 	# Store reference
 	_building_buttons[building] = btn
 
-	# Set color based on building
-	var style := StyleBoxFlat.new()
-	style.bg_color = building.color
-	style.set_corner_radius_all(4)
-	btn.add_theme_stylebox_override("normal", style)
-
-	# Hover style
-	var hover_style := style.duplicate()
-	hover_style.bg_color = building.color.lightened(0.2)
-	btn.add_theme_stylebox_override("hover", hover_style)
-
-	# Pressed style
-	var pressed_style := style.duplicate()
-	pressed_style.bg_color = building.color.darkened(0.2)
-	pressed_style.border_width_bottom = 4
-	pressed_style.border_color = Color.WHITE
-	btn.add_theme_stylebox_override("pressed", pressed_style)
+	_apply_block_style(btn, building.color)
 
 	# Connect signals
 	btn.pressed.connect(_on_building_button_pressed.bind(building))
@@ -171,21 +155,7 @@ func _create_prop_button(prop: PropData) -> void:
 
 	_prop_buttons[prop] = btn
 
-	# Style with prop's secondary color (more visual)
-	var style := StyleBoxFlat.new()
-	style.bg_color = prop.secondary_color
-	style.set_corner_radius_all(4)
-	btn.add_theme_stylebox_override("normal", style)
-
-	var hover_style := style.duplicate()
-	hover_style.bg_color = prop.secondary_color.lightened(0.2)
-	btn.add_theme_stylebox_override("hover", hover_style)
-
-	var pressed_style := style.duplicate()
-	pressed_style.bg_color = prop.secondary_color.darkened(0.2)
-	pressed_style.border_width_bottom = 4
-	pressed_style.border_color = Color.WHITE
-	btn.add_theme_stylebox_override("pressed", pressed_style)
+	_apply_block_style(btn, prop.secondary_color)
 
 	# Affordability check
 	var can_afford: bool = prop.can_afford(_building_manager.education_points)
@@ -320,3 +290,25 @@ func _on_building_unlocked(building: BuildingData) -> void:
 	_update_button_state(building)
 	AudioManager.play_sfx(AudioManager.SFX.UNLOCK)
 
+
+## A coloured toy block for a building/prop, sized for the reading level.
+## The selected block gets a dark ring.
+func _apply_block_style(btn: Button, color: Color) -> void:
+	var side: int = UITheme.px(48)
+	btn.custom_minimum_size = Vector2(side, side)
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = color
+	normal.set_corner_radius_all(UITheme.RADIUS)
+	normal.border_width_bottom = UITheme.BLOCK_LIP
+	normal.border_color = color.darkened(0.4)
+	var hover: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
+	hover.bg_color = color.lightened(0.15)
+	var pressed := StyleBoxFlat.new()
+	pressed.bg_color = color.lightened(0.08)
+	pressed.set_corner_radius_all(UITheme.RADIUS)
+	pressed.set_border_width_all(UITheme.px(3))
+	pressed.border_color = UITheme.INK
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("hover_pressed", pressed)

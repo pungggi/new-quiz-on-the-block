@@ -35,6 +35,7 @@ RoadManager="*res://autoloads/road_manager.gd"
 PropManager="*res://autoloads/prop_manager.gd"
 AchievementManager="*res://autoloads/achievement_manager.gd"
 ShellManager="*res://autoloads/shell_manager.gd"
+UITheme="*res://autoloads/ui_theme.gd"
 
 [editor_plugins]
 
