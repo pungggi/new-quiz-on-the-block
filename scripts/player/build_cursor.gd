@@ -1,3 +1,4 @@
+class_name BuildCursor
 extends Node3D
 
 ## Build Cursor
@@ -5,8 +6,6 @@ extends Node3D
 ## Shows where the player would build on the voxel terrain.
 ## Casts a ray from the active Camera3D through the mouse position
 ## and snaps to the voxel grid. Click to place a building.
-
-const BuildingMeshGen := preload("res://scripts/visuals/building_mesh_generator.gd")
 
 signal building_placed(grid_position: Vector3i)
 
@@ -76,13 +75,9 @@ func _ready() -> void:
 	_building_manager = get_node_or_null("/root/BuildingManager")
 	_prop_manager = get_node_or_null("/root/PropManager")
 
-	# Connect to BuildingPanel prop selection (deferred)
-	call_deferred("_connect_prop_selection")
-
-	# Create buildings container
-	_buildings_root = Node3D.new()
-	_buildings_root.name = "Buildings"
-	get_tree().current_scene.add_child.call_deferred(_buildings_root)
+	# The buildings container and the building bar belong to the game scene:
+	# main.gd hands them over (set_buildings_root / set_prop_picker), so this
+	# node never has to go looking for its siblings.
 
 	# Hide default mesh (we'll use preview meshes instead)
 	if mesh_instance:
@@ -92,10 +87,14 @@ func _ready() -> void:
 	visible = false
 
 
-func _connect_prop_selection() -> void:
-	await get_tree().process_frame
-	var panel: Node = get_tree().current_scene.get_node_or_null("UI/BuildingPanel")
-	if panel and panel.has_signal("prop_selected"):
+## Called by main.gd: the node placed and restored buildings live under
+func set_buildings_root(root: Node3D) -> void:
+	_buildings_root = root
+
+
+## Called by main.gd: the bar whose prop chips select a prop to place
+func set_prop_picker(panel: BuildingPanel) -> void:
+	if not panel.prop_selected.is_connected(_on_prop_selected):
 		panel.prop_selected.connect(_on_prop_selected)
 
 
@@ -173,7 +172,7 @@ func _setup_materials() -> void:
 	material_valid.cull_mode = BaseMaterial3D.CULL_BACK
 	material_valid.flags_do_not_receive_shadows = true
 	material_valid.flags_unshaded = true
-	
+
 	# Invalid placement material (red, transparent)
 	material_invalid = StandardMaterial3D.new()
 	material_invalid.albedo_color = Color(1.0, 0.0, 0.0, 0.5) # Red with 50% alpha
@@ -181,7 +180,7 @@ func _setup_materials() -> void:
 	material_invalid.cull_mode = BaseMaterial3D.CULL_BACK
 	material_invalid.flags_do_not_receive_shadows = true
 	material_invalid.flags_unshaded = true
-	
+
 	# Apply initial material
 	if mesh_instance and mesh_instance.mesh:
 		mesh_instance.material_override = material_valid
@@ -496,13 +495,13 @@ func _place_building() -> void:
 	building.collision_layer = BUILDING_COLLISION_LAYER
 	building.collision_mask = 0 # Doesn't need to detect anything
 
-	# Create detailed mesh using BuildingMeshGen
+	# Create detailed mesh using BuildingMeshGenerator
 	var block_mesh := MeshInstance3D.new()
 	block_mesh.name = "MeshInstance3D"
 
 	if building_data:
 		# Use procedural detailed mesh
-		block_mesh.mesh = BuildingMeshGen.generate(building_data)
+		block_mesh.mesh = BuildingMeshGenerator.generate(building_data)
 		# Store building data for save/load
 		building.set_meta("building_id", building_data.display_name)
 	else:
@@ -511,7 +510,7 @@ func _place_building() -> void:
 		box_mesh.size = Vector3(1.0, 1.0, 1.0)
 		block_mesh.mesh = box_mesh
 		var mat := StandardMaterial3D.new()
-		var colors := [Color.CORAL, Color.CORNFLOWER_BLUE, Color.GOLD]
+		var colors: Array[Color] = [Color.CORAL, Color.CORNFLOWER_BLUE, Color.GOLD]
 		mat.albedo_color = colors[randi() % colors.size()]
 		block_mesh.material_override = mat
 
@@ -560,7 +559,7 @@ func _place_building() -> void:
 	# Add interaction prompt label (starts invisible)
 	var prompt := Label3D.new()
 	prompt.name = "InteractionPrompt"
-	prompt.text = "[T] Erkunden"
+	prompt.text = "[E] Erkunden"
 	var prompt_y: float = float(building_data.size.y) if building_data else 1.0
 	prompt.position = Vector3(0.5, prompt_y + 0.3, 0.5)
 	prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED

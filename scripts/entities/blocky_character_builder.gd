@@ -91,12 +91,12 @@ class BuildResult:
 static func build_from_customization(root: Node3D, customization: PlayerCustomization) -> BuildResult:
 	_ensure_meshes()
 	var result := BuildResult.new()
-	
+
 	# Clear existing mesh children
 	for child in root.get_children():
 		if child is MeshInstance3D:
 			child.queue_free()
-	
+
 	# Create materials
 	var skin_mat := StandardMaterial3D.new()
 	skin_mat.albedo_color = customization.skin_color
@@ -110,37 +110,37 @@ static func build_from_customization(root: Node3D, customization: PlayerCustomiz
 	glasses_mat.albedo_color = customization.glasses_color
 	var hat_mat := StandardMaterial3D.new()
 	hat_mat.albedo_color = customization.hat_color
-	
+
 	result.materials = {
 		"skin": skin_mat, "hair": hair_mat, "body": body_mat,
 		"leg": leg_mat, "glasses": glasses_mat, "hat": hat_mat
 	}
-	
+
 	# HEAD
 	var head := _create_mesh_instance(_head_mesh, HEAD_POS, skin_mat)
 	root.add_child(head)
 	result.body_parts["head"] = head
-	
+
 	# HAIR
 	if customization.hair_style != PlayerCustomization.HairStyle.BALD:
 		var hair := _create_hair(customization.hair_style, hair_mat)
 		head.add_child(hair)
-	
+
 	# GLASSES
 	if customization.glasses_type != PlayerCustomization.GlassesType.NONE:
 		var glasses := _create_glasses(customization.glasses_type, glasses_mat)
 		head.add_child(glasses)
-	
+
 	# HAT
 	if customization.hat_type != PlayerCustomization.HatType.NONE:
 		var hat := _create_hat(customization.hat_type, hat_mat)
 		head.add_child(hat)
-	
+
 	# BODY
 	var body := _create_mesh_instance(_body_mesh, BODY_POS, body_mat)
 	root.add_child(body)
 	result.body_parts["body"] = body
-	
+
 	# ARMS
 	var left_arm := _create_mesh_instance(_arm_mesh, LEFT_ARM_POS, skin_mat)
 	var right_arm := _create_mesh_instance(_arm_mesh, RIGHT_ARM_POS, skin_mat)
@@ -148,7 +148,7 @@ static func build_from_customization(root: Node3D, customization: PlayerCustomiz
 	root.add_child(right_arm)
 	result.body_parts["left_arm"] = left_arm
 	result.body_parts["right_arm"] = right_arm
-	
+
 	# LEGS
 	var left_leg := _create_mesh_instance(_leg_mesh, LEFT_LEG_POS, leg_mat)
 	var right_leg := _create_mesh_instance(_leg_mesh, RIGHT_LEG_POS, leg_mat)
@@ -156,7 +156,7 @@ static func build_from_customization(root: Node3D, customization: PlayerCustomiz
 	root.add_child(right_leg)
 	result.body_parts["left_leg"] = left_leg
 	result.body_parts["right_leg"] = right_leg
-	
+
 	return result
 
 

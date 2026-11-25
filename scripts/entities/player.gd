@@ -102,12 +102,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		return # the vehicle (bicycle) handles all input while mounted
 
 	if event.is_action_pressed("interact"):
-		var npc_manager: Node = get_node_or_null("/root/NPCManager")
-		if _nearest_npc and npc_manager:
-			npc_manager.interact_with(_nearest_npc)
+		if _nearest_npc:
+			NPCManager.interact_with(_nearest_npc)
 			get_viewport().set_input_as_handled()
-		elif _nearest_building and npc_manager:
-			npc_manager.interact_with_building(_nearest_building)
+		elif _nearest_building:
+			BuildingManager.interact_with_building(_nearest_building)
 			get_viewport().set_input_as_handled()
 
 

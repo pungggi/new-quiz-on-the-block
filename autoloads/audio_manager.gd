@@ -310,7 +310,7 @@ func _create_fanfare_sound() -> AudioStreamWAV:
 	var data := PackedByteArray()
 	data.resize(samples * 2)
 
-	var notes := [523.25, 659.25, 783.99, 1046.5] # C5, E5, G5, C6
+	var notes: Array[float] = [523.25, 659.25, 783.99, 1046.5] # C5, E5, G5, C6
 	var note_duration := duration / notes.size()
 
 	for i in range(samples):

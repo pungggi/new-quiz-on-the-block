@@ -191,7 +191,7 @@ func _decorate_chunk(chunk_key: Vector2i, nature_props: Array[PropData]) -> void
 		if not _is_buildable_land(pos):
 			continue
 		var prop_data: PropData = nature_props[randi() % nature_props.size()]
-		var entry := {
+		var entry: Dictionary = {
 			"name": prop_data.display_name,
 			"x": pos.x,
 			"y": pos.y,
@@ -235,7 +235,7 @@ func place_prop(pos: Vector3, prop_data: PropData, deduct_cost: bool = true) -> 
 			return null
 		BuildingManager.education_points -= prop_data.cost
 
-	var entry := {
+	var entry: Dictionary = {
 		"name": prop_data.display_name,
 		"x": pos.x,
 		"y": pos.y,

@@ -1,4 +1,5 @@
 extends Node3D
+class_name Bridge
 
 ## Wooden bridge across the river. Geometry follows WorldManager.BRIDGE_*
 ## (the same constants drive walk_surface_y and this mesh, so they can

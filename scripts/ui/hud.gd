@@ -4,15 +4,21 @@ class_name HUD
 ## HUD - Heads Up Display
 ##
 ## Main gameplay UI orchestrator. Delegates to specialized components:
-## - ToastManager for notifications
-## - HintDisplay for contextual hints (via Label with script)
-## - Points/Stats display
+## - ToastManager (%ToastContainer) for notifications
+## - %HintLabel for contextual hints
+## - points/shell counters and the day/night clock
 
 signal quiz_requested
+## The HUD only asks: main.gd opens the dialogs (on the UI layer, where
+## nothing of the HUD can cover them)
+signal settings_requested
+signal stats_requested
+signal achievements_requested
 
-const SETTINGS_DIALOG_SCENE := preload("res://scenes/ui/settings_dialog.tscn")
-const STATS_DIALOG_SCENE := preload("res://scenes/ui/stats_dialog.tscn")
-const ACHIEVEMENTS_DIALOG_SCENE := preload("res://scenes/ui/achievements_dialog.tscn")
+
+## Height of the HUD chips strip at the top of the in-game screen.
+## The quiz window keeps this clear as well.
+const TOP_STRIP: float = 64.0
 
 # UI Elements
 @onready var quiz_button: Button = %QuizButton
@@ -22,7 +28,7 @@ const ACHIEVEMENTS_DIALOG_SCENE := preload("res://scenes/ui/achievements_dialog.
 @onready var stats_panel: PanelContainer = %StatsPanel
 @onready var points_label: Label = %PointsLabel
 @onready var stats_label: Label = %StatsLabel
-@onready var toast_container: VBoxContainer = %ToastContainer
+@onready var toast_container: ToastManager = %ToastContainer
 @onready var hint_label: Label = %HintLabel
 @onready var progress_bar: ProgressBar = %ProgressBar
 @onready var progress_label: Label = %ProgressLabel
@@ -35,12 +41,11 @@ var _building_manager: Node = null
 var _game_mode: Node = null
 var _quiz_manager: Node = null
 var _npc_manager: Node = null
-var _day_night: Node = null
+var _day_night: DayNightCycle = null
 var _planet_picker: PlanetPicker = null
-var _shell_label: Label = null
-
-# Toast manager (created dynamically or use existing container)
-var _toast_manager: ToastManager = null
+@onready var _shell_label: Label = %ShellLabel
+## Wired by main.gd (see set_bottom_bar / set_day_night)
+var _building_bar: BuildingPanel = null
 
 # Animated points display
 var _displayed_points: int = 0
@@ -55,7 +60,6 @@ var _has_answered_quiz: bool = false
 
 
 func _ready() -> void:
-	_setup_toast_manager()
 	_connect_buttons()
 	_connect_managers()
 
@@ -67,39 +71,9 @@ func _ready() -> void:
 	# Shell/coin counter under the points display
 	_setup_shell_display()
 
-	# Start showing hints after a short delay
-	await get_tree().create_timer(UIThemeConstants.TOAST_DURATION).timeout
+	# Start showing hints after a short delay (a toast's lifetime)
+	await get_tree().create_timer(ToastManager.DEFAULT_DURATION).timeout
 	_update_hint()
-
-
-func _setup_toast_manager() -> void:
-	# Convert toast_container to ToastManager if it exists
-	if toast_container:
-		_toast_manager = ToastManager.new()
-		_toast_manager.name = "ToastManager"
-		# Copy properties from existing container
-		_toast_manager.size_flags_horizontal = toast_container.size_flags_horizontal
-		_toast_manager.size_flags_vertical = toast_container.size_flags_vertical
-		# Keep it where the scene put the container (centred under the clock).
-		# Without this the toasts showed up in the top-left corner.
-		_toast_manager.anchor_left = toast_container.anchor_left
-		_toast_manager.anchor_top = toast_container.anchor_top
-		_toast_manager.anchor_right = toast_container.anchor_right
-		_toast_manager.anchor_bottom = toast_container.anchor_bottom
-		_toast_manager.offset_left = toast_container.offset_left
-		_toast_manager.offset_top = toast_container.offset_top
-		_toast_manager.offset_right = toast_container.offset_right
-		_toast_manager.offset_bottom = toast_container.offset_bottom
-		_toast_manager.grow_horizontal = toast_container.grow_horizontal
-		_toast_manager.grow_vertical = toast_container.grow_vertical
-		_toast_manager.add_theme_constant_override("separation", toast_container.get_theme_constant("separation"))
-		# Replace container
-		var parent := toast_container.get_parent()
-		var idx := toast_container.get_index()
-		parent.remove_child(toast_container)
-		toast_container.queue_free()
-		parent.add_child(_toast_manager)
-		parent.move_child(_toast_manager, idx)
 
 
 func _connect_buttons() -> void:
@@ -135,16 +109,20 @@ func _connect_managers() -> void:
 	if ach_mgr:
 		ach_mgr.achievement_unlocked.connect(_on_achievement_unlocked)
 
-	# Connect to day/night cycle (needs frame delay)
-	_connect_day_night_deferred()
+
+## Wired by main.gd: the day/night cycle drives the clock and the
+## planet picker.
+func set_day_night(cycle: DayNightCycle) -> void:
+	_day_night = cycle
+	if not cycle.time_changed.is_connected(_on_time_changed):
+		cycle.time_changed.connect(_on_time_changed)
+	_update_time_display()
 
 
-func _connect_day_night_deferred() -> void:
-	await get_tree().process_frame
-	_day_night = get_tree().current_scene.get_node_or_null("DayNightCycle")
-	if _day_night:
-		_day_night.time_changed.connect(_on_time_changed)
-		_update_time_display()
+## Wired by main.gd: the building bar at the bottom edge. Popups are
+## re-centred into the space above it.
+func set_bottom_bar(bar: BuildingPanel) -> void:
+	_building_bar = bar
 
 
 func _on_quiz_button_pressed() -> void:
@@ -153,25 +131,22 @@ func _on_quiz_button_pressed() -> void:
 
 func _on_settings_button_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	var dialog: Control = SETTINGS_DIALOG_SCENE.instantiate()
-	dialog.closed.connect(_on_settings_closed)
-	get_tree().root.add_child(dialog)
+	settings_requested.emit()
 
 
-func _on_settings_closed() -> void:
-	_update_stats() # Refresh stats after settings changed
+## Called once the settings dialog closed: name or grade may have changed
+func refresh_stats() -> void:
+	_update_stats()
 
 
 func _on_stats_button_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	var dialog: Control = STATS_DIALOG_SCENE.instantiate()
-	get_tree().root.add_child(dialog)
+	stats_requested.emit()
 
 
 func _on_achievements_button_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	var dialog: Control = ACHIEVEMENTS_DIALOG_SCENE.instantiate()
-	get_tree().root.add_child(dialog)
+	achievements_requested.emit()
 
 
 func _on_points_changed(new_total: int) -> void:
@@ -185,7 +160,7 @@ func _on_building_unlocked(building: BuildingData) -> void:
 	_pulse_stats_panel()
 
 
-func _on_achievement_unlocked(achievement: Resource) -> void:
+func _on_achievement_unlocked(achievement: AchievementData) -> void:
 	show_toast("🏆 %s %s!" % [achievement.icon, achievement.title], Color(1.0, 0.85, 0.3))
 	AudioManager.play_sfx(AudioManager.SFX.UNLOCK)
 
@@ -209,7 +184,7 @@ func _update_points_display(value: int) -> void:
 		var player_name := "Spieler"
 		var avatar_emoji := "👤"
 		if profile_mgr and profile_mgr.current_profile:
-			var profile: Resource = profile_mgr.current_profile
+			var profile: PlayerProfile = profile_mgr.current_profile
 			player_name = profile.player_name
 			avatar_emoji = profile.get_avatar_emoji()
 		points_label.text = "%s %s\n📚 %d Punkte" % [avatar_emoji, player_name, value]
@@ -219,6 +194,8 @@ func _update_points_display(value: int) -> void:
 func _pulse_stats_panel() -> void:
 	if not stats_panel:
 		return
+	# Grow from the centre, not from the top-left corner
+	stats_panel.pivot_offset = stats_panel.size * 0.5
 	var tween := create_tween()
 	tween.tween_property(stats_panel, "scale", Vector2(1.05, 1.05), 0.1)
 	tween.tween_property(stats_panel, "scale", Vector2(1.0, 1.0), 0.1)
@@ -271,7 +248,7 @@ func _update_stats() -> void:
 
 	var avatar_emoji := "👤"
 	if profile_mgr and profile_mgr.current_profile:
-		var profile: Resource = profile_mgr.current_profile
+		var profile: PlayerProfile = profile_mgr.current_profile
 		player_name = profile.player_name
 		grade_name = profile.get_grade_name(profile.grade_level)
 		avatar_emoji = profile.get_avatar_emoji()
@@ -302,17 +279,16 @@ func _update_time_display() -> void:
 		return
 
 	var time_str: String = _day_night.get_time_string()
-	var phase: int = _day_night.current_phase
-	var emoji := "🌞"
+	var emoji: String = "🌞"
 
-	match phase:
-		0: # DAWN
+	match _day_night.current_phase:
+		DayNightCycle.DayPhase.DAWN:
 			emoji = "🌅"
-		1: # DAY
+		DayNightCycle.DayPhase.DAY:
 			emoji = "🌞"
-		2: # DUSK
+		DayNightCycle.DayPhase.DUSK:
 			emoji = "🌇"
-		3: # NIGHT
+		DayNightCycle.DayPhase.NIGHT:
 			emoji = "🌙"
 
 	time_label.text = "%s %s" % [emoji, time_str]
@@ -331,14 +307,14 @@ func _toggle_planet_picker() -> void:
 	if _planet_picker == null:
 		_planet_picker = PlanetPicker.new()
 		add_child(_planet_picker)
-		_planet_picker.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 		_planet_picker.planet_selected.connect(_on_planet_selected)
 	if _planet_picker.visible:
 		_planet_picker.hide()
 		return
+	if _day_night == null:
+		return # no day/night cycle to re-tune
 	_lift_above_building_bar(_planet_picker)
-	if _day_night:
-		_planet_picker.open(_day_night as DayNightCycle)
+	_planet_picker.open(_day_night)
 
 
 func _on_planet_selected(planet: Dictionary) -> void:
@@ -351,13 +327,8 @@ func _on_planet_selected(planet: Dictionary) -> void:
 #region Shell Counter
 
 func _setup_shell_display() -> void:
-	if not (points_label and points_label.get_parent()):
+	if not _shell_label:
 		return
-	_shell_label = Label.new()
-	_shell_label.name = "ShellLabel"
-	_shell_label.text = "🐚 0   💰 0"
-	points_label.get_parent().add_child(_shell_label)
-	points_label.get_parent().move_child(_shell_label, points_label.get_index() + 1)
 	ShellManager.shells_changed.connect(_on_shells_changed)
 	ShellManager.coins_changed.connect(_on_coins_changed)
 	_update_shell_display()
@@ -380,37 +351,8 @@ func _on_coins_changed(_amount: int) -> void:
 
 ## Show a toast notification with slide-in animation
 func show_toast(message: String, color: Color = Color.WHITE) -> void:
-	if _toast_manager:
-		_toast_manager.show_toast(message, color)
-	elif toast_container:
-		# Fallback if ToastManager setup failed
-		_show_toast_fallback(message, color)
-
-
-## Fallback toast implementation
-func _show_toast_fallback(message: String, color: Color) -> void:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UITheme.toast_stylebox(color))
-
-	var toast := Label.new()
-	toast.text = message
-	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast.add_theme_color_override("font_color", color)
-	toast.add_theme_font_size_override("font_size", UITheme.px(18))
-
-	panel.add_child(toast)
-	toast_container.add_child(panel)
-
-	panel.modulate.a = 0.0
-	panel.position.y = -30
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(panel, "modulate:a", 1.0, UIThemeConstants.FADE_DURATION_NORMAL).set_ease(Tween.EASE_OUT)
-	tween.tween_property(panel, "position:y", 0.0, UIThemeConstants.FADE_DURATION_NORMAL).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.chain().tween_interval(UIThemeConstants.TOAST_DURATION)
-	tween.tween_property(panel, "modulate:a", 0.0, UIThemeConstants.FADE_DURATION_SLOW)
-	tween.tween_property(panel, "position:y", -20.0, UIThemeConstants.FADE_DURATION_SLOW)
-	tween.tween_callback(panel.queue_free)
+	if toast_container:
+		toast_container.show_toast(message, color)
 
 
 #region Hint System
@@ -435,13 +377,16 @@ func _update_hint() -> void:
 
 	# Determine what hint to show based on player progress
 	if not _has_clicked_npc:
-		hint_text = "💡 Klicke auf einen bunten NPC um ein Quiz zu starten!"
+		hint_text = "💡 Klicke auf einen bunten NPC, um ein Quiz zu starten!"
 	elif not _has_answered_quiz:
-		hint_text = "💡 Beantworte Fragen richtig um Punkte zu sammeln!"
+		hint_text = "💡 Beantworte Fragen richtig, um Punkte zu sammeln!"
 	elif not _has_placed_building:
 		hint_text = "💡 Wähle unten ein Gebäude und klicke auf die Wiese zum Bauen!"
 	else:
-		# All done - hide hint
+		# All done - hide the hint and stop its pulse
+		if _hint_tween:
+			_hint_tween.kill()
+			_hint_tween = null
 		hint_label.visible = false
 		return
 
@@ -471,7 +416,6 @@ func _update_mode_display() -> void:
 
 	var is_walk: bool = _game_mode.is_walk_mode() as bool
 	mode_label.text = "🚶 LAUFEN [Tab]" if is_walk else "🏗️ BAUEN [Tab]"
-	
 	if mode_panel:
 		# Light chip with a coloured border: blue = walking, red = building
 		var accent: Color = UITheme.BLUE if is_walk else UITheme.RED
@@ -482,16 +426,13 @@ func _update_mode_display() -> void:
 #endregion
 
 
-## A popup centred in the window would end up behind the building bar at
-## the bottom. Re-centre it, then move its centre up by half the difference
-## between the bar's height and the HUD strip at the top.
+## Centre a popup in the window space left between the HUD strip at
+## the top and the building bar at the bottom (wired via
+## set_bottom_bar), instead of letting it disappear behind the bar.
 func _lift_above_building_bar(popup: Control) -> void:
-	var lift: float = 0.0
-	# The building bar is a sibling under the same CanvasLayer
-	var bar: Control = get_parent().get_node_or_null("BuildingPanel/VBox") as Control
-	if bar:
-		lift = maxf(0.0, (bar.size.y - 64.0) * 0.5)
-	# Centre explicitly. The preset helper works off the popup's current
+	var bar_height: float = _building_bar.occupied_height() if _building_bar else 0.0
+	var lift: float = maxf(0.0, (bar_height - TOP_STRIP) * 0.5)
+	# Centre explicitly: the preset helper works off the popup's current
 	# size, which is stale while the popup is still hidden.
 	popup.set_anchors_preset(Control.PRESET_CENTER)
 	var size: Vector2 = popup.get_combined_minimum_size()

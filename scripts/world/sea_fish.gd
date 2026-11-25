@@ -9,8 +9,15 @@ extends Node3D
 const JUMP_TIME: float = 0.85
 const JUMP_PEAK: float = 1.0
 
+## Emitted at the start and at the landing of a jump; SeaWildlife draws
+## the splash droplets.
+signal splash_requested(pos: Vector3, strength: float)
+
 ## Public knobs (set by SeaWildlife)
 var jump_interval: float = 10.0
+## Set by SeaWildlife before the fish joins the tree: picks a spot over
+## open water for the next jump (argument: spread along the coast).
+var pick_jump_spot: Callable = Callable()
 ## Read by tests / debug
 var jumping: bool = false
 
@@ -60,11 +67,10 @@ func _process(delta: float) -> void:
 ## ---------------------------------------------------------------- jump
 
 func _begin_jump() -> void:
-	var manager := get_parent() as SeaWildlife
-	if manager == null:
+	if not pick_jump_spot.is_valid():
 		_timer = 2.0
 		return
-	var pos: Vector3 = manager.random_ocean_pos(25.0)
+	var pos: Vector3 = pick_jump_spot.call(25.0)
 	var dirv := Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0))
 	if dirv.length() < 0.1:
 		dirv = Vector3(1.0, 0.0, 0.0)
@@ -74,7 +80,7 @@ func _begin_jump() -> void:
 	_t = 0.0
 	jumping = true
 	visible = true
-	manager.splash(pos, 0.6)
+	splash_requested.emit(pos, 0.6)
 
 
 func _jump_step(delta: float) -> void:
@@ -94,9 +100,9 @@ func _end_jump() -> void:
 	jumping = false
 	visible = false
 	rotation.z = 0.0
-	var manager := get_parent() as SeaWildlife
-	if manager:
-		manager.splash(Vector3(global_position.x, WorldManager.WATER_SURFACE_MAX_Y, global_position.z), 0.6)
+	splash_requested.emit(
+		Vector3(global_position.x, WorldManager.WATER_SURFACE_MAX_Y, global_position.z), 0.6
+	)
 	_timer = randf_range(0.5, 1.5) * jump_interval
 
 

@@ -54,22 +54,22 @@ func host_game(port: int = DEFAULT_PORT) -> Error:
 	if state != ConnectionState.DISCONNECTED:
 		push_warning("NetworkManager: Already connected or hosting")
 		return ERR_ALREADY_IN_USE
-	
+
 	_peer = ENetMultiplayerPeer.new()
 	var error := _peer.create_server(port, MAX_PLAYERS)
-	
+
 	if error != OK:
 		push_error("NetworkManager: Failed to create server: %s" % error_string(error))
 		_peer = null
 		return error
-	
+
 	multiplayer.multiplayer_peer = _peer
 	state = ConnectionState.HOSTING
 	local_peer_id = 1 # Server is always peer 1
-	
+
 	# Register host as player
 	_register_player(local_peer_id)
-	
+
 	if _DEBUG:
 		print("NetworkManager: Server started on port %d" % port)
 	connection_established.emit()
@@ -81,15 +81,15 @@ func join_game(address: String, port: int = DEFAULT_PORT) -> Error:
 	if state != ConnectionState.DISCONNECTED:
 		push_warning("NetworkManager: Already connected or hosting")
 		return ERR_ALREADY_IN_USE
-	
+
 	_peer = ENetMultiplayerPeer.new()
 	var error := _peer.create_client(address, port)
-	
+
 	if error != OK:
 		push_error("NetworkManager: Failed to connect: %s" % error_string(error))
 		_peer = null
 		return error
-	
+
 	multiplayer.multiplayer_peer = _peer
 	state = ConnectionState.CONNECTING
 
@@ -102,14 +102,14 @@ func join_game(address: String, port: int = DEFAULT_PORT) -> Error:
 func disconnect_game() -> void:
 	if state == ConnectionState.DISCONNECTED:
 		return
-	
+
 	players.clear()
 	local_peer_id = 0
-	
+
 	if _peer:
 		_peer.close()
 		_peer = null
-	
+
 	multiplayer.multiplayer_peer = null
 	state = ConnectionState.DISCONNECTED
 

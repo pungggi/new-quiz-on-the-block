@@ -30,35 +30,35 @@ func _ready() -> void:
 func _load_questions() -> void:
 	var questions_path := "res://data/questions/"
 	var dir := DirAccess.open(questions_path)
-	
+
 	if not dir:
 		push_warning("QuizManager: Questions directory not found at %s" % questions_path)
 		return
-	
+
 	dir.list_dir_begin()
 	var file_name := dir.get_next()
-	
+
 	while file_name != "":
 		if file_name.ends_with(".tres") or file_name.ends_with(".res") or file_name.ends_with(".tres.remap") or file_name.ends_with(".res.remap"):
 			var resource := load(questions_path + file_name.trim_suffix(".remap"))
 			if resource is QuizQuestion:
 				_questions.append(resource)
 		file_name = dir.get_next()
-	
+
 	dir.list_dir_end()
 
 
 ## Get questions filtered by category and difficulty
 func get_questions(category: String = "", min_difficulty: int = 1, max_difficulty: int = 5) -> Array[QuizQuestion]:
 	var filtered: Array[QuizQuestion] = []
-	
+
 	for q in _questions:
 		if category != "" and q.category != category:
 			continue
 		if q.difficulty < min_difficulty or q.difficulty > max_difficulty:
 			continue
 		filtered.append(q)
-	
+
 	return filtered
 
 
@@ -109,11 +109,11 @@ func get_random_question(category: String = "", max_difficulty: int = 5, use_pro
 func start_session(count: int, category: String = "", max_difficulty: int = 5) -> void:
 	var pool := get_questions(category, 1, max_difficulty)
 	pool.shuffle()
-	
+
 	_current_session.clear()
 	_session_index = 0
 	_session_correct = 0
-	
+
 	for i in range(mini(count, pool.size())):
 		_current_session.append(pool[i])
 
@@ -130,18 +130,18 @@ func submit_answer(answer_index: int) -> bool:
 	var question := get_current_question()
 	if not question:
 		return false
-	
+
 	var correct := question.is_correct(answer_index)
 	if correct:
 		_session_correct += 1
-	
+
 	question_answered.emit(question, correct)
 	_session_index += 1
-	
+
 	# Check if session is complete
 	if _session_index >= _current_session.size():
 		quiz_completed.emit(_session_correct, _current_session.size())
-	
+
 	return correct
 
 

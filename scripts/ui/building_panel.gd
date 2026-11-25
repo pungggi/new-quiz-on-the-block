@@ -8,13 +8,13 @@ class_name BuildingPanel
 
 signal building_selected(building: BuildingData)
 signal prop_selected(prop: PropData)
-signal panel_toggled(is_open: bool)
 
 @onready var toggle_button: Button = %ToggleButton
 @onready var points_label: Label = %PointsLabel
 @onready var building_container: HBoxContainer = %BuildingContainer
 @onready var category_tabs: HFlowContainer = %CategoryTabs
 @onready var panel: PanelContainer = %Panel
+@onready var _bar: Control = %VBox
 @onready var tooltip_panel: PanelContainer = %TooltipPanel
 @onready var tooltip_name: Label = %TooltipName
 @onready var tooltip_desc: Label = %TooltipDesc
@@ -23,14 +23,18 @@ signal panel_toggled(is_open: bool)
 
 const BUILDING_BUTTON_SCENE := preload("res://scenes/ui/building_button.tscn")
 
-## Category display names and icons
+## Category display names and tab order. The keys are the categories the
+## building resources use (data/buildings); an unknown one falls back to
+## its raw name.
 const CATEGORY_INFO: Dictionary = {
 	"residential": {"name": "🏠 Wohnen", "order": 0},
 	"commercial": {"name": "🏪 Gewerbe", "order": 1},
 	"education": {"name": "🎓 Bildung", "order": 2},
-	"industry": {"name": "🏭 Industrie", "order": 3},
-	"infrastructure": {"name": "🛤️ Infrastruktur", "order": 4},
-	"decoration": {"name": "🌳 Deko", "order": 5},
+	"entertainment": {"name": "🎬 Unterhaltung", "order": 3},
+	"public": {"name": "🚒 Öffentlich", "order": 4},
+	"recreation": {"name": "🎠 Freizeit", "order": 5},
+	"infrastructure": {"name": "🛤️ Infrastruktur", "order": 6},
+	"decoration": {"name": "🌳 Deko", "order": 7},
 }
 
 var _is_open: bool = true
@@ -173,12 +177,12 @@ func _update_button_state(building: BuildingData) -> void:
 	var btn: Button = _building_buttons.get(building)
 	if not btn:
 		return
-	
+
 	var is_unlocked := building.is_unlocked(_building_manager.player_stats)
 	var can_afford := building.can_afford(_building_manager.education_points)
-	
+
 	btn.disabled = not is_unlocked
-	
+
 	if not is_unlocked:
 		btn.modulate = Color(0.5, 0.5, 0.5, 0.8)
 		btn.text = "🔒"
@@ -199,8 +203,14 @@ func _on_toggle_pressed() -> void:
 	_is_open = not _is_open
 	panel.visible = _is_open
 	toggle_button.text = "▼ Bauen" if _is_open else "▲ Bauen"
-	panel_toggled.emit(_is_open)
 	AudioManager.play_sfx(AudioManager.SFX.PANEL_OPEN if _is_open else AudioManager.SFX.PANEL_CLOSE)
+
+
+## Height the bar covers at the bottom edge of the window right now
+## (header plus open card; the header alone when the card is folded).
+## Popups ask for it so they do not end up behind the bar.
+func occupied_height() -> float:
+	return _bar.size.y if _bar else 0.0
 
 
 func _on_building_button_pressed(building: BuildingData) -> void:
@@ -235,7 +245,7 @@ func _on_building_hover(building: BuildingData) -> void:
 		tooltip_unlock.visible = true
 	else:
 		tooltip_unlock.visible = false
-	
+
 	tooltip_panel.visible = true
 
 

@@ -53,7 +53,7 @@ enum HairStyle { SHORT, LONG, SPIKY, BALD }
 ## Hat type enum
 enum HatType { NONE, CAP, BEANIE }
 
-## Glasses type enum  
+## Glasses type enum
 enum GlassesType { NONE, ROUND, SQUARE }
 
 ## Character colors

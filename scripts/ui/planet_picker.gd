@@ -55,7 +55,7 @@ func _build() -> void:
 
 func _make_card(p: Dictionary) -> VBoxContainer:
 	var card := VBoxContainer.new()
-	card.add_theme_constant_override("separation", 6)
+	card.add_theme_constant_override("separation", UITheme.px(6))
 	card.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	var ball := Button.new()
@@ -93,15 +93,17 @@ func _on_ball_pressed(p: Dictionary) -> void:
 	_refresh_balls()
 
 
-## Round styleboxes with the planet color; the selected ball gets a
-## dark ring (a white one vanished on the cream card)
+	## Round styleboxes with the planet color; the selected ball gets a
+## dark ring (a white one vanished on the cream card). Keyboard focus
+## gets a ring of its own, so the balls stay usable without a mouse.
 func _refresh_balls() -> void:
+	var radius: int = int(BALL_SIZE * UITheme.scale_factor() * 0.5)
 	for key: String in _ball_buttons:
 		var planet: Dictionary = PlanetCatalog.by_key(key)
 		var button: Button = _ball_buttons[key]
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = planet["color"]
-		sb.set_corner_radius_all(int(BALL_SIZE * 0.5))
+		sb.set_corner_radius_all(radius)
 		if key == _selected_key:
 			sb.set_border_width_all(6)
 			sb.border_color = UITheme.INK
@@ -114,4 +116,10 @@ func _refresh_balls() -> void:
 		hover.bg_color = (planet["color"] as Color).lightened(0.18)
 		button.add_theme_stylebox_override("hover", hover)
 		button.add_theme_stylebox_override("pressed", hover)
-		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		var focus := StyleBoxFlat.new()
+		focus.draw_center = false
+		focus.set_corner_radius_all(radius)
+		focus.set_border_width_all(3)
+		focus.border_color = UITheme.INK
+		focus.set_expand_margin_all(4.0)
+		button.add_theme_stylebox_override("focus", focus)

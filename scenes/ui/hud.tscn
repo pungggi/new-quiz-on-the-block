@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://cri86tqk751qh"]
+[gd_scene load_steps=3 format=3 uid="uid://cri86tqk751qh"]
 
 [ext_resource type="Script" uid="uid://bckq7nrbnbcxu" path="res://scripts/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" uid="uid://2fauqocppi1p" path="res://scripts/ui/components/toast_manager.gd" id="2_toast"]
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -101,6 +102,11 @@ layout_mode = 2
 text = "👤 Spieler
 📚 100 Punkte"
 
+[node name="ShellLabel" type="Label" parent="StatsPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "🐚 0   💰 0"
+
 [node name="StatsLabel" type="Label" parent="StatsPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -139,6 +145,7 @@ offset_bottom = 192.0
 grow_horizontal = 2
 theme_override_constants/separation = 6
 mouse_filter = 2
+script = ExtResource("2_toast")
 
 [node name="HintLabel" type="Label" parent="."]
 unique_name_in_owner = true

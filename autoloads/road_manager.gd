@@ -32,6 +32,10 @@ const DIR_WEST: int = 8 # -X
 ## Store all road positions -> Node3D reference
 var _roads: Dictionary = {} # Vector3i -> Node3D
 
+## The building that is a road. Gehweg, Platz and Straßenlampe are
+## infrastructure too, but they must keep their own meshes.
+const ROAD_BUILDING_NAME: String = "Straße"
+
 
 func _ready() -> void:
 	# Connect to BuildingManager for road placement events
@@ -40,9 +44,9 @@ func _ready() -> void:
 
 
 func _on_building_placed(building: BuildingData, pos: Vector3i) -> void:
-	if building.category != "infrastructure":
+	if building.display_name != ROAD_BUILDING_NAME:
 		return
-	
+
 	# Find the actual node that was just placed
 	call_deferred("_register_new_road", pos)
 
@@ -50,30 +54,53 @@ func _on_building_placed(building: BuildingData, pos: Vector3i) -> void:
 func _register_new_road(pos: Vector3i) -> void:
 	# Wait a frame for the node to be added
 	await get_tree().process_frame
-	
+
 	var buildings_root: Node = get_tree().current_scene.get_node_or_null("Buildings")
 	if not buildings_root:
 		return
-	
+
 	# Find the road node at this position
 	for child in buildings_root.get_children():
 		var child_node := child as Node3D
 		if child_node:
-			var cx: int = int(round(child_node.global_position.x - 0.5))
-			var cy: int = int(round(child_node.global_position.y))
-			var cz: int = int(round(child_node.global_position.z - 0.5))
-			var child_pos := Vector3i(cx, cy, cz)
-			
+			var child_pos := _grid_pos(child_node)
+
 			if child_pos == pos and not _roads.has(pos):
 				_roads[pos] = child_node
 				_update_road_and_neighbors(pos)
 				return
 
 
+## Grid cell a building node stands on (nodes sit at the cell centre)
+func _grid_pos(node: Node3D) -> Vector3i:
+	return Vector3i(
+		int(round(node.global_position.x - 0.5)),
+		int(round(node.global_position.y)),
+		int(round(node.global_position.z - 0.5))
+	)
+
+
+## Roads from the save were not "placed", so this manager knows nothing
+## about them: register them and rebuild the connections. Also drops the
+## entries of a world that was left (their nodes are gone).
+func register_restored_roads(buildings_root: Node) -> void:
+	_roads.clear()
+	for child in buildings_root.get_children():
+		var node: Node3D = child as Node3D
+		if node == null:
+			continue
+		var data: BuildingData = BuildingManager.get_building_data(str(node.get_meta("building_id", "")))
+		if data == null or data.display_name != ROAD_BUILDING_NAME:
+			continue
+		_roads[_grid_pos(node)] = node
+	for pos: Vector3i in _roads:
+		_update_road_mesh(pos)
+
+
 ## Get the road type based on neighbor connections
 func _get_road_type(pos: Vector3i) -> int:
 	var connections: int = _get_connection_mask(pos)
-	
+
 	match connections:
 		0: return RoadType.SINGLE
 		DIR_NORTH, DIR_SOUTH: return RoadType.STRAIGHT_NS
@@ -95,7 +122,7 @@ func _get_road_type(pos: Vector3i) -> int:
 ## Get bitmask of connected neighbors
 func _get_connection_mask(pos: Vector3i) -> int:
 	var mask: int = 0
-	
+
 	if _roads.has(Vector3i(pos.x, pos.y, pos.z - 1)):
 		mask |= DIR_NORTH
 	if _roads.has(Vector3i(pos.x, pos.y, pos.z + 1)):
@@ -104,14 +131,14 @@ func _get_connection_mask(pos: Vector3i) -> int:
 		mask |= DIR_EAST
 	if _roads.has(Vector3i(pos.x - 1, pos.y, pos.z)):
 		mask |= DIR_WEST
-	
+
 	return mask
 
 
 ## Update a road and all its neighbors
 func _update_road_and_neighbors(pos: Vector3i) -> void:
 	_update_road_mesh(pos)
-	
+
 	# Update neighbors
 	var neighbors: Array[Vector3i] = [
 		Vector3i(pos.x, pos.y, pos.z - 1), # North
@@ -119,7 +146,7 @@ func _update_road_and_neighbors(pos: Vector3i) -> void:
 		Vector3i(pos.x + 1, pos.y, pos.z), # East
 		Vector3i(pos.x - 1, pos.y, pos.z), # West
 	]
-	
+
 	for neighbor_pos: Vector3i in neighbors:
 		if _roads.has(neighbor_pos):
 			_update_road_mesh(neighbor_pos)

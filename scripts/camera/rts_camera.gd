@@ -204,7 +204,7 @@ func _handle_mouse_rotate(relative: Vector2) -> void:
 func _handle_pan(delta: float) -> void:
 	# Get pan input vector (WASD or arrow keys)
 	var pan_vector := Vector2.ZERO
-	
+
 	if Input.is_action_pressed(&"camera_pan_up"):
 		pan_vector.y += 1.0
 	if Input.is_action_pressed(&"camera_pan_down"):
@@ -213,28 +213,28 @@ func _handle_pan(delta: float) -> void:
 		pan_vector.x -= 1.0
 	if Input.is_action_pressed(&"camera_pan_right"):
 		pan_vector.x += 1.0
-	
+
 	# Normalize diagonal movement
 	if pan_vector.length_squared() > 0.0:
 		pan_vector = pan_vector.normalized()
-	
+
 	# Apply pan in world space (XZ plane)
 	# Pan direction is relative to camera's Y rotation
 	var yaw_rad := _yaw_rotation
 	var forward := Vector3.FORWARD.rotated(Vector3.UP, yaw_rad)
 	var right := Vector3.RIGHT.rotated(Vector3.UP, yaw_rad)
-	
+
 	var movement := (forward * pan_vector.y + right * pan_vector.x) * pan_speed * delta
 	global_position += movement
 
 func _handle_rotation(delta: float) -> void:
 	var rotation_input := 0.0
-	
+
 	if Input.is_action_pressed(&"camera_rotate_left"):
 		rotation_input -= 1.0
 	if Input.is_action_pressed(&"camera_rotate_right"):
 		rotation_input += 1.0
-	
+
 	if rotation_input != 0.0 and yaw_pivot:
 		var rotation_delta := deg_to_rad(rotation_speed) * rotation_input * delta
 		_yaw_rotation += rotation_delta
@@ -244,12 +244,12 @@ func _handle_rotation(delta: float) -> void:
 func _handle_zoom(delta: float) -> void:
 	# Zoom via spring arm length
 	var zoom_input := 0.0
-	
+
 	if Input.is_action_pressed(&"camera_zoom_in"):
 		zoom_input -= 1.0
 	if Input.is_action_pressed(&"camera_zoom_out"):
 		zoom_input += 1.0
-	
+
 	if zoom_input != 0.0:
 		_zoom_by_delta(zoom_input * zoom_speed * delta)
 

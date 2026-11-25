@@ -15,16 +15,16 @@ var _current_streak: int = 0
 
 func _ready() -> void:
 	_define_achievements()
-	
+
 	# Connect to relevant signals
 	var quiz_mgr: Node = get_node_or_null("/root/QuizManager")
 	if quiz_mgr:
 		quiz_mgr.quiz_completed.connect(_on_quiz_completed)
-	
+
 	var building_mgr: Node = get_node_or_null("/root/BuildingManager")
 	if building_mgr:
 		building_mgr.building_placed_event.connect(_on_building_placed)
-	
+
 	ProfileManager.profile_created.connect(_on_profile_created)
 	ProfileManager.points_changed.connect(_on_points_changed)
 
@@ -75,21 +75,21 @@ func get_locked() -> Array[AchievementData]:
 func try_unlock(achievement_id: String) -> bool:
 	if is_unlocked(achievement_id):
 		return false
-	
+
 	var achievement: AchievementData = null
 	for ach in all_achievements:
 		if ach.id == achievement_id:
 			achievement = ach
 			break
-	
+
 	if not achievement:
 		return false
-	
+
 	# Unlock it
 	ProfileManager.current_profile.unlocked_achievements.append(achievement_id)
 	ProfileManager.add_points(achievement.points)
 	ProfileManager.save_profile()
-	
+
 	achievement_unlocked.emit(achievement)
 	return true
 
@@ -106,9 +106,9 @@ func _check_quiz_achievements() -> void:
 	var profile: PlayerProfile = ProfileManager.current_profile
 	if not profile:
 		return
-	
+
 	var total_correct: int = profile.total_correct_answers
-	
+
 	# Check correct answer achievements
 	for ach in all_achievements:
 		if ach.type == AchievementData.Type.QUIZ_CORRECT:
@@ -123,7 +123,7 @@ func _on_building_placed(_building: BuildingData, _pos: Vector3i) -> void:
 	var profile: PlayerProfile = ProfileManager.current_profile
 	if not profile:
 		return
-	
+
 	for ach in all_achievements:
 		if ach.type == AchievementData.Type.BUILDINGS_PLACED:
 			if profile.buildings_placed >= ach.target_value:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://npc_entity_001"]
+[gd_scene load_steps=4 format=3 uid="uid://cqem1wf10iyaj"]
 
 [ext_resource type="Script" path="res://scripts/entities/npc.gd" id="1_npc"]
 
@@ -36,7 +36,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 modulate = Color(1, 1, 1, 0)
 pixel_size = 0.01
 billboard = 1
-text = "[T] Sprechen"
+text = "[E] Sprechen"
 font_size = 28
 outline_size = 10
 font_color = Color(1, 0.95, 0.6, 1)

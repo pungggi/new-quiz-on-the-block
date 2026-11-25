@@ -75,6 +75,7 @@ const SIZE_HERO: int = 44
 const _SCALES: Array[float] = [1.30, 1.12, 1.00]
 
 var _level: int = LEVEL_TEEN
+var _applied: bool = false ## apply_level() ran at least once
 var _themes: Dictionary = {} ## level (int) -> Theme
 
 
@@ -83,7 +84,6 @@ var _extra_roots: Array[Control] = []
 
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().node_added.connect(_on_node_added)
 	# ProfileManager is listed before us, so it is already in the tree.
 	ProfileManager.profile_created.connect(_on_profile_changed)
@@ -91,6 +91,11 @@ func _ready() -> void:
 	ProfileManager.profile_updated.connect(_on_profile_changed)
 	ProfileManager.profile_loaded.connect(_on_profile_changed)
 	refresh()
+
+
+func _exit_tree() -> void:
+	if get_tree() and get_tree().node_added.is_connected(_on_node_added):
+		get_tree().node_added.disconnect(_on_node_added)
 
 
 func _on_profile_changed(_profile: PlayerProfile) -> void:
@@ -132,18 +137,6 @@ static func _scaled(level: int, base: int) -> int:
 	return int(round(float(base) * _SCALES[level]))
 
 
-func font_body() -> Font:
-	return _body_fonts()[_level]
-
-
-func font_strong() -> Font:
-	return _strong_fonts()[_level]
-
-
-func font_title() -> Font:
-	return _title_fonts()[_level]
-
-
 func _body_fonts() -> Array[Font]:
 	var fonts: Array[Font] = [FONT_ANDIKA, _nunito(400), _nunito(400)]
 	return fonts
@@ -160,12 +153,19 @@ func _title_fonts() -> Array[Font]:
 
 
 ## The variable font's default instance is weight 200 (ExtraLight), so
-## every Nunito use must name its weight explicitly.
+## every Nunito use must name its weight explicitly. Created once per
+## weight: each FontVariation owns a glyph cache in the text server, so
+## building a new one on every call would throw that cache away.
+static var _nunito_cache: Dictionary = {} ## weight (int) -> FontVariation
+
+
 static func _nunito(weight: int) -> FontVariation:
-	var fv: FontVariation = FontVariation.new()
-	fv.base_font = FONT_NUNITO
-	fv.variation_opentype = {"wght": weight}
-	return fv
+	if not _nunito_cache.has(weight):
+		var fv: FontVariation = FontVariation.new()
+		fv.base_font = FONT_NUNITO
+		fv.variation_opentype = {"wght": weight}
+		_nunito_cache[weight] = fv
+	return _nunito_cache[weight]
 
 
 ## Controls whose parent is neither a Control nor a Window - e.g. directly
@@ -180,17 +180,27 @@ func _on_node_added(node: Node) -> void:
 		return
 	control.theme = get_theme(_level)
 	_extra_roots.append(control)
+	# Off the list as soon as it leaves the tree, so the list never
+	# collects freed controls
+	control.tree_exiting.connect(_forget_root.bind(control), CONNECT_ONE_SHOT)
+
+
+func _forget_root(control: Control) -> void:
+	_extra_roots.erase(control)
 
 
 ## Put the theme on the root window (menus inherit it) and on every extra
 ## root collected by _on_node_added (in-game UI).
 func apply_level(level: int) -> void:
-	_level = clampi(level, LEVEL_YOUNG, LEVEL_TEEN)
+	level = clampi(level, LEVEL_YOUNG, LEVEL_TEEN)
+	if _applied and level == _level:
+		return # same reading level: leave the UI as it is
+	_level = level
+	_applied = true
 	var theme: Theme = get_theme(_level)
 	var window: Window = get_window()
 	if window:
 		window.theme = theme
-	_extra_roots = _extra_roots.filter(func(c: Control) -> bool: return is_instance_valid(c))
 	for control: Control in _extra_roots:
 		control.theme = theme
 	theme_changed.emit(_level)
@@ -287,16 +297,16 @@ func _build(level: int) -> Theme:
 	t.set_stylebox("panel", "PanelContainer", card)
 	t.set_stylebox("panel", "Panel", card)
 	_variation(t, "CardPanel", "PanelContainer")
-	t.set_stylebox("panel", "CardPanel", _flat(CARD_WHITE, 6, CARD_LINE, 2, _margins(level, 12, 8, 12, 8), CARD_EDGE))
+	t.set_stylebox("panel", "CardPanel", _flat(CARD_WHITE, RADIUS, CARD_LINE, 2, _margins(level, 12, 8, 12, 8), CARD_EDGE))
 	_variation(t, "LockedCardPanel", "PanelContainer")
-	t.set_stylebox("panel", "LockedCardPanel", _flat(DISABLED, 6, NEUTRAL_EDGE, 2, _margins(level, 12, 8, 12, 8)))
+	t.set_stylebox("panel", "LockedCardPanel", _flat(DISABLED, RADIUS, NEUTRAL_EDGE, 2, _margins(level, 12, 8, 12, 8)))
 	_variation(t, "UnlockedCardPanel", "PanelContainer")
-	t.set_stylebox("panel", "UnlockedCardPanel", _flat(GREEN_PALE, 6, GREEN, 2, _margins(level, 12, 8, 12, 8), GREEN_EDGE))
+	t.set_stylebox("panel", "UnlockedCardPanel", _flat(GREEN_PALE, RADIUS, GREEN, 2, _margins(level, 12, 8, 12, 8), GREEN_EDGE))
 	_variation(t, "HudPanel", "PanelContainer")
-	var hud: StyleBoxFlat = _flat(Color(CARD, 0.9), 6, CARD_EDGE, 2, _margins(level, 10, 4, 10, 4), CARD_EDGE)
+	var hud: StyleBoxFlat = _flat(Color(CARD, 0.9), RADIUS, CARD_EDGE, 2, _margins(level, 10, 4, 10, 4), CARD_EDGE)
 	t.set_stylebox("panel", "HudPanel", hud)
 	_variation(t, "WellPanel", "PanelContainer")
-	var well: StyleBoxFlat = _flat(CARD_SUNKEN, 6, CARD_EDGE, 2, _margins(level, 8, 8, 8, 8))
+	var well: StyleBoxFlat = _flat(CARD_SUNKEN, RADIUS, CARD_EDGE, 2, _margins(level, 8, 8, 8, 8))
 	well.border_width_top = 4
 	t.set_stylebox("panel", "WellPanel", well)
 
@@ -305,8 +315,8 @@ func _build(level: int) -> Theme:
 	var neutral: Array[StyleBox] = _block_set(level, NEUTRAL_TOP, NEUTRAL, NEUTRAL_EDGE)
 	_apply_button(t, "Button", neutral, focus, strong[level], level, INK, INK_MUTED)
 	# Toggle "chips": the pressed state is the SELECTED state
-	neutral[2] = _flat(GREEN_PALE, 6, GREEN, 2, _margins(level, 16, 9, 16, 9))
-	neutral[4] = _flat(GREEN_PALE.lightened(0.04), 6, GREEN, 2, _margins(level, 16, 9, 16, 9))
+	neutral[2] = _flat(GREEN_PALE, RADIUS, GREEN, 2, _margins(level, 16, 9, 16, 9))
+	neutral[4] = _flat(GREEN_PALE.lightened(0.04), RADIUS, GREEN, 2, _margins(level, 16, 9, 16, 9))
 	_apply_button(t, "ChipButton", neutral, focus, strong[level], level, INK, INK_MUTED)
 	_variation(t, "ChipButton", "Button")
 	# IconChip: the same chip with tight side padding, so an emoji-only chip
@@ -380,21 +390,41 @@ func _build(level: int) -> Theme:
 	t.set_constant("separation", "HSeparator", _scaled(level, 6))
 
 	# --- Tooltips ---
-	t.set_stylebox("panel", "TooltipPanel", _flat(INK, 6, Color.TRANSPARENT, 0, _margins(level, 10, 6, 10, 6)))
+	t.set_stylebox("panel", "TooltipPanel", _flat(INK, RADIUS, Color.TRANSPARENT, 0, _margins(level, 10, 6, 10, 6)))
 	t.set_color("font_color", "TooltipLabel", WHITE)
 	t.set_font_size("font_size", "TooltipLabel", _scaled(level, SIZE_CAPTION + 1))
 	t.set_constant("outline_size", "TooltipLabel", 0)
 
 	# --- Embedded windows (ConfirmationDialog for "reset profile") ---
+	# Godot draws this stylebox on the window's CLIENT rect and then the
+	# (opaque) window content over it. Only what sticks out through EXPAND
+	# margins stays visible: the title band on top and a frame around the
+	# rest. The default theme does the same (expand 8/32/8/6).
+	var title_height: int = _scaled(level, 36)
+	var frame: int = _scaled(level, 8)
 	var window_panel: StyleBoxFlat = _card_style(level)
-	window_panel.content_margin_top = float(window_panel.content_margin_top + _scaled(level, 30))
+	window_panel.content_margin_left = float(frame)
+	window_panel.content_margin_right = float(frame)
+	window_panel.content_margin_top = float(title_height)
+	window_panel.content_margin_bottom = float(frame)
+	window_panel.set_expand_margin(SIDE_LEFT, float(frame))
+	window_panel.set_expand_margin(SIDE_RIGHT, float(frame))
+	window_panel.set_expand_margin(SIDE_TOP, float(title_height))
+	window_panel.set_expand_margin(SIDE_BOTTOM, float(frame))
 	t.set_stylebox("embedded_border", "Window", window_panel)
 	t.set_stylebox("embedded_unfocused_border", "Window", window_panel)
-	t.set_constant("title_height", "Window", _scaled(level, 30))
+	t.set_constant("title_height", "Window", title_height)
 	t.set_color("title_color", "Window", INK)
 	t.set_font("title_font", "Window", strong[level])
 	t.set_font_size("title_font_size", "Window", _scaled(level, SIZE_SECTION + 2))
-	t.set_stylebox("panel", "AcceptDialog", StyleBoxEmpty.new())
+	# The stock close button is light grey (made for dark title bars)
+	var close_size: int = _scaled(level, 16)
+	t.set_icon("close", "Window", _close_icon(close_size, INK))
+	t.set_icon("close_pressed", "Window", _close_icon(close_size, GREEN_EDGE))
+	t.set_constant("close_h_offset", "Window", _scaled(level, 18))
+	t.set_constant("close_v_offset", "Window", _scaled(level, 24))
+	# Inside the frame: the same cream, with breathing room for text + buttons
+	t.set_stylebox("panel", "AcceptDialog", _flat(CARD, RADIUS, Color.TRANSPARENT, 0, _margins(level, 14, 8, 14, 12)))
 	t.set_constant("buttons_separation", "AcceptDialog", _scaled(level, 10))
 
 	return t
@@ -438,11 +468,24 @@ static func _flat(
 
 ## The dialog card: cream, thick border, darker underside, soft shadow
 static func _card_style(level: int) -> StyleBoxFlat:
-	var sb: StyleBoxFlat = _flat(CARD, 6, CARD_EDGE, 2, _margins(level, 24, 20, 24, 20), CARD_EDGE)
+	var sb: StyleBoxFlat = _flat(CARD, RADIUS, CARD_EDGE, 2, _margins(level, 24, 20, 24, 20), CARD_EDGE)
 	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.24)
 	sb.shadow_size = 12
 	sb.shadow_offset = Vector2(0, 6)
 	return sb
+
+
+## Blocky "X" for the close button of embedded windows, in one flat colour
+static func _close_icon(size: int, color: Color) -> ImageTexture:
+	var img: Image = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var pad: int = maxi(1, size / 8)
+	var half: int = maxi(1, size / 8)
+	for y: int in range(pad, size - pad):
+		for x: int in range(pad, size - pad):
+			if mini(absi(x - y), absi(x - (size - 1 - y))) <= half:
+				img.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(img)
 
 
 ## A block face plus its darker underside, with press feedback: pressed
@@ -451,11 +494,11 @@ static func _card_style(level: int) -> StyleBoxFlat:
 static func _block_set(level: int, top: Color, face: Color, edge: Color) -> Array[StyleBox]:
 	var pad: float = float(_scaled(level, 16))
 	var pad_v: float = float(_scaled(level, 9))
-	var normal: StyleBoxFlat = _flat(top, 6, Color.TRANSPARENT, 0, Vector4(pad, pad_v, pad, pad_v), edge)
-	var hover: StyleBoxFlat = _flat(top.lightened(0.07), 6, Color.TRANSPARENT, 0, Vector4(pad, pad_v, pad, pad_v), edge)
-	var pressed: StyleBoxFlat = _flat(face, 6, Color.TRANSPARENT, 0, Vector4(pad, pad_v + float(BLOCK_LIP), pad, pad_v))
-	var disabled: StyleBoxFlat = _flat(DISABLED, 6, Color.TRANSPARENT, 0, Vector4(pad, pad_v, pad, pad_v), NEUTRAL_EDGE)
-	var hover_pressed: StyleBoxFlat = _flat(face.lightened(0.05), 6, Color.TRANSPARENT, 0, Vector4(pad, pad_v + float(BLOCK_LIP), pad, pad_v))
+	var normal: StyleBoxFlat = _flat(top, RADIUS, Color.TRANSPARENT, 0, Vector4(pad, pad_v, pad, pad_v), edge)
+	var hover: StyleBoxFlat = _flat(top.lightened(0.07), RADIUS, Color.TRANSPARENT, 0, Vector4(pad, pad_v, pad, pad_v), edge)
+	var pressed: StyleBoxFlat = _flat(face, RADIUS, Color.TRANSPARENT, 0, Vector4(pad, pad_v + float(BLOCK_LIP), pad, pad_v))
+	var disabled: StyleBoxFlat = _flat(DISABLED, RADIUS, Color.TRANSPARENT, 0, Vector4(pad, pad_v, pad, pad_v), NEUTRAL_EDGE)
+	var hover_pressed: StyleBoxFlat = _flat(face.lightened(0.05), RADIUS, Color.TRANSPARENT, 0, Vector4(pad, pad_v + float(BLOCK_LIP), pad, pad_v))
 	var out: Array[StyleBox] = [normal, hover, pressed, disabled, hover_pressed]
 	return out
 
@@ -463,7 +506,7 @@ static func _block_set(level: int, top: Color, face: Color, edge: Color) -> Arra
 static func _focus_ring(level: int) -> StyleBoxFlat:
 	var ring: StyleBoxFlat = StyleBoxFlat.new()
 	ring.draw_center = false
-	ring.set_corner_radius_all(6)
+	ring.set_corner_radius_all(RADIUS)
 	ring.set_border_width_all(2)
 	ring.border_color = INK
 	ring.set_expand_margin_all(float(_scaled(level, 3)))
@@ -510,7 +553,7 @@ static func _grabber(level: int, vertical: bool, color: Color) -> StyleBoxFlat:
 ## Dark toast sliding over the world: coloured bar on the left, readable
 ## whatever is behind it.
 func toast_stylebox(accent: Color) -> StyleBoxFlat:
-	var sb: StyleBoxFlat = _flat(Color(INK, 0.94), 6, Color.TRANSPARENT, 0, _margins(_level, 16, 8, 16, 8))
+	var sb: StyleBoxFlat = _flat(Color(INK, 0.94), RADIUS, Color.TRANSPARENT, 0, _margins(_level, 16, 8, 16, 8))
 	sb.border_width_left = 5
 	sb.border_color = accent
 	return sb
@@ -518,4 +561,4 @@ func toast_stylebox(accent: Color) -> StyleBoxFlat:
 
 ## Light HUD chip with a coloured border (e.g. walk/build mode)
 func hud_chip_style(accent: Color) -> StyleBoxFlat:
-	return _flat(Color(CARD, 0.92), 6, accent, 2, _margins(_level, 12, 6, 12, 6), accent.darkened(0.25))
+	return _flat(Color(CARD, 0.92), RADIUS, accent, 2, _margins(_level, 12, 6, 12, 6), accent.darkened(0.25))

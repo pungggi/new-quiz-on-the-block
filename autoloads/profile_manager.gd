@@ -89,7 +89,7 @@ func save_all_profiles() -> bool:
 	for profile in all_profiles:
 		profiles_data.append(profile.to_dict())
 
-	var data := {
+	var data: Dictionary = {
 		"current_index": current_profile_index,
 		"profiles": profiles_data
 	}
@@ -212,7 +212,7 @@ func spend_points(amount: int) -> bool:
 		return false
 	if current_profile.total_points < amount:
 		return false
-	
+
 	current_profile.total_points -= amount
 	points_changed.emit(current_profile.total_points)
 	profile_updated.emit(current_profile)

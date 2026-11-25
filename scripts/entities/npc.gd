@@ -92,7 +92,7 @@ func _ready() -> void:
 	_target_position = global_position
 	_last_position = global_position
 	_pick_new_target()
-	
+
 	# Check if it's night and spawn fire if needed
 	call_deferred("_check_night_fire")
 
@@ -397,7 +397,7 @@ func interact() -> void:
 func _start_interaction() -> void:
 	_in_quiz = true
 	clicked.emit(self)
-	
+
 	# Visual feedback - slight scale up
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector3(1.2, 1.2, 1.2), 0.1)
@@ -408,7 +408,7 @@ func _start_interaction() -> void:
 func on_quiz_result(was_correct: bool) -> void:
 	_in_quiz = false
 	quiz_completed.emit(self, was_correct)
-	
+
 	if was_correct:
 		_on_correct_answer()
 	else:
@@ -470,7 +470,7 @@ func _on_wrong_answer() -> void:
 	tween.tween_property(self, "position:x", original_x + 0.2, 0.1)
 	tween.tween_property(self, "position:x", original_x - 0.2, 0.1)
 	tween.tween_property(self, "position:x", original_x, 0.05)
-	
+
 	# Change color briefly to indicate wrong
 	if _material:
 		var original_color := _material.albedo_color
@@ -514,12 +514,12 @@ func _check_night_fire() -> void:
 func _on_night_started() -> void:
 	if not _can_make_fire or _campfire != null:
 		return
-	
+
 	# Spawn campfire
 	_campfire = FIRE_SCENE.instantiate()
 	_campfire.position = Vector3(0.8, 0, 0.8) # Offset from NPC
 	add_child(_campfire)
-	
+
 	# Animate fire appearance
 	_campfire.scale = Vector3.ZERO
 	var tween := create_tween()
@@ -530,7 +530,7 @@ func _on_night_started() -> void:
 func _on_night_ended() -> void:
 	if _campfire == null:
 		return
-	
+
 	# Animate fire disappearance
 	var tween := create_tween()
 	tween.tween_property(_campfire, "scale", Vector3.ZERO, 0.3).set_ease(Tween.EASE_IN)

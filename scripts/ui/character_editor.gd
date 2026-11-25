@@ -7,9 +7,6 @@ extends MenuDialog
 ## the editor opens or "Zufällig" is pressed).
 ## Layout and ESC come from MenuDialog.
 
-signal editor_closed
-signal customization_saved(customization: PlayerCustomization)
-
 @onready var preview_viewport: SubViewport = %SubViewport
 @onready var preview_character: Node3D = %PreviewCharacter
 
@@ -27,7 +24,6 @@ signal customization_saved(customization: PlayerCustomization)
 @onready var cancel_button: Button = %CancelButton
 
 var _customization: PlayerCustomization
-var _preview_builder: CharacterPreviewBuilder
 
 ## group name -> buttons, in the order of the preset arrays / style indexes
 var _swatch_groups: Dictionary = {}
@@ -36,7 +32,6 @@ var _style_groups: Dictionary = {}
 
 func _ready() -> void:
 	visible = false
-	_preview_builder = CharacterPreviewBuilder.new()
 
 	# Swatches show their colour; the selected one gets a thick dark border
 	_swatch_groups["skin"] = _create_swatch_buttons(skin_colors, PlayerCustomization.SKIN_PRESETS, _on_skin_color_selected)
@@ -64,16 +59,6 @@ func open() -> void:
 	_update_preview()
 	_update_button_selections()
 	visible = true
-
-
-func close() -> void:
-	editor_closed.emit()
-	queue_free()
-
-
-func _on_escape() -> bool:
-	close()
-	return true
 
 
 # --- buttons -------------------------------------------------------------
@@ -175,8 +160,7 @@ func _update_button_selections() -> void:
 func _update_preview() -> void:
 	if not preview_character:
 		return
-	if _preview_builder:
-		_preview_builder.build_character(preview_character, _customization)
+	BlockyCharacterBuilder.build_from_customization(preview_character, _customization)
 
 
 func _on_skin_color_selected(color: Color) -> void:
@@ -229,16 +213,14 @@ func _on_save_pressed() -> void:
 		ProfileManager.current_profile.customization = _customization
 		ProfileManager.save_profile()
 
-	customization_saved.emit(_customization)
-
 	# Update player in game if it exists
 	var player: Player = get_tree().get_first_node_in_group("player") as Player
 	if player:
 		player.apply_customization(_customization)
 
-	queue_free()
+	_close()
 
 
 func _on_cancel_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	close()
+	_close()

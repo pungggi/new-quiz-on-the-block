@@ -25,6 +25,15 @@ var _last_prompted_building: StaticBody3D = null
 ## Tween for prompt animation
 var _prompt_tween: Tween = null
 
+## One-shot listener for the building quiz that is open right now (see
+## interact_with_building)
+var _building_quiz_answer: Callable = Callable()
+
+## The game scene's "Buildings" node (bind_scene); what the lights iterate
+var _buildings_root: Node3D = null
+## The game scene's day/night cycle (bind_scene); re-applied after an upgrade
+var _cycle: DayNightCycle = null
+
 
 ## Player's education points - proxied through ProfileManager
 var education_points: int:
@@ -74,11 +83,9 @@ func _ready() -> void:
 		ProfileManager.profile_loaded.connect(_on_profile_changed)
 		ProfileManager.profile_switched.connect(_on_profile_changed)
 
-	# Connect to day/night cycle for lighting
-	_connect_day_night_deferred()
-
-	# Connect to player for building interactions (deferred)
-	_connect_player_interaction_deferred()
+	# The day/night cycle and the player live in the game scene, which does
+	# not exist yet (the main menu is showing). main.gd calls bind_scene()
+	# as soon as the world is in the tree.
 
 
 func _on_profile_changed(_profile: PlayerProfile) -> void:
@@ -90,15 +97,15 @@ func _on_profile_changed(_profile: PlayerProfile) -> void:
 func _load_building_types() -> void:
 	var buildings_path := "res://data/buildings/"
 	var dir := DirAccess.open(buildings_path)
-	
+
 	if not dir:
 		push_warning("BuildingManager: Buildings directory not found, creating default buildings")
 		_create_default_buildings()
 		return
-	
+
 	dir.list_dir_begin()
 	var file_name := dir.get_next()
-	
+
 	while file_name != "":
 		# Exported builds remap resources to "*.tres.remap" inside the PCK;
 		# load() resolves the trimmed path transparently in both modes.
@@ -107,9 +114,9 @@ func _load_building_types() -> void:
 			if resource is BuildingData:
 				_building_types.append(resource)
 		file_name = dir.get_next()
-	
+
 	dir.list_dir_end()
-	
+
 	if _building_types.is_empty():
 		_create_default_buildings()
 
@@ -125,7 +132,7 @@ func _create_default_buildings() -> void:
 	house.color = Color.CORAL
 	house.population = 4
 	_building_types.append(house)
-	
+
 	# School
 	var school := BuildingData.new()
 	school.display_name = "Schule"
@@ -136,7 +143,7 @@ func _create_default_buildings() -> void:
 	school.required_correct_answers = 5
 	school.education_bonus = 1.5
 	_building_types.append(school)
-	
+
 	# Shop
 	var shop := BuildingData.new()
 	shop.display_name = "Laden"
@@ -254,35 +261,34 @@ func _on_question_answered(question: QuizQuestion, was_correct: bool) -> void:
 		ProfileManager.save_profile()
 
 
-## Connect to day/night cycle after scene load (deferred)
-func _connect_day_night_deferred() -> void:
-	await get_tree().process_frame
-	var dnc = get_tree().current_scene.get_node_or_null("DayNightCycle") as DayNightCycle
-	if not dnc:
-		return
-	dnc.day_phase_changed.connect(_on_day_phase_changed)
-	# Apply initial state if game starts at night or dusk
-	_on_day_phase_changed(dnc.current_phase)
+## Called by the game scene (main.gd) once it is in the tree: connects
+## the day/night cycle (window and lamp lights) and the player (building
+## prompts). A one-shot lookup at start-up found neither, because the main
+## menu was the current scene back then.
+func bind_scene(scene: Node) -> void:
+	_buildings_root = scene.get_node_or_null("Buildings") as Node3D
+	var cycle: DayNightCycle = scene.get_node_or_null("DayNightCycle") as DayNightCycle
+	_cycle = cycle
+	if cycle and not cycle.day_phase_changed.is_connected(_on_day_phase_changed):
+		cycle.day_phase_changed.connect(_on_day_phase_changed)
+		# Apply the state right away (the game may start at dusk or night)
+		_on_day_phase_changed(cycle.current_phase)
+	var player: Player = scene.get_node_or_null("Player") as Player
+	if player and not player.nearest_building_changed.is_connected(_on_nearest_building_changed):
+		player.nearest_building_changed.connect(_on_nearest_building_changed)
 
 
 ## Handle day phase changes - toggle window emission and lamp lights
-func _on_day_phase_changed(phase) -> void:
-	var lights_on = (phase == DayNightCycle.DayPhase.DUSK or phase == DayNightCycle.DayPhase.NIGHT)
+func _on_day_phase_changed(phase: DayNightCycle.DayPhase) -> void:
+	var lights_on: bool = (phase == DayNightCycle.DayPhase.DUSK or phase == DayNightCycle.DayPhase.NIGHT)
 	_set_window_emission(lights_on)
 	_set_lamp_lights(phase == DayNightCycle.DayPhase.NIGHT)
 
 
 ## Set window emission on all buildings
 func _set_window_emission(enabled: bool) -> void:
-	var buildings_root: Node = get_tree().current_scene.get_node_or_null("Buildings")
-	if not buildings_root:
-		return
-
-	for building in buildings_root.get_children():
-		if not building.is_in_group("placed_buildings"):
-			continue
-
-		var mesh_inst: MeshInstance3D = building.get_node_or_null("MeshInstance3D")
+	for building in _placed_buildings():
+		var mesh_inst: MeshInstance3D = building.get_node_or_null("MeshInstance3D") as MeshInstance3D
 		if mesh_inst and mesh_inst.has_meta("has_window_surface"):
 			var win_mat: StandardMaterial3D = mesh_inst.get_surface_override_material(1) as StandardMaterial3D
 			if win_mat:
@@ -291,23 +297,21 @@ func _set_window_emission(enabled: bool) -> void:
 
 ## Set street lamp lights on/off
 func _set_lamp_lights(enabled: bool) -> void:
-	var buildings_root: Node = get_tree().current_scene.get_node_or_null("Buildings")
-	if not buildings_root:
-		return
-
-	for building in buildings_root.get_children():
+	for building in _placed_buildings():
 		var lamp: OmniLight3D = building.get_node_or_null("LampLight") as OmniLight3D
 		if lamp:
 			lamp.visible = enabled
 
 
-## Connect to player nearest_building_changed signal (deferred)
-func _connect_player_interaction_deferred() -> void:
-	await get_tree().process_frame
-	var player: Node = get_tree().current_scene.get_node_or_null("Player")
-	if not player:
-		return
-	player.nearest_building_changed.connect(_on_nearest_building_changed)
+## Placed (or restored) buildings of the current world
+func _placed_buildings() -> Array[Node]:
+	var out: Array[Node] = []
+	if _buildings_root == null or not is_instance_valid(_buildings_root):
+		return out
+	for building: Node in _buildings_root.get_children():
+		if building.is_in_group("placed_buildings"):
+			out.append(building)
+	return out
 
 
 ## Handle nearest building change - show/hide interaction prompt
@@ -336,7 +340,8 @@ func _on_nearest_building_changed(building: StaticBody3D) -> void:
 		building_interaction_prompt_hide.emit()
 
 
-## Handle building interaction when player presses E near a building
+## Handle building interaction when player presses E near a building: a
+## quiz from the building's category; a correct answer raises its level.
 func interact_with_building(building: StaticBody3D) -> void:
 	if not building:
 		return
@@ -346,39 +351,38 @@ func interact_with_building(building: StaticBody3D) -> void:
 	if building_id.is_empty():
 		return
 
-	# Look up building data
-	var building_data: BuildingData = null
-	for b in _building_types:
-		if b.display_name == building_id:
-			building_data = b
-			break
-
+	var building_data: BuildingData = get_building_data(building_id)
 	if not building_data:
 		return
 
-	# Get quiz window
-	var quiz_window = get_node_or_null("/root/UI/QuizWindow")
-	if not quiz_window:
+	# The quiz window registers itself with the NPCManager
+	var quiz_window: QuizWindow = NPCManager.quiz_window
+	if quiz_window == null:
+		push_warning("BuildingManager: no quiz window available for a building quiz")
 		return
 
-	# Determine quiz category
-	var category: String = building_data.quiz_category
-	if category.is_empty():
-		category = ""  # Empty = random category
-
-	# Connect to answer result signal
-	quiz_window.answer_submitted.connect(
-		func(was_correct: bool):
-			_on_building_quiz_answered(building, building_data, was_correct),
-		CONNECT_ONE_SHOT
-	)
-
-	# Open quiz window
-	quiz_window.open_with_category(category)
+	# A quiz left open from an earlier interaction must not upgrade anything
+	_forget_building_quiz()
+	_building_quiz_answer = _on_building_quiz_answered.bind(building, building_data)
+	quiz_window.answer_submitted.connect(_building_quiz_answer, CONNECT_ONE_SHOT)
+	if not quiz_window.quiz_closed.is_connected(_forget_building_quiz):
+		quiz_window.quiz_closed.connect(_forget_building_quiz, CONNECT_ONE_SHOT)
+	quiz_window.open_with_category(building_data.quiz_category)
 
 
-## Handle building quiz answer
-func _on_building_quiz_answered(building: StaticBody3D, building_data: BuildingData, was_correct: bool) -> void:
+## The quiz was closed without an answer: nothing is upgraded, and a later
+## answer (e.g. to an NPC quiz) must not count for this building.
+func _forget_building_quiz() -> void:
+	var quiz_window: QuizWindow = NPCManager.quiz_window
+	if quiz_window and _building_quiz_answer.is_valid() \
+			and quiz_window.answer_submitted.is_connected(_building_quiz_answer):
+		quiz_window.answer_submitted.disconnect(_building_quiz_answer)
+	_building_quiz_answer = Callable()
+
+
+## Handle building quiz answer. The signal's `was_correct` comes first,
+## the building is bound to the listener (signal arguments precede bound ones).
+func _on_building_quiz_answered(was_correct: bool, building: StaticBody3D, building_data: BuildingData) -> void:
 	if not is_instance_valid(building):
 		return
 
@@ -404,6 +408,11 @@ func _on_building_quiz_answered(building: StaticBody3D, building_data: BuildingD
 				win_mat.emission_energy_multiplier = 1.5
 				mesh_inst.set_surface_override_material(1, win_mat)
 				mesh_inst.set_meta("has_window_surface", true)
+
+		# The fresh window material starts switched off: keep the lights as
+		# the current time of day wants them
+		if _cycle:
+			_on_day_phase_changed(_cycle.current_phase)
 
 		# Emit signal
 		building_level_changed.emit(building, new_level)

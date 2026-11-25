@@ -1,4 +1,5 @@
 extends Node3D
+class_name ShellStand
 
 ## 🐚 Tauschbude on the beach: trade every collected shell for coins
 ## (E to interact, same key as NPCs). Standalone by design - it shows

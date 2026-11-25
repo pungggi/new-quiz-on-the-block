@@ -2,6 +2,8 @@ class_name QuizWindow
 extends MenuDialog
 
 signal answer_submitted(was_correct: bool)
+## The quiz was closed - answered, aborted with ESC or with the close button
+signal quiz_closed
 
 @onready var close_button: Button = %CloseButton
 @onready var question_label: Label = %QuestionLabel
@@ -13,13 +15,17 @@ signal answer_submitted(was_correct: bool)
 @onready var reward_label: Label = %RewardLabel
 @onready var panel: PanelContainer = %Panel
 
-var _current_question: Resource # QuizQuestion type
+var _current_question: QuizQuestion = null
 var _answer_buttons: Array[Button] = []
 var _current_category: String = ""
 var _npc_manager: Node = null
 var _quiz_manager: Node = null
+## Wired by main.gd: the bar at the bottom the quiz keeps clear of
+var _building_bar: BuildingPanel = null
 var _used_second_chance: bool = false
 var _is_closing: bool = false
+## Gap between the quiz card and whatever is below it (the bar adds to it)
+const BOTTOM_MARGIN: int = 24
 
 
 func _ready() -> void:
@@ -61,20 +67,24 @@ func open_with_category(category: String) -> void:
 ## the top and above the building bar at the bottom, instead of letting it
 ## disappear behind either.
 func _keep_above_building_bar() -> void:
-	var safe: MarginContainer = get_node_or_null("%SafeArea")
+	var safe: MarginContainer = get_node_or_null("%SafeArea") as MarginContainer
 	if safe == null:
 		return
-	safe.add_theme_constant_override("margin_top", 64)
-	var margin: int = 24
-	var bar: Control = get_parent().get_node_or_null("BuildingPanel/VBox") as Control
-	if bar:
-		margin += int(ceil(bar.size.y))
+	safe.add_theme_constant_override("margin_top", int(HUD.TOP_STRIP))
+	var margin: int = BOTTOM_MARGIN
+	if _building_bar:
+		margin += int(ceil(_building_bar.occupied_height()))
 	safe.add_theme_constant_override("margin_bottom", margin)
 	_fit_panel()
 
 
+## Wired by main.gd: the building bar at the bottom edge
+func set_bottom_bar(bar: BuildingPanel) -> void:
+	_building_bar = bar
+
+
 func close() -> void:
-	if _is_closing:
+	if _is_closing or not visible:
 		return
 	_is_closing = true
 	AudioManager.play_sfx(AudioManager.SFX.PANEL_CLOSE)
@@ -84,6 +94,7 @@ func close() -> void:
 	_reset_button_colors()
 	_set_build_cursor_blocking(false)
 	_is_closing = false
+	quiz_closed.emit()
 
 
 ## ESC closes the quiz. MenuDialog handles the key and consumes it, so

@@ -5,8 +5,6 @@ extends MenuDialog
 ## Layout and pause handling come from MenuDialog; ESC is off so the
 ## introduction is not skipped by accident.
 
-signal tutorial_completed
-
 const TUTORIAL_STEPS: Array[Dictionary] = [
 	{
 		"title": "🏙️ Willkommen bei New Quiz on the Block!",
@@ -106,4 +104,3 @@ func _on_skip_pressed() -> void:
 func _complete_tutorial() -> void:
 	_mark_tutorial_completed()
 	queue_free()
-	tutorial_completed.emit()

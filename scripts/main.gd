@@ -2,12 +2,18 @@ extends Node3D
 
 const TUTORIAL_SCENE := preload("res://scenes/ui/tutorial_overlay.tscn")
 const PAUSE_MENU_SCENE := preload("res://scenes/ui/pause_menu.tscn")
+const SETTINGS_DIALOG_SCENE := preload("res://scenes/ui/settings_dialog.tscn")
+const STATS_DIALOG_SCENE := preload("res://scenes/ui/stats_dialog.tscn")
+const ACHIEVEMENTS_DIALOG_SCENE := preload("res://scenes/ui/achievements_dialog.tscn")
 
 @onready var chunk_root: Node3D = $ChunkRoot
 @onready var camera_rig: Node3D = $CameraRig
 @onready var hud: HUD = $UI/HUD
 @onready var quiz_window: QuizWindow = $UI/QuizWindow
-@onready var build_cursor: Node3D = $BuildCursor
+@onready var buildings_root: Node3D = $Buildings
+@onready var build_cursor: BuildCursor = $BuildCursor
+@onready var building_panel: BuildingPanel = $UI/BuildingPanel
+@onready var day_night: DayNightCycle = $DayNightCycle
 @onready var ui: CanvasLayer = $UI
 
 var _npc_manager: Node = null
@@ -17,6 +23,17 @@ var _pause_menu: Control = null
 
 
 func _ready() -> void:
+	# The game scene hands its parts to the services that need them. They
+	# start up while the main menu is showing, so they cannot have found
+	# the world on their own. Order matters: saved buildings come back
+	# first, then the roads between them, then their lights - and all of
+	# it before the world decorates the ground around them.
+	build_cursor.set_buildings_root(buildings_root)
+	build_cursor.set_prop_picker(building_panel)
+	SaveManager.bind_scene(self)
+	RoadManager.register_restored_roads(buildings_root)
+	BuildingManager.bind_scene(self)
+
 	# Initialize ChunkManager and load initial chunks
 	ChunkManager.initialize(chunk_root)
 	if camera_rig:
@@ -24,6 +41,17 @@ func _ready() -> void:
 	ChunkManager.load_initial_chunks()
 
 	hud.quiz_requested.connect(_on_hud_quiz_requested)
+	# The HUD only asks for its dialogs; they are opened on the UI layer
+	hud.settings_requested.connect(_open_dialog.bind(SETTINGS_DIALOG_SCENE))
+	hud.stats_requested.connect(_open_dialog.bind(STATS_DIALOG_SCENE))
+	hud.achievements_requested.connect(_open_dialog.bind(ACHIEVEMENTS_DIALOG_SCENE))
+
+	# The HUD and the quiz window keep clear of the building bar, and the
+	# HUD shows the day/night clock. Wiring it here keeps both free of
+	# searching the scene for their siblings.
+	hud.set_bottom_bar(building_panel)
+	hud.set_day_night(day_night)
+	quiz_window.set_bottom_bar(building_panel)
 
 	# Get autoloads
 	_npc_manager = get_node_or_null("/root/NPCManager")
@@ -50,7 +78,7 @@ func _ready() -> void:
 	add_child(sea_wildlife)
 
 	# Wooden bridge across the river + hedge labyrinth west of spawn
-	var bridge: Node3D = load("res://scripts/world/bridge.gd").new()
+	var bridge: Bridge = Bridge.new()
 	bridge.name = "Bridge"
 	add_child(bridge)
 
@@ -101,7 +129,7 @@ func _ready() -> void:
 
 	# Beachcombing: shells on the beach + the exchange stand
 	ShellManager.initialize(self)
-	var stand: Node3D = load("res://scripts/world/shell_stand.gd").new()
+	var stand: ShellStand = ShellStand.new()
 	stand.name = "ShellStand"
 	add_child(stand)
 
@@ -116,6 +144,16 @@ func _input(event: InputEvent) -> void:
 
 func _on_hud_quiz_requested() -> void:
 	quiz_window.open()
+
+
+## A menu asked for by the HUD goes onto the UI layer, like the HUD itself
+## and the building bar. On the root window the bar would be drawn over its
+## footer, hiding the buttons.
+func _open_dialog(scene: PackedScene) -> void:
+	var dialog: MenuDialog = scene.instantiate()
+	if scene == SETTINGS_DIALOG_SCENE:
+		dialog.closed.connect(hud.refresh_stats) # name or grade may have changed
+	ui.add_child(dialog)
 
 
 func _on_weather_changed(raining: bool) -> void:

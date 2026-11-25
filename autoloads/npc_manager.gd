@@ -35,8 +35,9 @@ var _current_quiz_npc: NPC = null
 ## Currently hovered NPC (for visual feedback)
 var _hovered_npc: NPC = null
 
-## Reference to QuizWindow (set by main scene)
-var quiz_window: Control = null
+## The quiz window. It registers itself here in its _ready, so whatever
+## opens a quiz (NPC click, building exploration) goes through one door.
+var quiz_window: QuizWindow = null
 
 ## Reference to BuildingManager for points
 var _building_manager: Node = null
@@ -262,7 +263,7 @@ func _load_npc_types() -> void:
 	if not dir:
 		push_warning("NPCManager: Could not open res://data/npcs")
 		return
-	
+
 	dir.list_dir_begin()
 	var file_name := dir.get_next()
 	while file_name != "":
@@ -280,15 +281,15 @@ func spawn_npc(world_position: Vector3, npc_data: NPCData) -> NPC:
 	var npc: NPC = NPC_SCENE.instantiate()
 	npc.npc_data = npc_data
 	npc.position = world_position
-	
+
 	# Connect signals
 	npc.clicked.connect(_on_npc_clicked)
 	npc.quiz_completed.connect(_on_npc_quiz_completed)
-	
+
 	# Add to scene
 	get_tree().current_scene.add_child(npc)
 	_active_npcs.append(npc)
-	
+
 	return npc
 
 
@@ -297,7 +298,7 @@ func spawn_npc_by_id(world_position: Vector3, npc_type_id: String) -> NPC:
 	if not _npc_types.has(npc_type_id):
 		push_error("NPCManager: Unknown NPC type: " + npc_type_id)
 		return null
-	
+
 	return spawn_npc(world_position, _npc_types[npc_type_id])
 
 
@@ -314,12 +315,10 @@ func get_npc_data(npc_type_id: String) -> NPCData:
 func _on_npc_clicked(npc: NPC) -> void:
 	_current_quiz_npc = npc
 	npc_clicked.emit(npc)
-	
+
 	# Open quiz with NPC's category
-	if quiz_window and quiz_window.has_method("open_with_category"):
+	if quiz_window:
 		quiz_window.open_with_category(npc.get_category())
-	elif quiz_window and quiz_window.has_method("open"):
-		quiz_window.open()
 
 
 func _on_npc_quiz_completed(npc: NPC, was_correct: bool) -> void:

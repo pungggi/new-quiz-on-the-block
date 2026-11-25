@@ -20,6 +20,8 @@ var _selected_avatar: String = "fox"
 var _grade_buttons: Array[Button] = []
 var _avatar_buttons: Dictionary = {}
 var _category_checkboxes: Dictionary = {}
+## Open while the user decides about "Profil zurücksetzen"
+var _reset_confirm: ConfirmationDialog = null
 
 
 func _ready() -> void:
@@ -102,6 +104,12 @@ func _validate_input() -> void:
 
 
 func _on_escape() -> bool:
+	# ESC closes the top-most layer only: first the reset confirmation,
+	# which would otherwise be freed along with the whole settings dialog
+	if _reset_confirm and is_instance_valid(_reset_confirm) and _reset_confirm.visible:
+		_reset_confirm.queue_free()
+		_reset_confirm = null
+		return true
 	_on_cancel_pressed()
 	return true
 
@@ -132,20 +140,24 @@ func _on_cancel_pressed() -> void:
 
 func _on_reset_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	# ConfirmationDialog is an embedded window; it inherits the theme
+	# ConfirmationDialog is an embedded window. Windows do not inherit the
+	# theme of the window they are embedded in, so it gets ours explicitly.
 	var confirm := ConfirmationDialog.new()
+	confirm.theme = UITheme.get_theme(UITheme.current_level())
 	confirm.title = "Profil zurücksetzen"
 	confirm.dialog_text = "Profil wirklich zurücksetzen?\nAlle Fortschritte gehen verloren!"
 	confirm.ok_button_text = "Zurücksetzen"
 	confirm.cancel_button_text = "Abbrechen"
 	confirm.confirmed.connect(_do_reset.bind(confirm))
-	confirm.canceled.connect(func() -> void: confirm.queue_free())
+	confirm.canceled.connect(confirm.queue_free)
+	_reset_confirm = confirm
 	add_child(confirm)
 	confirm.popup_centered()
 
 
 func _do_reset(dialog: ConfirmationDialog) -> void:
 	dialog.queue_free()
+	_reset_confirm = null
 	ProfileManager.reset_current_profile()
 	AudioManager.play_sfx(AudioManager.SFX.QUIZ_WRONG)
 	_load_current_profile()

@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://campfire_001"]
+[gd_scene load_steps=6 format=3 uid="uid://dvqnca6lgdvsf"]
 
 [sub_resource type="Gradient" id="Gradient_001"]
 offsets = PackedFloat32Array(0, 0.3, 0.7, 1)

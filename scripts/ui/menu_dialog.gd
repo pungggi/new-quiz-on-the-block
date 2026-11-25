@@ -37,7 +37,8 @@ signal closed
 ## Dims the background. Off for full screens such as the main menu.
 @export var dim_background: bool = true
 
-## Open dialogs, bottom-most first. ESC goes to the last one only.
+## Open dialogs, bottom-most first. ESC goes to the top-most VISIBLE
+## one (see _topmost_visible).
 static var _stack: Array[MenuDialog] = []
 static var _pause_count: int = 0
 
@@ -169,10 +170,22 @@ func _input(event: InputEvent) -> void:
 		return
 	if not event.is_action_pressed("ui_cancel"):
 		return
-	if _stack.is_empty() or _stack.back() != self:
+	if _topmost_visible() != self:
 		return
 	if _on_escape():
 		get_viewport().set_input_as_handled()
+
+
+## The dialog ESC belongs to: the last one on the stack that is really
+## shown. Dialogs that live permanently in the tree (the quiz window)
+## are hidden most of the time and must not swallow the key for the
+## dialog below them.
+static func _topmost_visible() -> MenuDialog:
+	for i: int in range(_stack.size() - 1, -1, -1):
+		var dialog: MenuDialog = _stack[i]
+		if is_instance_valid(dialog) and dialog.is_visible_in_tree():
+			return dialog
+	return null
 
 
 ## ESC was pressed while this dialog is on top. Return true if it was used.

@@ -19,6 +19,9 @@ var speed: float = randf_range(0.7, 1.1)
 ## Circle direction (clockwise / counter-clockwise)
 var dir: int = 1 if randf() > 0.5 else -1
 
+## Emitted when the gull hits the water; SeaWildlife draws the splash.
+signal splash_requested(pos: Vector3, strength: float)
+
 ## Public knobs (set by SeaWildlife before/after add_child)
 var home: Vector3 = Vector3.ZERO
 var dive_interval: float = 10.0
@@ -209,9 +212,7 @@ static func _mesh(size: Vector3, mat: StandardMaterial3D, pos: Vector3 = Vector3
 
 
 func _splash(pos: Vector3, strength: float) -> void:
-	var manager := get_parent() as SeaWildlife
-	if manager:
-		manager.splash(pos, strength)
+	splash_requested.emit(pos, strength)
 
 
 ## ---------------------------------------------------------------- api

@@ -100,6 +100,8 @@ current = true
 
 [node name="ChunkRoot" type="Node3D" parent="."]
 
+[node name="Buildings" type="Node3D" parent="."]
+
 [node name="BuildCursor" parent="." instance=ExtResource("3_cursor")]
 
 [node name="UI" type="CanvasLayer" parent="."]

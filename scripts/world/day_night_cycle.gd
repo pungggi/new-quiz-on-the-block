@@ -106,19 +106,19 @@ func _process(delta: float) -> void:
 	# Calculate time progression
 	var hours_per_second := 24.0 / (day_duration_minutes * 60.0)
 	current_hour += hours_per_second * delta
-	
+
 	if current_hour >= 24.0:
 		current_hour -= 24.0
-	
+
 	# Update sun position and colors
 	_update_visuals()
-	
+
 	# Check phase change
 	var new_phase := _get_phase_for_hour(current_hour)
 	if new_phase != current_phase:
 		current_phase = new_phase
 		day_phase_changed.emit(current_phase)
-		
+
 		# Emit night started/ended signals
 		var is_night: bool = current_phase == DayPhase.NIGHT
 		if is_night and not _was_night:
@@ -126,7 +126,7 @@ func _process(delta: float) -> void:
 		elif not is_night and _was_night:
 			night_ended.emit()
 		_was_night = is_night
-	
+
 	time_changed.emit(current_hour)
 
 
@@ -140,7 +140,7 @@ func _update_sun_position() -> void:
 	var sun_angle := (current_hour - 6.0) * 15.0 # 15 degrees per hour
 	var sun_pitch := deg_to_rad(-sun_angle)
 	var sun_yaw := deg_to_rad(-30.0) # Slight angle for nicer shadows
-	
+
 	if _sun:
 		_sun.rotation = Vector3(sun_pitch, sun_yaw, 0)
 		# Disable sun when below horizon (night time)
@@ -149,15 +149,15 @@ func _update_sun_position() -> void:
 			_sun.visible = false
 		else:
 			_sun.visible = true
-	
+
 	# Moon is opposite to sun (12 hours offset)
 	if _moon:
 		var moon_angle := (current_hour + 6.0) * 15.0 # Moon rises when sun sets
 		var moon_pitch := deg_to_rad(-moon_angle)
 		var moon_yaw := deg_to_rad(30.0) # Opposite direction
-		
+
 		_moon.rotation = Vector3(moon_pitch, moon_yaw, 0)
-		
+
 		# Only show moon during night (when it's above horizon)
 		var moon_elevation := moon_angle
 		if moon_elevation > -5.0 and moon_elevation < 175.0:
@@ -170,21 +170,21 @@ func _update_sky_colors() -> void:
 	var phase := _get_phase_for_hour(current_hour)
 	var next_phase := _get_next_phase(phase)
 	var blend := _get_phase_blend(current_hour, phase)
-	
+
 	var current_colors: Dictionary = SKY_COLORS[phase]
 	var next_colors: Dictionary = SKY_COLORS[next_phase]
-	
+
 	# Interpolate colors
 	if _sky_material:
 		_sky_material.sky_top_color = current_colors["top"].lerp(next_colors["top"], blend)
 		_sky_material.sky_horizon_color = current_colors["horizon"].lerp(next_colors["horizon"], blend)
 		_sky_material.ground_bottom_color = current_colors["ground"].lerp(next_colors["ground"], blend)
 		_sky_material.ground_horizon_color = current_colors["horizon"].lerp(next_colors["horizon"], blend)
-	
+
 	if _environment:
 		_environment.ambient_light_color = current_colors["ambient"].lerp(next_colors["ambient"], blend)
 		_environment.ambient_light_energy = lerpf(current_colors["ambient_energy"], next_colors["ambient_energy"], blend) * weather_dim
-	
+
 	if _sun:
 		_sun.light_color = current_colors["sun_color"].lerp(next_colors["sun_color"], blend)
 		# Planet intensity scales the sun (see PlanetCatalog), rain dims it

@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://build_cursor_001"]
+[gd_scene load_steps=3 format=3 uid="uid://cj8qy4fv1r6t1"]
 
 [ext_resource type="Script" path="res://scripts/player/build_cursor.gd" id="1_cursor"]
 

@@ -6,6 +6,8 @@ extends Node
 ## Player data (points, stats) is handled by ProfileManager.
 
 const SAVE_PATH: String = "user://world_save.json"
+## The save as it was before the last write; used if the save is damaged
+const BACKUP_PATH: String = "user://world_save.json.bak"
 const SAVE_VERSION: int = 2
 
 
@@ -14,6 +16,10 @@ signal game_loaded()
 
 var _auto_save_timer: float = 0.0
 const AUTO_SAVE_INTERVAL: float = 60.0 # Auto-save every 60 seconds
+## Buildings from the last load, waiting for the game scene (bind_scene)
+var _pending_buildings: Array = []
+## Off in tests and probes: nothing reaches the disk, whatever happens
+var saves_enabled: bool = true
 
 ## Debounced event saves: bursts of changes (e.g. restoring a save with
 ## many props) trigger exactly one write shortly after the last change,
@@ -37,6 +43,7 @@ func _ready() -> void:
 	# Connect to events for auto-save triggers
 	if BuildingManager:
 		BuildingManager.building_placed_event.connect(_on_building_placed)
+		BuildingManager.building_level_changed.connect(_on_building_upgraded)
 
 	# Connect to PropManager for prop save triggers
 	if PropManager:
@@ -45,13 +52,26 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not saves_enabled or not is_world_loaded():
+		return # main menu: nothing to save, and saving would empty the city
 	_auto_save_timer += delta
 	if _auto_save_timer >= AUTO_SAVE_INTERVAL:
 		_auto_save_timer = 0.0
 		save_game()
 
 
+## Closing the window saves like "Beenden" in the pause menu does
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and saves_enabled and is_world_loaded():
+		save_game()
+
+
 func _on_building_placed(_building: BuildingData, _pos: Vector3i) -> void:
+	_mark_save_dirty()
+
+
+## An upgraded building (quiz answered) is part of the city from now on
+func _on_building_upgraded(_building: StaticBody3D, _new_level: int) -> void:
 	_mark_save_dirty()
 
 
@@ -66,6 +86,8 @@ func _on_prop_removed(_pos: Vector3) -> void:
 ## Mark the world dirty; a single save fires DEBOUNCE_DELAY seconds
 ## after the last change.
 func _mark_save_dirty() -> void:
+	if not saves_enabled:
+		return
 	_save_pending = true
 	_debounce_timer.start()
 
@@ -76,14 +98,30 @@ func _on_debounce_timeout() -> void:
 		save_game()
 
 
-## Save the current world state (buildings only)
+## True while the game scene (the one with the "Buildings" node) is the
+## current scene. The main menu has no buildings: saving there would write
+## an EMPTY city over the real save.
+func is_world_loaded() -> bool:
+	var scene: Node = get_tree().current_scene
+	return scene != null and scene.get_node_or_null("Buildings") != null
+
+
+## Save the current world state (buildings + props). Does nothing while
+## the game scene is not loaded and returns false then.
 func save_game() -> bool:
+	if not saves_enabled or not is_world_loaded():
+		return false
+
 	var save_data: Dictionary = {
 		"version": SAVE_VERSION,
 		"timestamp": Time.get_unix_time_from_system(),
 		"buildings": _get_placed_buildings(),
 		"props": _get_placed_props(),
 	}
+
+	# The previous save is kept one step as a backup
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.copy_absolute(SAVE_PATH, BACKUP_PATH)
 
 	# Write to file
 	var json_string := JSON.stringify(save_data, "\t")
@@ -106,28 +144,17 @@ func save_game() -> bool:
 
 ## Load world state from file
 func load_game() -> bool:
-	if not FileAccess.file_exists(SAVE_PATH):
+	var save_data: Dictionary = _read_save_file(SAVE_PATH)
+	if save_data.is_empty() and FileAccess.file_exists(BACKUP_PATH):
+		push_warning("SaveManager: save file unreadable, loading the backup copy")
+		save_data = _read_save_file(BACKUP_PATH)
+	if save_data.is_empty():
 		return false
 
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if not file:
-		push_error("SaveManager: Could not open save file for reading")
-		return false
-
-	var json_string := file.get_as_text()
-	file.close()
-
-	var json := JSON.new()
-	var parse_result := json.parse(json_string)
-	if parse_result != OK:
-		push_error("SaveManager: Failed to parse save file")
-		return false
-
-	var save_data: Dictionary = json.data
-
-	# Restore buildings (deferred to ensure scene is ready)
+	# Buildings need the game scene. It does not exist at start-up (the main
+	# menu is up), so they are buffered until main.gd calls bind_scene().
 	if save_data.has("buildings"):
-		call_deferred("_restore_buildings", save_data["buildings"])
+		_pending_buildings = save_data["buildings"]
 
 	# Restore props (deferred so the menu is ready; PropManager buffers until the world loads)
 	if save_data.has("props"):
@@ -137,13 +164,28 @@ func load_game() -> bool:
 	return true
 
 
+## Parsed contents of a save file, or {} when it is missing or damaged
+func _read_save_file(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var json := JSON.new()
+	if json.parse(FileAccess.get_file_as_string(path)) != OK:
+		push_error("SaveManager: Failed to parse %s: %s" % [path, json.get_error_message()])
+		return {}
+	if typeof(json.data) != TYPE_DICTIONARY:
+		push_error("SaveManager: %s does not contain a save" % path)
+		return {}
+	var data: Dictionary = json.data
+	return data
+
+
 func _get_placed_buildings() -> Array:
 	var buildings: Array = []
 	var buildings_root: Node = get_tree().current_scene.get_node_or_null("Buildings")
-	
+
 	if not buildings_root:
 		return buildings
-	
+
 	for child in buildings_root.get_children():
 		if child.is_in_group("placed_buildings"):
 			var pos: Vector3 = child.global_position
@@ -171,18 +213,26 @@ func _get_placed_buildings() -> Array:
 				building_data["building_level"] = child.get_meta("building_level")
 
 			buildings.append(building_data)
-	
+
 	return buildings
 
 
-func _restore_buildings(buildings_data: Array) -> void:
-	# Wait for scene to be fully ready
-	await get_tree().process_frame
-
-	var buildings_root: Node = get_tree().current_scene.get_node_or_null("Buildings")
-	if not buildings_root:
+## Called by the game scene (main.gd) once it is in the tree: puts the
+## buffered buildings into the world and lets the roads connect.
+func bind_scene(scene: Node) -> void:
+	if _pending_buildings.is_empty():
 		return
+	var buildings_root: Node = scene.get_node_or_null("Buildings")
+	if buildings_root == null:
+		return
+	var pending: Array = _pending_buildings
+	_pending_buildings = []
+	_restore_buildings(pending, buildings_root)
 
+
+## Rebuild saved buildings under buildings_root, exactly as placing them
+## would have (mesh, collider, lamp, prompt, level).
+func _restore_buildings(buildings_data: Array, buildings_root: Node) -> void:
 	for bdata in buildings_data:
 		var pos_data: Dictionary = bdata.get("position", {})
 		var pos := Vector3(
@@ -194,7 +244,7 @@ func _restore_buildings(buildings_data: Array) -> void:
 		# Create building
 		var building := StaticBody3D.new()
 		building.add_to_group("placed_buildings")
-		building.collision_layer = 2
+		building.collision_layer = Config.BUILDING_COLLISION_LAYER
 		building.collision_mask = 0
 
 		# Look up BuildingData by building_id (display_name)
@@ -270,7 +320,7 @@ func _restore_buildings(buildings_data: Array) -> void:
 		# Add interaction prompt label (starts invisible)
 		var prompt := Label3D.new()
 		prompt.name = "InteractionPrompt"
-		prompt.text = "[T] Erkunden"
+		prompt.text = "[E] Erkunden"
 		var prompt_y := float(bdata_res.size.y) if bdata_res else 1.0
 		prompt.position = Vector3(0.5, prompt_y + 0.3, 0.5)
 		prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED

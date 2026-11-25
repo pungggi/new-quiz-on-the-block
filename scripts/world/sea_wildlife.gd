@@ -41,12 +41,17 @@ func _ready() -> void:
 		gull.name = "Gull%d" % i
 		gull.home = _random_home()
 		gull.dive_interval = randf_range(6.0, 16.0)
+		gull.splash_requested.connect(splash)
 		_gulls.append(gull)
 		add_child(gull)
 	for i in range(FISH_COUNT):
 		var fish := SeaFish.new()
 		fish.name = "Fish%d" % i
 		fish.jump_interval = randf_range(5.0, 15.0)
+		# The fish do not look up a parent: they get the spot picker and
+		# announce their splashes (signal up, call down)
+		fish.pick_jump_spot = random_ocean_pos
+		fish.splash_requested.connect(splash)
 		_fish.append(fish)
 		add_child(fish)
 

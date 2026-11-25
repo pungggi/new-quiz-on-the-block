@@ -168,7 +168,7 @@ func record_correct(category: String, _points_earned: int = 0) -> void:
 ## Record a wrong answer
 func record_wrong(category: String) -> void:
 	total_wrong_answers += 1
-	
+
 	if not category_wrong.has(category):
 		category_wrong[category] = 0
 	category_wrong[category] += 1
@@ -204,7 +204,7 @@ func get_avatar_emoji() -> String:
 
 ## Convert to dictionary for saving
 func to_dict() -> Dictionary:
-	var result := {
+	var result: Dictionary = {
 		"player_name": player_name,
 		"avatar_id": avatar_id,
 		"grade_level": grade_level,

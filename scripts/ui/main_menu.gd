@@ -67,9 +67,7 @@ func _on_play_pressed() -> void:
 
 	if ProfileManager.needs_profile_creation():
 		# No profile exists - create one first
-		var dialog: MenuDialog = PROFILE_CREATION_SCENE.instantiate()
-		dialog.profile_completed.connect(_on_new_profile_created)
-		add_child(dialog)
+		_open_profile_creation(_on_new_profile_created)
 	else:
 		# Start game
 		_start_game()
@@ -88,13 +86,24 @@ func _on_profiles_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
 
 	if ProfileManager.needs_profile_creation():
-		var creation: MenuDialog = PROFILE_CREATION_SCENE.instantiate()
-		creation.profile_completed.connect(_on_profile_changed)
-		add_child(creation)
+		_open_profile_creation(_on_profile_changed)
 	else:
-		var selection: MenuDialog = PROFILE_SELECTION_SCENE.instantiate()
+		var selection: ProfileSelection = PROFILE_SELECTION_SCENE.instantiate()
 		selection.profile_selected.connect(_on_profile_changed)
+		selection.create_new_requested.connect(_on_create_profile_from_selection)
 		add_child(selection)
+
+
+## "➕ Neues Profil erstellen" in the profile list. The list closes
+## itself; the creation dialog opens in its place.
+func _on_create_profile_from_selection() -> void:
+	_open_profile_creation(_on_profile_changed)
+
+
+func _open_profile_creation(on_completed: Callable) -> void:
+	var creation: ProfileCreation = PROFILE_CREATION_SCENE.instantiate()
+	creation.profile_completed.connect(on_completed)
+	add_child(creation)
 
 
 func _on_character_pressed() -> void:
@@ -102,9 +111,7 @@ func _on_character_pressed() -> void:
 
 	if ProfileManager.needs_profile_creation():
 		# Need a profile first
-		var creation: MenuDialog = PROFILE_CREATION_SCENE.instantiate()
-		creation.profile_completed.connect(_on_profile_changed)
-		add_child(creation)
+		_open_profile_creation(_on_profile_changed)
 	else:
 		var editor: CharacterEditor = CHARACTER_EDITOR_SCENE.instantiate()
 		add_child(editor)
@@ -113,12 +120,14 @@ func _on_character_pressed() -> void:
 
 func _on_settings_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	add_child(SETTINGS_DIALOG_SCENE.instantiate())
+	var dialog: SettingsDialog = SETTINGS_DIALOG_SCENE.instantiate()
+	add_child(dialog)
 
 
 func _on_credits_pressed() -> void:
 	AudioManager.play_sfx(AudioManager.SFX.BUTTON_CLICK)
-	add_child(CREDITS_DIALOG_SCENE.instantiate())
+	var dialog: CreditsDialog = CREDITS_DIALOG_SCENE.instantiate()
+	add_child(dialog)
 
 
 func _on_quit_pressed() -> void:
